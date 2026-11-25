@@ -1,5 +1,5 @@
 {
- "chain_head": "dffded5b3c4f60ef6412389ca21b562482981dc8ec5ba1663e1de6fda8701bc4",
+ "chain_head": "634fa1e228afd44ee1aa69058f92147c5df469a63e5ea96f3792c0243d5ac356",
  "n_cards": 14,
  "genesis": "0000000000000000000000000000000000000000000000000000000000000000",
  "audit": "reports/audit_trackc.json",
@@ -40,7 +40,7 @@
     "monsoon_activity": 0
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "c_dbsi": 0.1,
      "buffer_px": 50,
@@ -78,7 +78,7 @@
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
-   "hash": "5751e7218576dd6ef391a74f4474b6ac14ae57a549921718bb8f633b8e18f050"
+   "hash": "79821ce44f5a9c68456404e3361ae80e6ffb57093ef4a63c54d3193081595ab8"
   },
   {
    "card_id": "sone2046",
@@ -116,7 +116,7 @@
     "monsoon_activity": 0
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "c_dbsi": 0.1,
      "buffer_px": 50,
@@ -153,8 +153,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "5751e7218576dd6ef391a74f4474b6ac14ae57a549921718bb8f633b8e18f050",
-   "hash": "eec36e81409b48b1443cc1310ca6a8a7ca74ef23ed8af26d5a23c2f6dced2971"
+   "prev_hash": "79821ce44f5a9c68456404e3361ae80e6ffb57093ef4a63c54d3193081595ab8",
+   "hash": "4a6c0fbed1b23b44aaa5dcfce83c964841256a49330bc27dfcaa0150ac0514b0"
   },
   {
    "card_id": "sone1406",
@@ -192,7 +192,7 @@
     "monsoon_activity": 0
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "c_dbsi": 0.1,
      "buffer_px": 50,
@@ -229,8 +229,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "eec36e81409b48b1443cc1310ca6a8a7ca74ef23ed8af26d5a23c2f6dced2971",
-   "hash": "a026461bc92969c554bddd4ef88f34cb5a4fa46be7e3cada1291c6aec11d1cba"
+   "prev_hash": "4a6c0fbed1b23b44aaa5dcfce83c964841256a49330bc27dfcaa0150ac0514b0",
+   "hash": "3ee72adfc0293b7942a5ea71dd7e830d7f82af9ac762ffd9073cf366590f3bae"
   },
   {
    "card_id": "sone1682",
@@ -268,7 +268,7 @@
     "monsoon_activity": 0
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "c_dbsi": 0.1,
      "buffer_px": 50,
@@ -305,8 +305,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "a026461bc92969c554bddd4ef88f34cb5a4fa46be7e3cada1291c6aec11d1cba",
-   "hash": "3023211fcfb4982b75193c43b467e0db8d52fc3beeeae70913b424b285cff4bd"
+   "prev_hash": "3ee72adfc0293b7942a5ea71dd7e830d7f82af9ac762ffd9073cf366590f3bae",
+   "hash": "e1b77ae65d5df8af448cd66a232e651e11214639f0843cb0df86f6cedd225af8"
   },
   {
    "card_id": "hasdeo1103",
@@ -344,7 +344,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -370,8 +370,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "3023211fcfb4982b75193c43b467e0db8d52fc3beeeae70913b424b285cff4bd",
-   "hash": "ecd2be95f78eb141c1200b99d1614cb98a0b31f320436b62128f90d4b1c2c83f"
+   "prev_hash": "e1b77ae65d5df8af448cd66a232e651e11214639f0843cb0df86f6cedd225af8",
+   "hash": "2da2d7004cafafa00170edbaeda4ca2f1d0878cdec884043ae33eb234b081ed5"
   },
   {
    "card_id": "hasdeo1008",
@@ -409,7 +409,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -435,8 +435,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "ecd2be95f78eb141c1200b99d1614cb98a0b31f320436b62128f90d4b1c2c83f",
-   "hash": "21483f996741b7f729d2ce30786a1fdcdf911cded3a0cd1f88633fbf406c3b51"
+   "prev_hash": "2da2d7004cafafa00170edbaeda4ca2f1d0878cdec884043ae33eb234b081ed5",
+   "hash": "7c52df14bece9fe63b8f507dd3de700e700bf2f3794116f952000a26252058f1"
   },
   {
    "card_id": "hasdeo1007",
@@ -474,7 +474,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -500,8 +500,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "21483f996741b7f729d2ce30786a1fdcdf911cded3a0cd1f88633fbf406c3b51",
-   "hash": "6a13e6b098c73b90b122469a2708db3ad2a4a359d56e84b5f3a30afb4251363a"
+   "prev_hash": "7c52df14bece9fe63b8f507dd3de700e700bf2f3794116f952000a26252058f1",
+   "hash": "3a88e6b66e449331fd8b512e7d02f5314935aa601936e38efc14ec3819eb767b"
   },
   {
    "card_id": "hasdeo1056",
@@ -539,7 +539,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -565,8 +565,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "6a13e6b098c73b90b122469a2708db3ad2a4a359d56e84b5f3a30afb4251363a",
-   "hash": "eb12f6c8f4d6a51ea6439f10249453d9cf9df2bb09150ab2b412511021558e74"
+   "prev_hash": "3a88e6b66e449331fd8b512e7d02f5314935aa601936e38efc14ec3819eb767b",
+   "hash": "79facf40b873858192f04c059cf7e36bf1c344fff2b693f2837fdb22b4af000e"
   },
   {
    "card_id": "hasdeo0772",
@@ -604,7 +604,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -630,8 +630,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "eb12f6c8f4d6a51ea6439f10249453d9cf9df2bb09150ab2b412511021558e74",
-   "hash": "56402f67ecc2c653d1a81d3a767c444783e2083e67f5f1d504ea4184519ce95b"
+   "prev_hash": "79facf40b873858192f04c059cf7e36bf1c344fff2b693f2837fdb22b4af000e",
+   "hash": "0ada8dedbf788df4600e56d247dc85ef17556a011521796009cb11205b2d7ecb"
   },
   {
    "card_id": "hasdeo1055",
@@ -669,7 +669,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -695,8 +695,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "56402f67ecc2c653d1a81d3a767c444783e2083e67f5f1d504ea4184519ce95b",
-   "hash": "2d6df4ec5f8314d27ae19d648c69dc0a5bfc874ce561693b8c5cefd3aa338b4d"
+   "prev_hash": "0ada8dedbf788df4600e56d247dc85ef17556a011521796009cb11205b2d7ecb",
+   "hash": "7cbf7024bc9f46bac92f59d2cfa82ccb5cd32b40a51d785ef2d1d86ee713cfa8"
   },
   {
    "card_id": "hasdeo1102",
@@ -734,7 +734,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -760,8 +760,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "2d6df4ec5f8314d27ae19d648c69dc0a5bfc874ce561693b8c5cefd3aa338b4d",
-   "hash": "b1cc6a9de12ba4032d177be36e80a2a660c4e4512055afc1a3d823862fd27bf7"
+   "prev_hash": "7cbf7024bc9f46bac92f59d2cfa82ccb5cd32b40a51d785ef2d1d86ee713cfa8",
+   "hash": "d5437b73dd49728c543ae960cecea5381b8d43d7a5976235c43e159c33fc4114"
   },
   {
    "card_id": "hasdeo0960",
@@ -799,7 +799,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -825,8 +825,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "b1cc6a9de12ba4032d177be36e80a2a660c4e4512055afc1a3d823862fd27bf7",
-   "hash": "3f5ab82ccbb555804e86bbd95d8b4d1688a8a736b9891075f3e0b0d4b199d46c"
+   "prev_hash": "d5437b73dd49728c543ae960cecea5381b8d43d7a5976235c43e159c33fc4114",
+   "hash": "991c0e0725f1ece2a90a51b6971bff57402396a6cc6089b0374a806c3ee1e66d"
   },
   {
    "card_id": "hasdeo1006",
@@ -864,7 +864,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -890,8 +890,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "3f5ab82ccbb555804e86bbd95d8b4d1688a8a736b9891075f3e0b0d4b199d46c",
-   "hash": "1bf6b2f071c32cc25e52b78f32681fa9d76a5e7272f189c109f7b2403fd9afd3"
+   "prev_hash": "991c0e0725f1ece2a90a51b6971bff57402396a6cc6089b0374a806c3ee1e66d",
+   "hash": "4657469a46d187bdb4c11c4b11a31798bd553eb18d4519510bf6925a7cecc1b0"
   },
   {
    "card_id": "hasdeo0818",
@@ -929,7 +929,7 @@
     "monsoon_activity": null
    },
    "model": {
-    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "version": "timm mobilenetv2_050 ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher; change engine: indices-and-rules v2",
     "thresholds": {
      "forest_ndvi": 0.5,
      "d_ndvi": 0.25,
@@ -955,8 +955,8 @@
     }
    },
    "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
-   "prev_hash": "1bf6b2f071c32cc25e52b78f32681fa9d76a5e7272f189c109f7b2403fd9afd3",
-   "hash": "dffded5b3c4f60ef6412389ca21b562482981dc8ec5ba1663e1de6fda8701bc4"
+   "prev_hash": "4657469a46d187bdb4c11c4b11a31798bd553eb18d4519510bf6925a7cecc1b0",
+   "hash": "634fa1e228afd44ee1aa69058f92147c5df469a63e5ea96f3792c0243d5ac356"
   }
  ]
 }

@@ -23,31 +23,31 @@
  },
  "headline_rho5": {
   "ratio_vs_fifo": {
-   "H1": 80.234,
-   "H2": 79.377
+   "H1": 119.503,
+   "H2": 122.69
   },
   "ratio_vs_b2": {
-   "H1": 16.154,
-   "H2": 15.981
+   "H1": 61.658,
+   "H2": 63.302
   },
   "minutes_to_90": {
    "B1": null,
    "B2": null,
-   "B3": 733.3079,
-   "H1": 733.3079,
-   "H2": 731.876
+   "B3": 639.1961,
+   "H1": 639.6702,
+   "H2": 581.3225
   },
   "minutes_to_match_fifo": {
    "B1": 929.26,
    "B2": 929.26,
-   "B3": 3.04,
-   "H1": 3.04,
-   "H2": 2.85
+   "B3": 3.19,
+   "H1": 3.19,
+   "H2": 2.88
   },
   "fifo_minutes_used": 929.26,
   "minutes_saved_vs_fifo": {
-   "H1": 926.22,
-   "H2": 926.41
+   "H1": 926.07,
+   "H2": 926.38
   },
   "ttfi_min": {
    "B1": 2039.748,
@@ -57,41 +57,41 @@
    "H2": 1.84
   },
   "pct_ub": {
-   "B1": 0.0123,
-   "B2": 0.0609,
-   "B3": 0.9835,
-   "H1": 0.9835,
-   "H2": 0.973
+   "B1": 0.008,
+   "B2": 0.0156,
+   "B3": 0.9607,
+   "H1": 0.9606,
+   "H2": 0.9862
   }
  },
  "by_rho": {
   "1": {
    "ratio_vs_fifo": {
-    "H1": 1.856,
-    "H2": 1.82
+    "H1": 1.852,
+    "H2": 1.857
    },
    "ratio_vs_b2": {
-    "H1": 1.426,
-    "H2": 1.398
+    "H1": 1.58,
+    "H2": 1.584
    },
    "minutes_to_90": {
-    "B1": 1765.9714,
-    "B2": 1301.7185,
-    "B3": 732.0607,
-    "H1": 732.0607,
-    "H2": 731.864
+    "B1": 1163.651,
+    "B2": 987.3088,
+    "B3": 425.8663,
+    "H1": 425.8738,
+    "H2": 415.0649
    },
    "minutes_to_match_fifo": {
     "B1": 1769.73,
-    "B2": 856.23,
-    "B3": 378.42,
-    "H1": 378.42,
-    "H2": 377.98
+    "B2": 974.66,
+    "B3": 381.99,
+    "H1": 381.99,
+    "H2": 378.96
    },
    "fifo_minutes_used": 1769.73,
    "minutes_saved_vs_fifo": {
-    "H1": 1391.31,
-    "H2": 1391.75
+    "H1": 1387.74,
+    "H2": 1390.77
    },
    "ttfi_min": {
     "B1": 392.623,
@@ -101,40 +101,40 @@
     "H2": 1.84
    },
    "pct_ub": {
-    "B1": 0.5347,
-    "B2": 0.6962,
-    "B3": 0.9926,
-    "H1": 0.9926,
-    "H2": 0.9734
+    "B1": 0.534,
+    "B2": 0.6261,
+    "B3": 0.9891,
+    "H1": 0.989,
+    "H2": 0.9914
    }
   },
   "2": {
    "ratio_vs_fifo": {
-    "H1": 6.503,
-    "H2": 6.391
+    "H1": 10.945,
+    "H2": 11.032
    },
    "ratio_vs_b2": {
-    "H1": 2.994,
-    "H2": 2.942
+    "H1": 5.762,
+    "H2": 5.808
    },
    "minutes_to_90": {
     "B1": null,
     "B2": null,
-    "B3": 732.2605,
-    "H1": 732.2605,
-    "H2": 731.867
+    "B3": 478.4766,
+    "H1": 478.2923,
+    "H2": 456.3609
    },
    "minutes_to_match_fifo": {
     "B1": 1769.73,
-    "B2": 861.75,
-    "B3": 13.82,
-    "H1": 13.82,
-    "H2": 13.57
+    "B2": 946.25,
+    "B3": 14.59,
+    "H1": 14.59,
+    "H2": 13.24
    },
    "fifo_minutes_used": 1769.73,
    "minutes_saved_vs_fifo": {
-    "H1": 1755.91,
-    "H2": 1756.16
+    "H1": 1755.14,
+    "H2": 1756.49
    },
    "ttfi_min": {
     "B1": 769.429,
@@ -144,40 +144,40 @@
     "H2": 1.84
    },
    "pct_ub": {
-    "B1": 0.1523,
-    "B2": 0.3308,
-    "B3": 0.9904,
-    "H1": 0.9904,
-    "H2": 0.9733
+    "B1": 0.0898,
+    "B2": 0.1705,
+    "B3": 0.9825,
+    "H1": 0.9825,
+    "H2": 0.9902
    }
   },
   "5": {
    "ratio_vs_fifo": {
-    "H1": 80.234,
-    "H2": 79.377
+    "H1": 119.503,
+    "H2": 122.69
    },
    "ratio_vs_b2": {
-    "H1": 16.154,
-    "H2": 15.981
+    "H1": 61.658,
+    "H2": 63.302
    },
    "minutes_to_90": {
     "B1": null,
     "B2": null,
-    "B3": 733.3079,
-    "H1": 733.3079,
-    "H2": 731.876
+    "B3": 639.1961,
+    "H1": 639.6702,
+    "H2": 581.3225
    },
    "minutes_to_match_fifo": {
     "B1": 929.26,
     "B2": 929.26,
-    "B3": 3.04,
-    "H1": 3.04,
-    "H2": 2.85
+    "B3": 3.19,
+    "H1": 3.19,
+    "H2": 2.88
    },
    "fifo_minutes_used": 929.26,
    "minutes_saved_vs_fifo": {
-    "H1": 926.22,
-    "H2": 926.41
+    "H1": 926.07,
+    "H2": 926.38
    },
    "ttfi_min": {
     "B1": 2039.748,
@@ -187,40 +187,40 @@
     "H2": 1.84
    },
    "pct_ub": {
-    "B1": 0.0123,
-    "B2": 0.0609,
-    "B3": 0.9835,
-    "H1": 0.9835,
-    "H2": 0.973
+    "B1": 0.008,
+    "B2": 0.0156,
+    "B3": 0.9607,
+    "H1": 0.9606,
+    "H2": 0.9862
    }
   },
   "10": {
    "ratio_vs_fifo": {
-    "H1": 166.73,
-    "H2": 167.045
+    "H1": 211.275,
+    "H2": 224.218
    },
    "ratio_vs_b2": {
-    "H1": 166.73,
-    "H2": 167.045
+    "H1": 211.275,
+    "H2": 224.218
    },
    "minutes_to_90": {
     "B1": null,
     "B2": null,
-    "B3": 736.7485,
-    "H1": 736.7485,
-    "H2": 731.891
+    "B3": 742.6081,
+    "H1": 742.6081,
+    "H2": 731.8685
    },
    "minutes_to_match_fifo": {
     "B1": 1317.09,
     "B2": 1317.09,
-    "B3": 5.04,
-    "H1": 5.04,
-    "H2": 2.62
+    "B3": 5.41,
+    "H1": 5.41,
+    "H2": 2.68
    },
    "fifo_minutes_used": 1317.09,
    "minutes_saved_vs_fifo": {
-    "H1": 1312.05,
-    "H2": 1314.47
+    "H1": 1311.68,
+    "H2": 1314.41
    },
    "ttfi_min": {
     "B1": 4336.147,
@@ -230,37 +230,37 @@
     "H2": 1.84
    },
    "pct_ub": {
-    "B1": 0.0058,
-    "B2": 0.0058,
-    "B3": 0.9705,
-    "H1": 0.9705,
-    "H2": 0.9724
+    "B1": 0.0044,
+    "B2": 0.0044,
+    "B3": 0.9226,
+    "H1": 0.9227,
+    "H2": 0.9792
    }
   }
  },
  "robustness": {
   "note": "H1 sends full chips only: no packet-fraction assumption involved.",
-  "H1_vs_B1": 80.234,
-  "H1_vs_B2": 16.154,
+  "H1_vs_B1": 119.503,
+  "H1_vs_B2": 61.658,
   "H2_packet_fraction_sensitivity_rho5": {
    "0.3": {
-    "H2_value": 6604851.91,
-    "H2_vs_B1": 79.346,
-    "H2_vs_B2": 15.975
+    "H2_value": 78554999.83,
+    "H2_vs_B1": 122.637,
+    "H2_vs_B2": 63.275
    },
    "0.5": {
-    "H2_value": 6606036.22,
-    "H2_vs_B1": 79.36,
-    "H2_vs_B2": 15.978
+    "H2_value": 78566192.63,
+    "H2_vs_B1": 122.654,
+    "H2_vs_B2": 63.284
    },
    "0.7": {
-    "H2_value": 6607460.34,
-    "H2_vs_B1": 79.377,
-    "H2_vs_B2": 15.981
+    "H2_value": 78588730.36,
+    "H2_vs_B1": 122.69,
+    "H2_vs_B2": 63.302
    }
   }
  },
- "headline_note": "The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 per capture: {'c1': 0.102, 'c2': 0.037, 't1': 0.239}; mean cloud per capture: {'c1': 0.408, 'c2': 0.557, 't1': 0.059}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; value-aware policies send the valuable ones first. Change source per capture: ['captures']. If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.",
+ "headline_note": "The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 per capture: {'c1': 0.102, 'c2': 0.037, 't1': 0.237}; mean cloud per capture: {'c1': 0.284, 'c2': 0.518, 't1': 0.002}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; value-aware policies send the valuable ones first. Change source per capture: ['captures']. If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.",
  "change_source": {
   "blr/c1": "captures",
   "blr/t1": "captures",
@@ -275,19 +275,19 @@
  "frac_tiles_with_value": {
   "c1": 0.102,
   "c2": 0.037,
-  "t1": 0.239
+  "t1": 0.237
  },
  "mean_cloud": {
-  "c1": 0.408,
-  "c2": 0.557,
-  "t1": 0.059
+  "c1": 0.284,
+  "c2": 0.518,
+  "t1": 0.002
  },
  "load_avg": [
-  2.06591796875,
-  3.3056640625,
-  4.30078125
+  2.82763671875,
+  3.0263671875,
+  5.07470703125
  ],
- "g5_ms_per_1000_tiles_H2": 2.35,
+ "g5_ms_per_1000_tiles_H2": 3.6,
  "capture_overpasses_10d_cycle": {
   "blr": [
    {
