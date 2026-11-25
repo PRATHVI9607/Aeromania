@@ -25,6 +25,7 @@ dependencies = [
   "onnxruntime>=1.18",
   "onnxscript>=0.1",
   "pytest>=8",
+  "scikit-image>=0.26.0",
 ]
 
 [build-system]

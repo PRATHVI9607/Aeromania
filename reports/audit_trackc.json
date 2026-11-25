@@ -1,0 +1,85 @@
+{
+ "method": "reviewer visual audit, not field-verified",
+ "caveat": "reviewer visual audit, not field-verified. One reviewer, t0|t1|mask crops at 2x, tile-level leads (top 15 by area; sone has only 10 leads under the rules). 'real' = looks like the claimed land-cover change; not confirmed as illegal.",
+ "leads": {
+  "sone": {
+   "1176": "real",
+   "2046": "unsure",
+   "1406": "unsure",
+   "1683": "wrong",
+   "1682": "unsure",
+   "992": "wrong",
+   "123": "wrong",
+   "2000": "wrong",
+   "458": "wrong",
+   "1085": "wrong"
+  },
+  "hasdeo": {
+   "1103": "real",
+   "1008": "real",
+   "1007": "real",
+   "1056": "real",
+   "772": "real",
+   "1055": "real",
+   "1102": "real",
+   "960": "real",
+   "818": "unsure",
+   "959": "unsure",
+   "1006": "real",
+   "741": "wrong",
+   "525": "unsure",
+   "1362": "unsure",
+   "216": "wrong"
+  }
+ },
+ "counts": {
+  "sone": {
+   "sand_disturbance": {
+    "real": 0,
+    "unsure": 0,
+    "wrong": 2
+   },
+   "sand_pits": {
+    "real": 1,
+    "unsure": 3,
+    "wrong": 4
+   }
+  },
+  "hasdeo": {
+   "forest_clearing": {
+    "real": 2,
+    "unsure": 3,
+    "wrong": 2
+   },
+   "mine_expansion": {
+    "real": 7,
+    "unsure": 1,
+    "wrong": 0
+   }
+  }
+ },
+ "precision": {
+  "sone": {
+   "sand_disturbance": 0.0,
+   "sand_pits": 0.12
+  },
+  "hasdeo": {
+   "forest_clearing": 0.29,
+   "mine_expansion": 0.88
+  }
+ },
+ "precision_excl_unsure": {
+  "sone": {
+   "sand_disturbance": 0.0,
+   "sand_pits": 0.2
+  },
+  "hasdeo": {
+   "forest_clearing": 0.5,
+   "mine_expansion": 1.0
+  }
+ },
+ "notes": {
+  "sone": "real: rectangular water pit on a sand bar, absent/not water at t0. unsure: irregular blob or enlargement of an existing pit field. wrong: tiny slivers, farm/urban ponds, waterline or field edges. Pits already water at t0 inside the pit field are not new.",
+  "hasdeo": "real: forest to bare/mine overburden, visible in t0|t1. unsure: edge slivers/shadow/road. wrong: reservoir drawdown shoreline, village fields."
+ }
+}

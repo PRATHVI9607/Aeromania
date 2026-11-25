@@ -69,3 +69,23 @@ def test_growth_per_road_km_synthetic_wards():
     assert (round(ma, 3), round(aa, 3), round(mb, 3), round(ab, 3)) == (2.0, 2.0, 2.0, 2.5)
     assert ch.growth_per_road_km(10, ma) == 5.0
     assert ch.growth_per_road_km(3, 0.0) == 6.0   # floor 0.5 km
+
+
+def test_rectness_rect_vs_ring():
+    r = np.argwhere(np.ones((10, 20), bool))
+    assert ch.rectness(r) > 0.99
+    t = np.argwhere(np.tri(20, dtype=bool))   # triangle ~0.5
+    assert ch.rectness(t) < 0.65
+
+
+def test_find_pits_new_rect_kept_seasonal_edge_dropped():
+    w0 = np.zeros((60, 60), bool)
+    w1 = w0.copy()
+    w1[10:20, 10:30] = True                       # new 2 ha rectangle
+    w0[35:55, 5:25] = True
+    w1[35:55, 5:25] = True
+    w1[30:35, 5:25] = True                        # big water body whose edge moved: > 5 ha? 25x20=5 ha, merged, not new
+    ones = np.ones_like(w1)
+    thr = {**ch.DEFAULTS["sand"], "pit_max_ha": 3.0}
+    lab, pits = ch.find_pits(w0, w1, ones, ones, thr, ~w1)
+    assert len(pits) == 1 and pits[0]["new"] and abs(pits[0]["ha"] - 2.0) < 0.01

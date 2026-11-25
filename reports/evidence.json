@@ -1,0 +1,962 @@
+{
+ "chain_head": "dffded5b3c4f60ef6412389ca21b562482981dc8ec5ba1663e1de6fda8701bc4",
+ "n_cards": 14,
+ "genesis": "0000000000000000000000000000000000000000000000000000000000000000",
+ "audit": "reports/audit_trackc.json",
+ "cards": [
+  {
+   "card_id": "sone1176",
+   "aoi": "sone",
+   "kind": "sand_pits",
+   "audit_label": "real",
+   "lat": 25.487688,
+   "lon": 84.769129,
+   "bbox": [
+    84.765862,
+    25.484723,
+    84.772396,
+    25.490653
+   ],
+   "ha": 4.44,
+   "n_pits": 2,
+   "dates": {
+    "t0": "2023-04-05",
+    "t1": "2025-04-01",
+    "monsoon_s1": "2023-08-18"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": 0.0829,
+    "dndbi": 0.0059,
+    "dmndwi": -0.1251,
+    "dbsi": 0.0263
+   },
+   "s1": {
+    "dvv": -3.479,
+    "dvh": -2.224,
+    "monsoon_activity": 0
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "c_dbsi": 0.1,
+     "buffer_px": 50,
+     "min_px": 5,
+     "wc80_chip": 0.25,
+     "pit_min_ha": 0.2,
+     "pit_max_ha": 5.0,
+     "rect_min": 0.7,
+     "ring_ndvi_max": 0.15,
+     "ring_bsi_min": 0.08,
+     "ring_bare_frac": 0.6,
+     "pit_old_frac": 0.3,
+     "grow_ratio": 1.5,
+     "bsi_bar": 0.0,
+     "d_tex": 0.02,
+     "dist_min_px": 50,
+     "dist_min_width_px": 8,
+     "moist_px": 3,
+     "bright_db": -3.0,
+     "water_db": -15.0,
+     "bright_max_px": 4
+    }
+   },
+   "confidence": 0.12,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_sone1176_t0.jpg",
+     "sha256": "04dd5d0f0ca1e787b828db02f8510d39b5d44e724e25e754e8e7ea4b1fa53971"
+    },
+    "t1": {
+     "path": "data/img/ev_sone1176_t1.jpg",
+     "sha256": "67beef3ca795ad28436b2227973e276b13c59bedb8d3e03c6154e0133d76f2c3"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+   "hash": "5751e7218576dd6ef391a74f4474b6ac14ae57a549921718bb8f633b8e18f050"
+  },
+  {
+   "card_id": "sone2046",
+   "aoi": "sone",
+   "kind": "sand_pits",
+   "audit_label": "unsure",
+   "lat": 25.378763,
+   "lon": 84.740324,
+   "bbox": [
+    84.737061,
+    25.375799,
+    84.743587,
+    25.381728
+   ],
+   "ha": 2.52,
+   "n_pits": 1,
+   "dates": {
+    "t0": "2023-04-05",
+    "t1": "2025-04-01",
+    "monsoon_s1": "2023-08-18"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.0435,
+    "dndbi": -0.0632,
+    "dmndwi": 0.0952,
+    "dbsi": -0.0042
+   },
+   "s1": {
+    "dvv": -3.223,
+    "dvh": -0.483,
+    "monsoon_activity": 0
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "c_dbsi": 0.1,
+     "buffer_px": 50,
+     "min_px": 5,
+     "wc80_chip": 0.25,
+     "pit_min_ha": 0.2,
+     "pit_max_ha": 5.0,
+     "rect_min": 0.7,
+     "ring_ndvi_max": 0.15,
+     "ring_bsi_min": 0.08,
+     "ring_bare_frac": 0.6,
+     "pit_old_frac": 0.3,
+     "grow_ratio": 1.5,
+     "bsi_bar": 0.0,
+     "d_tex": 0.02,
+     "dist_min_px": 50,
+     "dist_min_width_px": 8,
+     "moist_px": 3,
+     "bright_db": -3.0,
+     "water_db": -15.0,
+     "bright_max_px": 4
+    }
+   },
+   "confidence": 0.12,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_sone2046_t0.jpg",
+     "sha256": "568432649f31c54d6bc8157dee97f8f819d985d5912b973d7096aeea1c9c3e94"
+    },
+    "t1": {
+     "path": "data/img/ev_sone2046_t1.jpg",
+     "sha256": "4b2239f85c030b28c7049357306a255ff747417b512ff83730b4d39e329830d1"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "5751e7218576dd6ef391a74f4474b6ac14ae57a549921718bb8f633b8e18f050",
+   "hash": "eec36e81409b48b1443cc1310ca6a8a7ca74ef23ed8af26d5a23c2f6dced2971"
+  },
+  {
+   "card_id": "sone1406",
+   "aoi": "sone",
+   "kind": "sand_pits",
+   "audit_label": "unsure",
+   "lat": 25.458853,
+   "lon": 84.768229,
+   "bbox": [
+    84.764963,
+    25.455888,
+    84.771495,
+    25.461818
+   ],
+   "ha": 1.22,
+   "n_pits": 2,
+   "dates": {
+    "t0": "2023-04-05",
+    "t1": "2025-04-01",
+    "monsoon_s1": "2023-08-18"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.2188,
+    "dndbi": -0.0799,
+    "dmndwi": 0.3612,
+    "dbsi": -0.0423
+   },
+   "s1": {
+    "dvv": -10.76,
+    "dvh": -5.193,
+    "monsoon_activity": 0
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "c_dbsi": 0.1,
+     "buffer_px": 50,
+     "min_px": 5,
+     "wc80_chip": 0.25,
+     "pit_min_ha": 0.2,
+     "pit_max_ha": 5.0,
+     "rect_min": 0.7,
+     "ring_ndvi_max": 0.15,
+     "ring_bsi_min": 0.08,
+     "ring_bare_frac": 0.6,
+     "pit_old_frac": 0.3,
+     "grow_ratio": 1.5,
+     "bsi_bar": 0.0,
+     "d_tex": 0.02,
+     "dist_min_px": 50,
+     "dist_min_width_px": 8,
+     "moist_px": 3,
+     "bright_db": -3.0,
+     "water_db": -15.0,
+     "bright_max_px": 4
+    }
+   },
+   "confidence": 0.12,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_sone1406_t0.jpg",
+     "sha256": "fc708c6175df39e39321c0f1a57794eebd5641c611a6f1caf0c546cd08af72e2"
+    },
+    "t1": {
+     "path": "data/img/ev_sone1406_t1.jpg",
+     "sha256": "1a5352acab48c141eef8fa5d9c647f787ceaeb03104eb3502c4120767b1275ba"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "eec36e81409b48b1443cc1310ca6a8a7ca74ef23ed8af26d5a23c2f6dced2971",
+   "hash": "a026461bc92969c554bddd4ef88f34cb5a4fa46be7e3cada1291c6aec11d1cba"
+  },
+  {
+   "card_id": "sone1682",
+   "aoi": "sone",
+   "kind": "sand_pits",
+   "audit_label": "unsure",
+   "lat": 25.424251,
+   "lon": 84.767151,
+   "bbox": [
+    84.763886,
+    25.421286,
+    84.770416,
+    25.427216
+   ],
+   "ha": 0.38,
+   "n_pits": 1,
+   "dates": {
+    "t0": "2023-04-05",
+    "t1": "2025-04-01",
+    "monsoon_s1": "2023-08-18"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.0777,
+    "dndbi": 0.0035,
+    "dmndwi": 0.0969,
+    "dbsi": 0.0094
+   },
+   "s1": {
+    "dvv": 2.06,
+    "dvh": 0.741,
+    "monsoon_activity": 0
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "c_dbsi": 0.1,
+     "buffer_px": 50,
+     "min_px": 5,
+     "wc80_chip": 0.25,
+     "pit_min_ha": 0.2,
+     "pit_max_ha": 5.0,
+     "rect_min": 0.7,
+     "ring_ndvi_max": 0.15,
+     "ring_bsi_min": 0.08,
+     "ring_bare_frac": 0.6,
+     "pit_old_frac": 0.3,
+     "grow_ratio": 1.5,
+     "bsi_bar": 0.0,
+     "d_tex": 0.02,
+     "dist_min_px": 50,
+     "dist_min_width_px": 8,
+     "moist_px": 3,
+     "bright_db": -3.0,
+     "water_db": -15.0,
+     "bright_max_px": 4
+    }
+   },
+   "confidence": 0.12,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_sone1682_t0.jpg",
+     "sha256": "aae7c6e10388c8ca92dee181a7cfeaefb100a868338615c8d918888cabf8a8b5"
+    },
+    "t1": {
+     "path": "data/img/ev_sone1682_t1.jpg",
+     "sha256": "7ea64676b7d916e3983dfd4cf04023ea8175a8ac339f6093b7ee0d3eb9e95feb"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "a026461bc92969c554bddd4ef88f34cb5a4fa46be7e3cada1291c6aec11d1cba",
+   "hash": "3023211fcfb4982b75193c43b467e0db8d52fc3beeeae70913b424b285cff4bd"
+  },
+  {
+   "card_id": "hasdeo1103",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.818177,
+   "lon": 82.81759,
+   "bbox": [
+    82.814435,
+    22.815253,
+    82.820745,
+    22.821102
+   ],
+   "ha": 14.88,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.2068,
+    "dndbi": 0.0684,
+    "dmndwi": 0.1453,
+    "dbsi": 0.0259
+   },
+   "s1": {
+    "dvv": -2.92,
+    "dvh": -4.765,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1103_t0.jpg",
+     "sha256": "9b4bd8e894f82d1fd201e645daec9501caa6b33f5b595d874c74a801e38471f9"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1103_t1.jpg",
+     "sha256": "72ac6f7c033b736fc21473448d0b44017be01fb62af7442edd735d85e178b7d9"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "3023211fcfb4982b75193c43b467e0db8d52fc3beeeae70913b424b285cff4bd",
+   "hash": "ecd2be95f78eb141c1200b99d1614cb98a0b31f320436b62128f90d4b1c2c83f"
+  },
+  {
+   "card_id": "hasdeo1008",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.829947,
+   "lon": 82.799041,
+   "bbox": [
+    82.795886,
+    22.827022,
+    82.802196,
+    22.832872
+   ],
+   "ha": 14.58,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.1707,
+    "dndbi": 0.0624,
+    "dmndwi": 0.0837,
+    "dbsi": 0.0498
+   },
+   "s1": {
+    "dvv": -2.274,
+    "dvh": -4.287,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1008_t0.jpg",
+     "sha256": "f92aeeaddec101ff7b5097e463567829ece537aab9fc4fde0221dd309c82b78a"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1008_t1.jpg",
+     "sha256": "e40e8b3f496d48a1e2045878b54fae0dac1a5418485fac8fb3846a968df5b74f"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "ecd2be95f78eb141c1200b99d1614cb98a0b31f320436b62128f90d4b1c2c83f",
+   "hash": "21483f996741b7f729d2ce30786a1fdcdf911cded3a0cd1f88633fbf406c3b51"
+  },
+  {
+   "card_id": "hasdeo1007",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.830017,
+   "lon": 82.792807,
+   "bbox": [
+    82.789652,
+    22.827093,
+    82.795962,
+    22.832942
+   ],
+   "ha": 13.31,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.1168,
+    "dndbi": 0.0892,
+    "dmndwi": 0.0059,
+    "dbsi": 0.0622
+   },
+   "s1": {
+    "dvv": -4.643,
+    "dvh": -6.825,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1007_t0.jpg",
+     "sha256": "904a5faa761e94ffa84fc48fcf9d2e8e31443fe864d3271039a97eb81a15b7cf"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1007_t1.jpg",
+     "sha256": "5c95ea101be9ba47dd6126e24eeacd76bd63e1ae5d9ca4864e90e65b1c36ff7e"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "21483f996741b7f729d2ce30786a1fdcdf911cded3a0cd1f88633fbf406c3b51",
+   "hash": "6a13e6b098c73b90b122469a2708db3ad2a4a359d56e84b5f3a30afb4251363a"
+  },
+  {
+   "card_id": "hasdeo1056",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.824027,
+   "lon": 82.811433,
+   "bbox": [
+    82.808278,
+    22.821102,
+    82.814588,
+    22.826952
+   ],
+   "ha": 13.13,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.2094,
+    "dndbi": 0.048,
+    "dmndwi": 0.1887,
+    "dbsi": -0.0226
+   },
+   "s1": {
+    "dvv": -1.303,
+    "dvh": -3.517,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1056_t0.jpg",
+     "sha256": "fb82213bc22a2f2dcbd8c2abe1882bc8765f43eba9007bcf24df476561e3b4ad"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1056_t1.jpg",
+     "sha256": "afb323a0ed5fbd6c9fd68eb0a641a1ad523db968bb52f9ceb19a1e7506682ca3"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "6a13e6b098c73b90b122469a2708db3ad2a4a359d56e84b5f3a30afb4251363a",
+   "hash": "eb12f6c8f4d6a51ea6439f10249453d9cf9df2bb09150ab2b412511021558e74"
+  },
+  {
+   "card_id": "hasdeo0772",
+   "aoi": "hasdeo",
+   "kind": "forest_clearing",
+   "audit_label": "real",
+   "lat": 22.859259,
+   "lon": 82.762008,
+   "bbox": [
+    82.758853,
+    22.856335,
+    82.765163,
+    22.862183
+   ],
+   "ha": 8.87,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.1427,
+    "dndbi": 0.1086,
+    "dmndwi": 0.0389,
+    "dbsi": 0.0734
+   },
+   "s1": {
+    "dvv": -3.06,
+    "dvh": -5.821,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.29,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo0772_t0.jpg",
+     "sha256": "e620bf73b4f2ef3c2bad857b48d7bf3971eae44b4f706a5cf6b70277a26386da"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo0772_t1.jpg",
+     "sha256": "dbb6d0bfa02c008f485c423c098f70441b799c07009ac2e4ebf8c412887e3574"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "eb12f6c8f4d6a51ea6439f10249453d9cf9df2bb09150ab2b412511021558e74",
+   "hash": "56402f67ecc2c653d1a81d3a767c444783e2083e67f5f1d504ea4184519ce95b"
+  },
+  {
+   "card_id": "hasdeo1055",
+   "aoi": "hasdeo",
+   "kind": "forest_clearing",
+   "audit_label": "real",
+   "lat": 22.824098,
+   "lon": 82.805199,
+   "bbox": [
+    82.802044,
+    22.821173,
+    82.808354,
+    22.827022
+   ],
+   "ha": 8.51,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.1345,
+    "dndbi": 0.0561,
+    "dmndwi": 0.0759,
+    "dbsi": 0.0248
+   },
+   "s1": {
+    "dvv": -3.831,
+    "dvh": -5.451,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.29,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1055_t0.jpg",
+     "sha256": "3a7e326aa993b609b41117d923fbfe7ba897e6931cd0e7f49647fa88e0efced8"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1055_t1.jpg",
+     "sha256": "8d483ae26a11e38a7929e0f8b991ef578e7ed00a21399b09b247e0ce795dfc1e"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "56402f67ecc2c653d1a81d3a767c444783e2083e67f5f1d504ea4184519ce95b",
+   "hash": "2d6df4ec5f8314d27ae19d648c69dc0a5bfc874ce561693b8c5cefd3aa338b4d"
+  },
+  {
+   "card_id": "hasdeo1102",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.818248,
+   "lon": 82.811357,
+   "bbox": [
+    82.808202,
+    22.815324,
+    82.814512,
+    22.821173
+   ],
+   "ha": 5.54,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.0898,
+    "dndbi": 0.0279,
+    "dmndwi": 0.0827,
+    "dbsi": 0.0006
+   },
+   "s1": {
+    "dvv": -3.026,
+    "dvh": -4.914,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1102_t0.jpg",
+     "sha256": "3828433618577babbc6522797fdbf570b315fc36ab268fe486e6d5167f70e5fa"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1102_t1.jpg",
+     "sha256": "43d93e3dc5ff496de5b9c0ec05dfe6437a4212c8a75a7671e207fb98818e1091"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "2d6df4ec5f8314d27ae19d648c69dc0a5bfc874ce561693b8c5cefd3aa338b4d",
+   "hash": "b1cc6a9de12ba4032d177be36e80a2a660c4e4512055afc1a3d823862fd27bf7"
+  },
+  {
+   "card_id": "hasdeo0960",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.835866,
+   "lon": 82.786648,
+   "bbox": [
+    82.783494,
+    22.832942,
+    82.789804,
+    22.83879
+   ],
+   "ha": 2.06,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.0556,
+    "dndbi": 0.0365,
+    "dmndwi": -0.0035,
+    "dbsi": 0.0323
+   },
+   "s1": {
+    "dvv": -3.44,
+    "dvh": -5.587,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo0960_t0.jpg",
+     "sha256": "010583c1bdc1f9e869aebc50edc23707796a284e71858d70cb65c23c0dd469e1"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo0960_t1.jpg",
+     "sha256": "49244e8ff285249329758f7ad52feee4df9024be9a2c4740ed7378d14ddb7bc4"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "b1cc6a9de12ba4032d177be36e80a2a660c4e4512055afc1a3d823862fd27bf7",
+   "hash": "3f5ab82ccbb555804e86bbd95d8b4d1688a8a736b9891075f3e0b0d4b199d46c"
+  },
+  {
+   "card_id": "hasdeo1006",
+   "aoi": "hasdeo",
+   "kind": "mine_expansion",
+   "audit_label": "real",
+   "lat": 22.830087,
+   "lon": 82.786573,
+   "bbox": [
+    82.783418,
+    22.827163,
+    82.789728,
+    22.833012
+   ],
+   "ha": 1.02,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": 0.0229,
+    "dndbi": -0.0037,
+    "dmndwi": 0.0051,
+    "dbsi": -0.0236
+   },
+   "s1": {
+    "dvv": -4.796,
+    "dvh": -6.603,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.88,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo1006_t0.jpg",
+     "sha256": "6e943060ceacc20a3b923fc6234cf2c1fa65e3d897437e778c806a0c51da06db"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo1006_t1.jpg",
+     "sha256": "e1727a7b528c70239f7ba0280e29dc645965e740b15ac8804af899d6c1a9eaf4"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "3f5ab82ccbb555804e86bbd95d8b4d1688a8a736b9891075f3e0b0d4b199d46c",
+   "hash": "1bf6b2f071c32cc25e52b78f32681fa9d76a5e7272f189c109f7b2403fd9afd3"
+  },
+  {
+   "card_id": "hasdeo0818",
+   "aoi": "hasdeo",
+   "kind": "forest_clearing",
+   "audit_label": "unsure",
+   "lat": 22.85348,
+   "lon": 82.761934,
+   "bbox": [
+    82.758779,
+    22.850556,
+    82.765089,
+    22.856404
+   ],
+   "ha": 1.2,
+   "n_pits": null,
+   "dates": {
+    "t0": "2023-02-09",
+    "t1": "2025-02-03",
+    "monsoon_s1": "2023-08-09"
+   },
+   "cloud_pct": {
+    "t0": 0.0,
+    "t1": 0.0
+   },
+   "indices": {
+    "dndvi": -0.0261,
+    "dndbi": 0.037,
+    "dmndwi": 0.0267,
+    "dbsi": 0.0024
+   },
+   "s1": {
+    "dvv": -1.099,
+    "dvh": -3.664,
+    "monsoon_activity": null
+   },
+   "model": {
+    "version": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11; change engine: indices-and-rules v2",
+    "thresholds": {
+     "forest_ndvi": 0.5,
+     "d_ndvi": 0.25,
+     "min_px": 45,
+     "wc10_chip": 0.5,
+     "wc_ndvi": 0.35,
+     "water_margin_px": 3,
+     "mine_bare_ndvi": 0.2,
+     "mine_min_px": 1000,
+     "mine_touch_px": 2
+    }
+   },
+   "confidence": 0.29,
+   "confidence_basis": "reviewer visual audit precision for this kind (strict: unsure counted as not real); not field-verified",
+   "images": {
+    "t0": {
+     "path": "data/img/ev_hasdeo0818_t0.jpg",
+     "sha256": "437b17f0c1d12fc945f74017105d7eeb03964666e30dcefe32152cca62ab0226"
+    },
+    "t1": {
+     "path": "data/img/ev_hasdeo0818_t1.jpg",
+     "sha256": "64eddce15c440ec913cb724ba49e0dd8c5625336d7b445f43353d75739529ac3"
+    }
+   },
+   "caveat": "Evidence lead for authorized departments; requires ground verification; land-cover change only; not legal proof",
+   "prev_hash": "1bf6b2f071c32cc25e52b78f32681fa9d76a5e7272f189c109f7b2403fd9afd3",
+   "hash": "dffded5b3c4f60ef6412389ca21b562482981dc8ec5ba1663e1de6fda8701bc4"
+  }
+ ]
+}

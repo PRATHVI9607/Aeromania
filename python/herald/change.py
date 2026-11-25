@@ -35,8 +35,8 @@ DEFAULTS = {
                      "road_r": 0.03, "road_r0": 0.015, "layout_density": 0.03, "layout_min_road_px": 15,
                      "layout_orient_share": 0.15, "building_frac": 0.4, "wet_chip": 0.10, "wet_mndwi": -0.3},
     # sand v2: pits = new/growing rectangular water in the JRC river corridor (MNDWI>0, Xu 2006); corridor = JRC occurrence>0 + 500 m
-    "sand": {"c_dbsi": 0.10, "buffer_px": 50, "min_px": 5, "wc80_chip": 0.25, "pit_min_ha": 0.05, "pit_max_ha": 5.0,
-             "rect_min": 0.7, "ring_ndvi_max": 0.15, "ring_bsi_min": 0.08, "ring_bare_frac": 0.6, "pit_old_frac": 0.3, "grow_ratio": 1.5, "bsi_bar": 0.0, "d_tex": 0.02, "dist_min_px": 50,
+    "sand": {"c_dbsi": 0.10, "buffer_px": 50, "min_px": 5, "wc80_chip": 0.25, "pit_min_ha": 0.2, "pit_max_ha": 5.0,
+             "rect_min": 0.7, "ring_ndvi_max": 0.15, "ring_bsi_min": 0.08, "ring_bare_frac": 0.6, "pit_old_frac": 0.3, "grow_ratio": 1.5, "bsi_bar": 0.0, "d_tex": 0.02, "dist_min_px": 50, "dist_min_width_px": 8,
              "moist_px": 3, "bright_db": -3.0, "water_db": -15.0, "bright_max_px": 4},
     # forest NDVI>0.5; clearing = dNDVI < -0.25 (Hansen-style loss, dry-season pair); WC tree chips relax to 0.35;
     # components >= 45 px (~0.5 ha); t0 water + 3 px margin excluded (reservoir drawdown); mine hint = touches a >=10 ha bare patch at t0
@@ -321,6 +321,11 @@ def sand_detect(x0, x1, i0, i1, d, valid, thr, occ):
     dtex = sd(x1[2]) - sd(x0[2])
     dist = (cor & ~w0 & ~w1 & ~moist & (i1["bsi"] > thr["bsi_bar"]) & (d["bsi"] > thr["c_dbsi"]) & (dtex > thr["d_tex"]))
     dist = remove_small(dist & valid, thr["dist_min_px"]) & ~pitm
+    if dist.any():   # waterline slivers are long and thin: keep compact patches only
+        from skimage import measure
+        lab_d = ndi.label(dist, structure=np.ones((3, 3)))[0]
+        keep = [r.label for r in measure.regionprops(lab_d) if r.minor_axis_length >= thr["dist_min_width_px"]]
+        dist = np.isin(lab_d, keep)
     return pitm | dist, cor, {"pit": pitm, "dist": dist, "pits": pits, "pit_lab": lab}
 
 
@@ -350,13 +355,13 @@ def bright_points(vv, cor, thr):
     return np.bincount((cy // C) * G + cx // C, minlength=N)
 
 
-def injected_pits(x0, x1, valid, thr, occ, rng, per_size=20, sizes=(0.1, 0.25, 0.5, 1, 2)):
+def injected_pits(x0, x1, valid, thr, occ, rng, per_size=20, sizes=(0.25, 0.5, 1, 2, 4)):
     """Paint square water pits (real t1 water spectra) into dry sand-bar pixels of t1 inside the corridor; recall by size.
     Hit = a returned pit overlaps >= 50% of the painted square. Each trial runs on an 80x80 crop (bar must be dry at t0)."""
     i0, i1 = indices(x0), indices(x1)
     cor = ndi.binary_dilation(occ > 0, iterations=thr["buffer_px"])
     pool = x1[:, valid & cor & (i1["mndwi"] > 0.1)]
-    bar = valid & cor & (i0["mndwi"] < -0.1) & (i1["mndwi"] < -0.1) & (i1["bsi"] > thr["bsi_bar"])
+    bar = valid & cor & (i0["mndwi"] < -0.1) & (i1["mndwi"] < -0.1) & (i1["ndvi"] < thr["ring_ndvi_max"]) & (i1["bsi"] > thr["ring_bsi_min"])
     if pool.shape[1] < 500:
         return {"error": "too few water pixels", "pool_px": int(pool.shape[1])}
     H = 40
@@ -365,12 +370,12 @@ def injected_pits(x0, x1, valid, thr, occ, rng, per_size=20, sizes=(0.1, 0.25, 0
     for ha in sizes:
         side = max(2, int(round(np.sqrt(ha * 100))))
         hit = done = 0
-        for _ in range(400):
-            if done == per_size:
-                break
-            y, x = (int(v) for v in rng.integers(H, M - H - side, 2))
-            if not bar[y - 6:y + side + 6, x - 6:x + side + 6].all():
-                continue
+        full = ndi.uniform_filter(bar.astype(np.float32), side + 6) > 0.999   # box + 3 px ring all dry bare sand
+        full[:H], full[-H - side:], full[:, :H], full[:, -H - side:] = False, False, False, False
+        cand = np.flatnonzero(full)
+        for c_ in rng.permutation(cand)[:per_size] if len(cand) else []:
+            y, x = divmod(int(c_), M)
+            y, x = y - side // 2, x - side // 2
             sl = (slice(y - H, y + H + side), slice(x - H, x + H + side))
             w0, a1 = (i0["mndwi"][sl] > 0), x1[(slice(None),) + sl].copy()
             a1[:, H:H + side, H:H + side] = pool[:, rng.integers(0, pool.shape[1], side * side)].reshape(5, side, side)

@@ -20,15 +20,35 @@
   },
   "sand": {
     "c_dbsi": 0.1,
-    "buffer_px": 30,
-    "min_px": 8,
-    "wc80_chip": 0.25
+    "buffer_px": 50,
+    "min_px": 5,
+    "wc80_chip": 0.25,
+    "pit_min_ha": 0.2,
+    "pit_max_ha": 5.0,
+    "rect_min": 0.7,
+    "ring_ndvi_max": 0.15,
+    "ring_bsi_min": 0.08,
+    "ring_bare_frac": 0.6,
+    "pit_old_frac": 0.3,
+    "grow_ratio": 1.5,
+    "bsi_bar": 0.0,
+    "d_tex": 0.02,
+    "dist_min_px": 50,
+    "dist_min_width_px": 8,
+    "moist_px": 3,
+    "bright_db": -3.0,
+    "water_db": -15.0,
+    "bright_max_px": 4
   },
   "clearing": {
     "forest_ndvi": 0.5,
     "d_ndvi": 0.25,
-    "min_px": 8,
+    "min_px": 45,
     "wc10_chip": 0.5,
-    "wc_ndvi": 0.35
+    "wc_ndvi": 0.35,
+    "water_margin_px": 3,
+    "mine_bare_ndvi": 0.2,
+    "mine_min_px": 1000,
+    "mine_touch_px": 2
   }
 }
