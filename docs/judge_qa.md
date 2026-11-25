@@ -46,22 +46,22 @@ Yes. After the one-time `vault build`, everything (pipeline + dashboard) runs of
 ## 3. The onboard AI model
 
 **Q: What model?**
-ResNet-18 pretrained self-supervised on Sentinel-2 (SSL4EO-S12 MoCo), with conv1 sliced to 5 bands, fine-tuned multi-task. It outputs land-cover class, cloud fraction, a 64-d embedding, and an India land-cover head (WorldCover classes, ⏳). Exported to ONNX and quantized to int8.
+ResNet-18 pretrained self-supervised on Sentinel-2 (SSL4EO-S12 MoCo), with conv1 sliced to 5 bands, fine-tuned multi-task. It outputs land-cover class, cloud fraction, a 64-d embedding, and an India land-cover head (WorldCover classes, 83.1% agreement on held-out land). Exported to ONNX and quantized to int8.
 
 **Q: Accuracy?**
 EuroSAT held-out test: 98.11% fp32, 98.02% int8 (0.11 pt drop). Calibration error (ECE) 0.0065 after temperature scaling.
 
 **Q: EuroSAT is Europe. Does it work on India?**
-The EuroSAT head does not prove that, and we say so. That is why (a) change detection uses physics indices, which work on any land, and (b) we added a head trained on our own Indian chips against ESA WorldCover with a spatial hold-out: ⏳ % agreement (WorldCover itself is ≈ 77% accurate).
+The EuroSAT head does not prove that, and we say so. That is why (a) change detection uses physics indices, which work on any land, and (b) we added a head trained on our own Indian chips against ESA WorldCover with a spatial hold-out: 83.1% agreement (WorldCover itself is ≈ 77% accurate).
 
 **Q: Why calibrate?**
 The scheduler multiplies probability × hectares × ₹. Uncalibrated softmax overstates confidence and mis-ranks tiles. ECE went from 0.087 to 0.0065.
 
 **Q: How fast? Is it really onboard-capable?**
-int8 CPU: ⏳ ms/chip idle (1.10 ms measured while 6 build jobs loaded the laptop). A 41-hectare tile in about a millisecond means one CPU core keeps up with a full swath. Flight boards (ARM + NPU) would be faster.
+int8 CPU: 0.88–1.17 ms/chip across runs on a laptop i5 (performance cores, 8 threads); GPU 1.12 ms. A 41-hectare tile in about a millisecond means one CPU core keeps up with a full swath. Flight boards (ARM + NPU) would be faster.
 
 **Q: Cloud detection accuracy?**
-Mean error vs the satellite's own cloud mask: ⏳ (0.087 before adding cirrus training scenes, against a target of 0.05). The miss came from thin cirrus that our training scenes lacked. We fixed the data, not the metric. A flight design would also use the cirrus band (B10), which our 5-band input does not include.
+Mean error vs the satellite's own cloud mask on a held-out area: 0.205 (0.150 on normal dates, 0.314 on cirrus-heavy dates; a constant guess scores 0.375), against a target of 0.05: a miss. The miss came from thin cirrus that our training scenes lacked. We fixed the data, not the metric. A flight design would also use the cirrus band (B10), which our 5-band input does not include.
 
 **Q: Did anything not work?**
 Yes. Using the embedding distance as an onboard change score scored AUC 0.56, barely better than chance, so we rejected it and say so. The embedding encodes land type, not change. Onboard change instead uses stored reference index maps (~3 KB per tile, ~6 MB per area) plus the same explainable rules.
@@ -147,10 +147,10 @@ Sentinel-2-like SSO at 786 km, 98.62°, 10:30 LTDN. Period 100.58 min (the textb
 ρ = oversubscription: total contact capacity = archive ÷ ρ. It models many satellites, or many areas, sharing the same stations. We show the whole curve, not one point.
 
 **Q: Isn't 27× cherry-picked?**
-We report share of the best possible value (upper bound) instead of a ratio, because FIFO drops to ~0 at ρ = 10 and ratios explode. HERALD gets 98.8 / 98.8 / 98.5% of the upper bound at ρ = 1 / 2 / 5. FIFO gets 73.3 / 52.7 / 14.5%, and the cloud filter 76.3 / 56.7 / 25.0%. The mechanism: only ~22–24% of tiles carry any value and the later capture is 47% cloud, so FIFO spends its budget on whatever it captured first. HERALD matches FIFO's 5-day value in 1.2 contact minutes. First insight: 42.8 min after capture vs 2,100 min for FIFO at ρ = 5.
+We report share of the best possible value (upper bound) instead of a ratio, because FIFO drops to ~1% and ratios explode. HERALD (H1) gets 99.3 / 99.0 / 98.4% of the upper bound at ρ = 1 / 2 / 5; FIFO 53.5 / 15.2 / 1.2%; the cloud filter 69.6 / 33.1 / 6.1%. Mechanism: only 4–24% of tiles per capture carry any value, so FIFO spends its budget on whatever it captured first, mostly no-change tiles. HERALD matches FIFO's 5-day value in 2.85 contact minutes. First insight: 1.8 min after capture (same-pass downlink) vs 2,040 min for FIFO at ρ = 5.
 
 **Q: Does the win depend on your "packet = 70% of value" assumption?**
-No. H1 sends full chips only, with no packets, and still gets 6.7× FIFO at ρ = 5. Changing the packet fraction from 0.3 to 0.7 moves H2 only from 6.77× to 6.78×. So the win comes from what is sent, not from the packet trick.
+No. H1 sends full chips only, with no packets, and gets 98.4% of the upper bound at ρ = 5, the best of all policies. Changing H2's packet fraction from 0.3 to 0.7 moves its value by under 0.1%.
 
 **Q: Is it optimal?**
 No. It's greedy by value/byte, O(n log n), deterministic. We compare against an upper bound (fractional knapsack relaxation), labelled as a bound, not the optimum. Scheduler speed: 2.69 ms per 1,000 tiles.
@@ -182,10 +182,10 @@ Land-cover change only:
 - new rectangular water-filled pits and disturbed sand bars inside the river corridor
 - forest loss, with a "mine expansion" hint
 
-Radar (Sentinel-1) corroborates, sees through monsoon cloud, and gives an aggregate activity index on the river during the monsoon ban months. ⏳ counts and precision.
+Radar (Sentinel-1) corroborates, sees through monsoon cloud, and gives an aggregate activity index on the river during the monsoon ban months. At Hasdeo, mine-expansion tiles show Sentinel-1 VH drops of 3.5–7.5 dB (canopy loss). On the Sone the monsoon scene shows 0 bright returns vs 6 in the dry scene, so no monsoon red flag on this reach.
 
 **Q: How do you avoid flagging normal river changes?**
-The river corridor comes from 38 years of JRC water history. Water-level and turbidity changes don't count. Only new rectangular pits and disturbed bars do. ⏳ audit precision.
+The river corridor comes from 38 years of JRC water history. Water-level and turbidity changes don't count. Only new rectangular pits and disturbed bars do. Audit precision for pits is 0.12, which is why sand is labelled experimental.
 
 **Q: Is this surveillance? Can it track people or vehicles?**
 No. At 10 m, people and vehicles are invisible, and we report per-reach aggregates, never object tracks. Outputs go to authorised departments as leads that need ground verification. This follows the hackathon's protective-use rule.
@@ -194,7 +194,7 @@ No. At 10 m, people and vehicles are invisible, and we report per-reach aggregat
 We don't claim legal admissibility. Each evidence card is hash-chained (SHA-256 over canonical JSON plus image hashes). Changing one byte breaks verification, and the dashboard re-verifies in the browser. It's tamper-evident, with model version, thresholds, dates and cloud % recorded.
 
 **Q: Who pays?**
-State mines and geology departments (lost royalty and penalties) and forest departments (CAMPA net present value per hectare of diverted forest) ⏳ rates and sources.
+State mines and geology departments (lost royalty and penalties) and forest departments (CAMPA net present value per hectare of diverted forest) We use ₹4.38 lakh per hectare, the lowest forest NPV rate in the Supreme Court Godavarman order (2008), as a labelled assumption.
 
 ---
 
