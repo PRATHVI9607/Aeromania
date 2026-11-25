@@ -13,3 +13,5 @@ vault/*.zip
 !reports/**
 .codegraph/
 .claude/settings.local.json
+vault/s1/
+vault/scores/
