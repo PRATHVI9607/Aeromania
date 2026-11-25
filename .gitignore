@@ -15,3 +15,4 @@ vault/*.zip
 .claude/settings.local.json
 vault/s1/
 vault/scores/
+vault/siting/

@@ -57,3 +57,12 @@ def test_distance_and_percentile():
     s = np.array([[1., 2.], [3., np.nan]])
     assert st.pct(s, np.array([[False, False], [True, False]]))["mean_pct"] == round(2 / 3 * 100, 1)
     assert st.top_idx(s, 2) == [2, 1]
+
+
+def test_lcoe_formula():
+    S = CFG["solar"]
+    r = st.solar(cells(d_sub=np.zeros((2, 2))), CFG)
+    w, n = S["wacc"]["v"], S["life_yr"]["v"]
+    crf = w / (1 - (1 + w) ** -n)
+    exp = (S["capex_cr_per_mw"]["v"] * 1e7 * crf + S["om_lakh_per_mw_yr"]["v"] * 1e5) / (r["mwh"] / r["mw"] * 1000)
+    assert np.allclose(r["lcoe"], exp) and np.allclose(r["score"], -exp)

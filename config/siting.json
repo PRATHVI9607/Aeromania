@@ -39,8 +39,10 @@
    "src": "assumption: SECI standalone ISTS solar tranches ~Rs 2.57-2.60/kWh (https://www.constructionworld.in/energy-infrastructure/power-and-renewable-energy/cerc-approves-tariff-for-secis-1.2-gw-solar-projects/70290 , 2025). Solar+storage auctions are higher (Rs 2.86, https://www.pv-magazine.com/2025/10/16/indias-solar-plus-storage-tender-sets-record-low-inr-2-86-tariff/ , Oct 2025) and are not used"
   },
   "capex_cr_per_mw": {
-   "v": 3.0,
-   "src": "assumption: ~Rs 3 crore per MW(DC) all-in utility PV (CUF below is DC basis), unverified; margin is thin so ranking is sensitive to this"
+   "v": 3.7,
+   "lo": 3.1,
+   "hi": 4.2,
+   "src": "Government of India stated Rs 3.5-4 crore/MW utility solar (Sept 2025, as cited in https://avaadaelectro.com/blog/solar-power-plant-setup-cost-india/ ); examples Rs 3.82 cr/MW UP 209 MW (Oct 2025) and Rs 3.5 cr/MW SJVN Rajasthan 100 MW (Jan 2025); UERC benchmark Rs 3.08 cr/MW from 1 Apr 2025 (low case, https://cdnbbsr.s3waas.gov.in/s3cf05968255451bdefe3c5bc64d550517/uploads/2025/06/202506131910199470.pdf); LinkedIn 2025 EPC range Rs 3.1-4.2 cr/MW (high case). Base 3.7 = mid of government range. Not tuned to results. Excludes land. Capex is per MW DC (CUF is DC basis)"
   },
   "om_lakh_per_mw_yr": {
    "v": 4.0,
@@ -50,13 +52,17 @@
    "v": 0.8,
    "src": "assumption: ~Rs 0.8 crore/km for a 66-132 kV evacuation line, unverified; charged once per cell on distance to nearest substation"
   },
-  "crf": {
-   "v": 0.102,
-   "src": "assumption: capital recovery factor, 9% discount over 25 years = 0.102"
-  },
   "min_project_mw": {
    "v": 20,
    "src": "assumption: cells below 20 MW usable are not ranked (too small for a utility project alone)"
+  },
+  "wacc": {
+   "v": 0.095,
+   "src": "assumption: WACC 9-10% (mid 9.5%) typical for Indian utility RE debt+equity, not verified against a single document"
+  },
+  "life_yr": {
+   "v": 25,
+   "src": "assumption: 25-year project life, standard PPA term. CRF = w/(1-(1+w)^-n) = 0.106"
   }
  },
  "wind": {
@@ -111,14 +117,19 @@
    "v": 0.8,
    "src": "assumption: as solar"
   },
-  "crf": {
-   "v": 0.102,
-   "src": "assumption: as solar"
-  },
   "min_project_mw": {
    "v": 3,
    "src": "assumption: one turbine-class cluster; a 1 km cell holds at most ~6-8 MW, so neighbours would be aggregated in practice"
-  }
+  },
+  "wacc": {
+   "v": 0.095,
+   "src": "assumption: WACC 9-10% (mid 9.5%) typical for Indian utility RE debt+equity, not verified against a single document"
+  },
+  "life_yr": {
+   "v": 25,
+   "src": "assumption: 25-year project life, standard PPA term. CRF = w/(1-(1+w)^-n) = 0.106"
+  },
+  "status": "not viable in this box at 0.5 deg resolution; Karnataka's wind belt is the Chitradurga/Gadag ridges; Global Wind Atlas is the upgrade"
  },
  "exclusion": {
   "tree_frac": {
@@ -142,5 +153,5 @@
   "landcover": "ESA WorldCover 2021 v200, https://esa-worldcover.s3.eu-central-1.amazonaws.com/ , 10 m",
   "grid_osm": "OpenStreetMap via Overpass API (power=line, power=substation, solar, protected areas), fetched 2026, ODbL"
  },
- "score_definition": "score = net annual value per MW (Rs/MW/yr) = tariff*MWh/MW - O&M - capex*CRF - grid line cost*CRF/MW, among non-excluded cells >= min_project_mw. Per-MW (not per-cell) so a larger cell does not win merely by being larger and the ranking does not flip sign with tariff."
+ "score_definition": "score = LCOE (Rs/kWh) = (capex*CRF + O&M + grid_line_cost*CRF/MW) / (MWh per MW per yr * 1000); lower is better, rank ascending (stored internally as score = -LCOE). Viable = LCOE < tariff (Rs 2.6/kWh, SECI 2025). Net Rs/MW/yr = (tariff - LCOE) * MWh/MW * 1000 is a secondary field. Cells below min_project_mw or excluded are unranked."
 }

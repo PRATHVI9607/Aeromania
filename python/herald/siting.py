@@ -227,20 +227,23 @@ def landshare(c, wts, built_ok=None):
 
 def econ(mw, mwh, S, grid_km):
     rev = mwh * 1000 * S["tariff_rs_kwh"]["v"]
-    cost = mw * (S["om_lakh_per_mw_yr"]["v"] * 1e5 + S["capex_cr_per_mw"]["v"] * 1e7 * S["crf"]["v"]) + grid_km * S["grid_cr_per_km"]["v"] * 1e7 * S["crf"]["v"]
-    return rev, rev - cost
+    w, n = S["wacc"]["v"], S["life_yr"]["v"]
+    crf = w / (1 - (1 + w) ** -n)
+    cost = mw * (S["om_lakh_per_mw_yr"]["v"] * 1e5 + S["capex_cr_per_mw"]["v"] * 1e7 * crf) + grid_km * S["grid_cr_per_km"]["v"] * 1e7 * crf
+    lcoe = cost / np.maximum(mwh * 1000, 1e-9)
+    return rev, rev - cost, lcoe
 
 
 def solar(c, P, built_ok=None):
-    """dict of arrays; score = net annual value per MW (Rs/MW/yr) = revenue - O&M - annualised capex - annualised grid line, per MW. NaN if excluded or < min MW."""
+    """dict of arrays; score = -LCOE (Rs/kWh), higher = better; NaN if excluded or < min MW."""
     S = P["solar"]
     ha = 100 * landshare(c, S["weights"]["v"], built_ok) * c["f5"]
     mw = ha / S["ha_per_mw"]["v"]
     cuf = c["ghi"] * 365 * S["pr"]["v"] / 8760
     mwh = mw * 8760 * cuf
-    rev, net = econ(mw, mwh, S, c["d_sub"])
+    rev, net, lcoe = econ(mw, mwh, S, c["d_sub"])
     ok = ~excluded(c, P, built_ok) & (mw >= S["min_project_mw"]["v"])
-    return dict(ha=ha, mw=mw, cuf=cuf, mwh=mwh, rev=rev, net=net, score=np.where(ok, net / np.maximum(mw, 1e-9), np.nan))
+    return dict(ha=ha, mw=mw, cuf=cuf, mwh=mwh, rev=rev, net=net, lcoe=lcoe, score=np.where(ok, -lcoe, np.nan))
 
 
 def wind_cuf(ws50, W):
@@ -260,9 +263,9 @@ def wind(c, P):
     mw = km2 * W["mw_per_km2"]["v"]
     cuf = wind_cuf(c["ws50"], W)
     mwh = mw * 8760 * cuf
-    rev, net = econ(mw, mwh, W, c["d_sub"])
+    rev, net, lcoe = econ(mw, mwh, W, c["d_sub"])
     ok = ~excluded(c, P) & (mw >= W["min_project_mw"]["v"]) & (c["ws50"] >= W["min_ws50"]["v"])
-    return dict(km2=km2, mw=mw, cuf=cuf, mwh=mwh, rev=rev, net=net, score=np.where(ok, net / np.maximum(mw, 1e-9), np.nan))
+    return dict(km2=km2, mw=mw, cuf=cuf, mwh=mwh, rev=rev, net=net, lcoe=lcoe, score=np.where(ok, -lcoe, np.nan))
 
 
 def pct(score, mask):
@@ -294,7 +297,7 @@ def record(c, r, k, kind, rank):
         reasons += [f"WS50M {c['ws50'][i, j]:.2f} m/s -> CUF {r['cuf'][i, j]:.3f}", f"{r['km2'][i, j]:.2f} km2 developable (slope<15 deg)"]
     reasons.append(f"{c['d_sub'][i, j]:.1f} km to substation, {c['d_l33'][i, j]:.1f} km to >=33 kV line")
     return dict(rank=rank, lat=round(float(c["lat"][i, j]), 4), lon=round(float(c["lon"][i, j]), 4), mw=round(float(r["mw"][i, j]), 1),
-                mwh_yr=round(float(r["mwh"][i, j])), revenue_rs_yr=round(float(r["rev"][i, j])), net_value_rs_yr=round(float(r["net"][i, j])), net_value_rs_per_mw_yr=round(float(r["net"][i, j] / max(r["mw"][i, j], 1e-9))),
+                mwh_yr=round(float(r["mwh"][i, j])), revenue_rs_yr=round(float(r["rev"][i, j])), net_value_rs_yr=round(float(r["net"][i, j])), net_value_rs_per_mw_yr=round(float(r["net"][i, j] / max(r["mw"][i, j], 1e-9))), lcoe_rs_kwh=round(float(r["lcoe"][i, j]), 2),
                 grid_km_substation=round(float(c["d_sub"][i, j]), 1), grid_km_line33=round(float(c["d_l33"][i, j]), 1),
                 slope_mean_deg=round(float(c["slope"][i, j]), 1), land_mix=mix, reasons=reasons)
 
@@ -336,27 +339,40 @@ def main(argv=None):
         other_osm_solar=dict(as_is=pct(S["score"], small), note="Cells holding OSM solar generators (points/small ways) outside the park cells; small n, mapping is patchy."),
     )
     # validation 3: sensitivity
-    def variant(tf=1.0, hpm=None):
+    def variant(hpm=None, capex=None):
         P = json.loads(json.dumps(cfg))
-        P["solar"]["tariff_rs_kwh"]["v"] *= tf
         if hpm:
             P["solar"]["ha_per_mw"]["v"] = hpm
-        return set(top_idx(solar(c, P)["score"]))
+        if capex:
+            P["solar"]["capex_cr_per_mw"]["v"] = capex
+        return solar(c, P)["score"]
     base = set(top_idx(S["score"]))
-    sens = {k: len(base & variant(*a)) for k, a in {"tariff-20%": (.8,), "tariff+20%": (1.2,), "ha_per_mw 1.6": (1, 1.6), "ha_per_mw 2.0": (1, 2.0)}.items()}
-    val["sensitivity_top20_overlap_of_20"] = sens
+    tariff = cfg["solar"]["tariff_rs_kwh"]["v"]
+    viable = lambda sc: int((-sc[~np.isnan(sc)] < tariff).sum())
+    cases = {"capex low": (None, cfg["solar"]["capex_cr_per_mw"]["lo"]), "capex base": (None, None), "capex high": (None, cfg["solar"]["capex_cr_per_mw"]["hi"]),
+             "ha_per_mw 1.6": (1.6, None), "ha_per_mw 2.0": (2.0, None)}
+    sc = {k: variant(*a) for k, a in cases.items()}
+    val["sensitivity"] = dict(
+        top20_overlap_with_base={k: len(base & set(top_idx(v))) for k, v in sc.items()},
+        viable_cells_lcoe_below_tariff={k: viable(v) for k, v in sc.items()},
+        viable_tariff_minus20pct=int((-S["score"][~np.isnan(S["score"])] < tariff * .8).sum()),
+        viable_tariff_plus20pct=int((-S["score"][~np.isnan(S["score"])] < tariff * 1.2).sum()),
+        note="Ranking is by LCOE so tariff does not change the order, only which cells are viable (LCOE < tariff).")
+    val["pavagada_lcoe_percentiles_note"] = "percentile = share of ranked cells with higher LCOE"
 
     tot = lambda r: dict(ranked_cells=int((~np.isnan(r["score"])).sum()), mw=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mw"])))),
                          mwh_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mwh"])))),
                          revenue_rs_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["rev"])))))
     ts, tw = top_idx(S["score"]), top_idx(W["score"])
+    wv = W["lcoe"][~np.isnan(W["score"])]
+    wind_note = dict(status=cfg["wind"]["status"], ranked=int(len(wv)), viable_lcoe_below_wind_tariff=int((wv < cfg["wind"]["tariff_rs_kwh"]["v"]).sum()))
     params = {k: cfg[k] for k in ("solar", "wind", "exclusion", "sources")}
     rep = dict(
         bbox=[round(float(v), 4) for v in (c["lon"].min() - .0045, c["lat"].min() - .0045, c["lon"].max() + .0045, c["lat"].max() + .0045)],
         caveats=["NASA POWER irradiance/wind is native ~0.5-1 deg: only 16 sample points, cell values are smooth interpolation, ridge-top wind NOT resolved (Global Wind Atlas would be the upgrade).",
                  "Slope-share and land-use share are multiplied as if independent.", "All Rs numbers are assumptions (config/siting.json).",
                  "Substation distance is a straight-line proxy; no capacity, voltage-level or land-ownership data."],
-        region_totals=dict(solar=tot(S), wind=tot(W), n_substations=c["n_sub"], n_lines_ge33kv=c["n_line33"], n_cells_excluded=int(excluded(c, cfg).sum())),
+        region_totals=dict(wind_status=wind_note, solar=tot(S), wind=tot(W), n_substations=c["n_sub"], n_lines_ge33kv=c["n_line33"], n_cells_excluded=int(excluded(c, cfg).sum())),
         top_solar=[record(c, S, k, "solar", n + 1) for n, k in enumerate(ts)], top_wind=[record(c, W, k, "wind", n + 1) for n, k in enumerate(tw)],
         params=params, validation=val)
     ensure(REPORTS, WEB_DATA / "img")
