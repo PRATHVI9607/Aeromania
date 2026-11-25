@@ -14,7 +14,7 @@ Aeromania '26 Mach-A-Thon · "Orbit to Economy: AI in Space" · 12 hours · solo
 - **Main goal:** turn every scarce minute of ground-station contact into the most rupees of decision value: the onboard AI picks what matters, the ground acts on it the same hour.
 - **Track A (objective 1):** *Bengaluru's construction ledger — every new layout and building, caught the month it starts, checked against no-build zones.* Decision: where enforcement, survey and planning teams go this week.
 - **Track A (objective 2):** *Where the next gigawatt should go* — solar and wind sites around Pavagada ranked by irradiance, slope, land use and grid distance, validated against the real 2 GW park.
-- **Track B:** *Same antenna, same minutes, far more value* — HERALD delivers 97–99% of the best possible value at every bandwidth level (H1 99.3 / 99.0 / 98.4% of the upper bound at ρ = 1 / 2 / 5), while FIFO falls from 53.5% to 15.2% to 1.2% and a CloudScout-style cloud filter from 69.6% to 6.1%; HERALD matches FIFO's entire 5-day value in 2.85 contact minutes at ρ = 5; first insight 1.8 min after capture (same-pass downlink) vs 34 h for FIFO.
+- **Track B:** *Same antenna, same minutes, far more value* — HERALD delivers 98.6–99.1% of the best possible value at every bandwidth level, while FIFO falls from 53% (ρ = 1) to 9% (ρ = 2) to under 1% (ρ = 5); HERALD matches FIFO's entire 5-day value in 2.9 contact minutes; first insight 1.8 min after capture (same-pass downlink).
 - **Track C:** *Forest lost to mining, timestamped from orbit* — open-cast mines advancing into dense forest at Hasdeo Arand, 2023→2025, packaged as hash-chained evidence cards for forest departments (mine-expansion lead precision 0.88 by reviewer audit). Sand mining at 10 m is shown as experimental and honestly weak (pit precision 0.12; Sentinel-1 shows no monsoon activity on this reach) — it needs sub-metre or SAR time series. Land cover only, never people.
 
 ---
@@ -96,20 +96,20 @@ Targets v5 (raised where v3 targets were beaten; misses stay visible). "Measured
 
 | ID | Metric | v3 target | **v5 target** | Measured | Status |
 |---|---|---|---|---|---|
-| G1 | EuroSAT top-1, int8 (held-out test) | ≥ 97% | **≥ 98.0%** | 98.02% (fp32 98.11%) | pass |
-| G1b | int8 accuracy drop vs fp32 | ≤ 0.5 pt | **≤ 0.3 pt** | 0.11 pt | pass |
-| G2 | Cloud-fraction MAE vs SCL, leave-one-AOI-out | ≤ 0.05 | ≤ 0.05 (all 3 folds) | 0.205 combined on held-out hasdeo (0.150 original dates, 0.314 cirrus); constant baseline 0.375 | miss: 5-band input has no cirrus band (B10); flight would include it |
-| G3 | Calibration ECE | < 0.03 | **< 0.01** | 0.0065 | pass |
-| G4 | int8 CPU latency, batch 64 | < 1 ms/chip | < 1 ms/chip idle; stretch < 0.5 | 0.88–1.17 ms across runs (P-cores, 8 threads; laptop thermally loaded); GPU 1.12 ms | borderline |
+| G1 | EuroSAT top-1, int8 (held-out test) | ≥ 97% | **≥ 98.0%** | 98.26% (fp32 98.41%), shipped distilled MobileNetV2 (0.69 M params) | pass |
+| G1b | int8 accuracy drop vs fp32 | ≤ 0.5 pt | **≤ 0.3 pt** | 0.15 pt | pass |
+| G2 | Cloud-fraction MAE vs SCL, leave-one-AOI-out | ≤ 0.05 | ≤ 0.05 (all 3 folds) | held-out hasdeo 0.073 combined (0.049 on normal dates, 0.120 on cirrus-heavy scenes); mean over folds 0.117; with the B10 cirrus band | miss on cirrus-heavy scenes; pass on normal dates |
+| G3 | Calibration ECE | < 0.03 | **< 0.01** | 0.0053 | pass |
+| G4 | int8 CPU latency, batch 64 | < 1 ms/chip | < 1 ms/chip; stretch < 0.5 | 0.33 ms/chip (4 P-core threads); 5-7 ms/chip in-browser WebAssembly | pass |
 | G5 | Scheduler | < 10 ms / 1k tiles | **< 5 ms / 1k** | 2.35 ms | pass |
 | G6 | Live query reorder in browser | < 100 ms | **< 60 ms** | 37–47 ms for all 5 policies + upper bound on 19,044 tiles (same V8 code as the worker) | pass |
 | G7 | Dashboard load / fps | < 1.5 s, 60 fps | < 1.5 s, 60 fps | first paint 150–250 ms; full load 1.5 s; FIFO race 60 fps; 3D globe fps to verify on the demo laptop GPU | pass (globe ⏳) |
-| G8 | HERALD vs FIFO value | ≥ 2× at ρ=5 | **≥ 2× at ρ=5; reported as % of upper bound** | % of UB at ρ=1/2/5: HERALD (H1) 99.3/99.0/98.4 vs FIFO 53.5/15.2/1.2 vs cloud filter 69.6/33.1/6.1 | pass |
-| G9 | Contact minutes for HERALD to match FIFO's final value | report | **≤ 5 min** | 2.85 min at ρ=5 | pass |
+| G8 | HERALD vs FIFO value | ≥ 2× at ρ=5 | **≥ 2× at ρ=5; reported as % of upper bound** | % of UB at ρ=1/2/5: HERALD 99.1/99.0/98.6 vs FIFO 53.4/9.0/0.8 vs cloud filter 62.6/17.1/1.6 | pass |
+| G9 | Contact minutes for HERALD to match FIFO's final value | report | **≤ 5 min** | 2.88 min at ρ=5 | pass |
 | G10 | Change vs OSM construction (weak labels) | report | report | P 0.26 / R 0.32 (east half) | reported |
 | G11 | Injected-change recall | ≥ 0.9 at ≥ 1 ha | **≥ 0.9 at ≥ 1 ha** (stretch: 0.5 ha) | 0.95 @1 ha, 0.95 @2 ha, 1.0 @4 ha; stretch 0.85 @0.5 ha | pass (stretch shown) |
 | G12 | Construction-lead precision (reviewer visual audit, not field) | — | **≥ 0.85 excluding unsure** (standard audit metric; incl.-unsure also shown) | 0.89 excl. unsure (24 real, 3 wrong, 8 unsure); 0.69 incl. | pass |
-| G13 | Time to first insight after capture (ρ=5) | — | **≤ 30 min** | 1.8 min (same-pass downlink) vs FIFO 2,040 min | pass |
+| G13 | Time to first insight after capture (ρ=5) | — | **≤ 30 min** | 1.84 min (same-pass downlink) | pass |
 | G14 | Siting validation: Pavagada park cells' solar percentile | — | **median ≥ 90 and ≥ 60% of park cells in top decile** (median, because OSM maps only ~1,017 of ~5,261 park ha so edge cells mix park and non-park land; mean also reported) | median 96.2, 5 of 7 cells top decile, mean 82.7 | pass |
 | G15 | Track C lead precision (reviewer visual audit) | — | **≥ 0.60 for headline kind** | mine_expansion 0.88; forest_clearing 0.29; sand_pits 0.12; sand_disturbance 0.0 | headline pass, sand fail |
 | G16 | Evidence chain: verify passes, single-byte tamper detected | — | **100%** | 14/14 cards verify (Python + browser); tamper tests on card body, image hash and chain head all detected (pytest + vitest) | pass |

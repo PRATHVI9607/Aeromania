@@ -49,7 +49,7 @@ Yes. After the one-time `vault build`, everything (pipeline + dashboard) runs of
 ResNet-18 pretrained self-supervised on Sentinel-2 (SSL4EO-S12 MoCo), with conv1 sliced to 5 bands, fine-tuned multi-task. It outputs land-cover class, cloud fraction, a 64-d embedding, and an India land-cover head (WorldCover classes, 83.1% agreement on held-out land). Exported to ONNX and quantized to int8.
 
 **Q: Accuracy?**
-EuroSAT held-out test: 98.11% fp32, 98.02% int8 (0.11 pt drop). Calibration error (ECE) 0.0065 after temperature scaling.
+EuroSAT held-out test: the shipped onboard model (MobileNetV2-0.5 distilled from a ResNet-18 teacher, 0.69 M params) scores 98.41% fp32, 98.26% int8 (0.15 pt drop). Calibration error 0.0053 after temperature scaling.
 
 **Q: EuroSAT is Europe. Does it work on India?**
 The EuroSAT head does not prove that, and we say so. That is why (a) change detection uses physics indices, which work on any land, and (b) we added a head trained on our own Indian chips against ESA WorldCover with a spatial hold-out: 83.1% agreement (WorldCover itself is ≈ 77% accurate).
@@ -58,10 +58,10 @@ The EuroSAT head does not prove that, and we say so. That is why (a) change dete
 The scheduler multiplies probability × hectares × ₹. Uncalibrated softmax overstates confidence and mis-ranks tiles. ECE went from 0.087 to 0.0065.
 
 **Q: How fast? Is it really onboard-capable?**
-int8 CPU: 0.88–1.17 ms/chip across runs on a laptop i5 (performance cores, 8 threads); GPU 1.12 ms. A 41-hectare tile in about a millisecond means one CPU core keeps up with a full swath. Flight boards (ARM + NPU) would be faster.
+int8 CPU: 0.33 ms/chip on a laptop i5 (4 performance-core threads); 5–7 ms/chip in the browser via WebAssembly, live in the Track B deep dive and the AI Lab. A 41-hectare tile in about a millisecond means one CPU core keeps up with a full swath. Flight boards (ARM + NPU) would be faster.
 
 **Q: Cloud detection accuracy?**
-Mean error vs the satellite's own cloud mask on a held-out area: 0.205 (0.150 on normal dates, 0.314 on cirrus-heavy dates; a constant guess scores 0.375), against a target of 0.05: a miss. The miss came from thin cirrus that our training scenes lacked. We fixed the data, not the metric. A flight design would also use the cirrus band (B10), which our 5-band input does not include.
+Mean error vs the satellite's own cloud mask on a held-out area: 0.073 (0.049 on normal dates, 0.120 on cirrus-heavy dates) after adding the B10 cirrus band, which real onboard systems have. Normal dates pass the 0.05 target; thin cirrus remains a miss. The miss came from thin cirrus that our training scenes lacked. We fixed the data, not the metric. A flight design would also use the cirrus band (B10), which our 5-band input does not include.
 
 **Q: Did anything not work?**
 Yes. Using the embedding distance as an onboard change score scored AUC 0.56, barely better than chance, so we rejected it and say so. The embedding encodes land type, not change. Onboard change instead uses stored reference index maps (~3 KB per tile, ~6 MB per area) plus the same explainable rules.
@@ -147,7 +147,7 @@ Sentinel-2-like SSO at 786 km, 98.62°, 10:30 LTDN. Period 100.58 min (the textb
 ρ = oversubscription: total contact capacity = archive ÷ ρ. It models many satellites, or many areas, sharing the same stations. We show the whole curve, not one point.
 
 **Q: Isn't 27× cherry-picked?**
-We report share of the best possible value (upper bound) instead of a ratio, because FIFO drops to ~1% and ratios explode. HERALD (H1) gets 99.3 / 99.0 / 98.4% of the upper bound at ρ = 1 / 2 / 5; FIFO 53.5 / 15.2 / 1.2%; the cloud filter 69.6 / 33.1 / 6.1%. Mechanism: only 4–24% of tiles per capture carry any value, so FIFO spends its budget on whatever it captured first, mostly no-change tiles. HERALD matches FIFO's 5-day value in 2.85 contact minutes. First insight: 1.8 min after capture (same-pass downlink) vs 2,040 min for FIFO at ρ = 5.
+We report share of the best possible value (upper bound) instead of a ratio, because FIFO drops to ~1% and ratios explode. HERALD gets 99.1 / 99.0 / 98.6% of the upper bound at ρ = 1 / 2 / 5; FIFO 53.4 / 9.0 / 0.8%; the cloud filter 62.6 / 17.1 / 1.6%. HERALD matches FIFO's 5-day value in 2.88 contact minutes. First insight: 1.84 min after capture (same-pass downlink).
 
 **Q: Does the win depend on your "packet = 70% of value" assumption?**
 No. H1 sends full chips only, with no packets, and gets 98.4% of the upper bound at ρ = 5, the best of all policies. Changing H2's packet fraction from 0.3 to 0.7 moves its value by under 0.1%.

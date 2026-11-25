@@ -1,27 +1,23 @@
-# HANDOFF — HERALD (FINAL STATE, 2026-11-26 ~02:40)
+# HANDOFF — HERALD (FINAL STATE, 2026-11-26 ~05:35)
 
-**Live:** https://herald-dusky.vercel.app (Vercel prod, static) · **Repo:** github.com/PRATHVI9607/Aeromania (main) · **Offline demo:** `cd web && npm ci && npm run build && npm run preview`
-**Pitch:** docs/pitch.md · **Judge Q&A:** docs/judge_qa.md · **Spec + gates:** PRD.md ("Headlines (v5)", "Targets v5") · **Run:** README.md
+**Live:** https://herald-dusky.vercel.app (Vercel prod, static, deployed from a clean worktree build of HEAD) · **Repo:** github.com/PRATHVI9607/Aeromania (main) · **Offline demo:** `cd web && npm ci && npm run build && npm run preview`
+**Pitch:** docs/pitch.md · **Judge Q&A:** docs/judge_qa.md · **Spec + gates:** PRD.md ("Headlines (v5)", "Targets v5") · **Run:** README.md · **E2E:** `node web/e2e/run.cjs <url> --browsers chrome`
 
-## Final status
-| Area | State | Headline numbers (all from reports/*.json) |
-|---|---|---|
-| A1 Bengaluru construction ledger | done | 488 construction leads; reviewer-audit precision 0.89 excl. unsure (0.69 incl.); injected recall 0.95 @1 ha; 10 lake leads, 0 confirmed filling (honest); ward + growth-vs-roads tables |
-| A2 renewable siting (Pavagada) | done | LCOE ranking; real park cells median 96th percentile; best cell ₹2.98/kWh vs ₹2.6 tariff; A1-A2 PV check inconclusive (stated) |
-| B orbit + scheduler | done | % of upper bound ρ=1/2/5: HERALD 99.3/99.0/98.4 vs FIFO 53.5/15.2/1.2 vs cloud filter 69.6/33.1/6.1; match FIFO in 2.85 min; first insight 1.8 min (same-pass downlink) |
-| C mining into forest + evidence | done | Hasdeo mine expansion audit precision 0.88, S1 VH −3.5…−7.5 dB corroboration; 14 hash-chained cards verify (Python + browser); sand pits 0.12 → labelled experimental |
-| Onboard model | done | EuroSAT int8 98.02% (fp32 98.11), ECE 0.0065, India WorldCover head 83.1%; cloud MAE 0.205 (miss, no B10 band); int8 CPU 0.88–1.17 ms/chip (borderline) |
-| Web | done | 9 views, 3D mission + 3D ledger, race animation, error boundaries (WebGL failure never blanks the app), licence footer |
-| Quality gate | pass | ruff clean; pytest 42/42 with -W error, 0 skips; vitest 26/26; tsc clean; pipeline reproducible; 0 console errors, 0 external requests, 0 404 on the live site |
+## App (sidebar)
+Command center (3D Earth day/night, satellite model, stations + coverage, Track A/B/C layers, live insight feed, click-to-inspect site drape with swipe, physics HUD, story tour, "fetch latest real pass" = the only online call) · Story · Track A: Construction ledger (work queue, before/after drawer, pan/zoom map), Renewable siting (shortlist builder) · Track B: FIFO vs HERALD, Downlink planner (+ deep dive: live in-browser int8 inference, pass Gantt, link budget) · Track C: Evidence (case inbox, verify chain, deep dive: radar, tamper demo, certificate) · Simulation (real imagery replay 2023->2026 on the globe, lake/construction charts) · AI Lab (upload GeoTIFF, before/after change check, lat/lon point check offline + live) · System (model, economics, gates). 3D falls back to 2D automatically if WebGL or Cesium assets fail.
 
-## Before going on stage
-1. Open the dashboard in Chrome on the demo laptop; confirm the 3D globe is smooth (GPU fps could not be measured headless).
-2. Prefer `npm run preview` on the laptop; the Vercel URL is the backup. Open each tab once so assets are cached.
-3. Speak numbers from the Gates panel (About / Limits), not from memory.
+## Final numbers (all from reports/*.json)
+| Area | Result |
+|---|---|
+| B scheduler | % of upper bound rho=1/2/5: HERALD 99.1/99.0/98.6 vs FIFO 53.4/9.0/0.8 vs cloud filter 62.6/17.1/1.6; match FIFO in 2.88 min; first insight 1.84 min |
+| Onboard model (shipped) | distilled MobileNetV2-0.5, 0.69 M params: EuroSAT int8 98.26%, ECE 0.0053, 0.33 ms/chip CPU; cloud MAE 0.073 held-out (0.049 normal dates, 0.120 cirrus) with B10 |
+| A1 ledger | 488 construction leads, per-site confidence 0.48-0.94 (audit-anchored, 0.89 precision excl. unsure); 10 lake leads, 0 confirmed filling |
+| A2 siting | Pavagada park median 96th percentile; best LCOE Rs 2.98 vs Rs 2.6 tariff |
+| C evidence | Hasdeo mine expansion 0.88 audit precision, S1 VH drop 3.5-7.5 dB; 14 hash-chained cards verify; sand pits experimental (0.12) |
+| Quality | ruff clean; pytest 43 with -W error; vitest 54; tsc clean; live e2e in Chrome: 12 routes, ~270 clicks, 0 errors, 7/7 flows pass |
 
-## Gates still not met (shown honestly in the UI)
-- G2 cloud MAE 0.205 vs 0.05 — 5-band input lacks the cirrus band (B10).
-- G4 int8 latency 0.88–1.17 ms vs < 1 ms — borderline, laptop thermals.
+## Open gate
+- G2 cloud on cirrus-heavy scenes (0.120 vs 0.05).
 
 ---
 

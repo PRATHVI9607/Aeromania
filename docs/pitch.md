@@ -19,7 +19,7 @@ Say every rupee figure as "an assumption, sourced". Numbers marked ⏳ get refre
 **0:55–1:50 · Track B live** (screen: Mission → FIFO vs HERALD → Queries)
 1. Mission: "Real orbit model: 786 km sun-synchronous, 100.6-minute period, max pass 10.6 minutes, 5.5 GB."
 2. FIFO vs HERALD: drag ρ from 1 to 5.
-   > "HERALD delivers 98 to 99 percent of the best possible value at every bandwidth. FIFO falls to about 1 percent when five satellites share the station, and a cloud filter only gets to 6. HERALD matches FIFO's whole five days in under three contact minutes. And the first insight reaches the ground 1.8 minutes after capture, in the same pass, instead of 34 hours."
+   > "HERALD delivers 99 percent of the best possible value at every bandwidth. FIFO falls below 1 percent when five satellites share the station; a cloud filter gets under 2. HERALD matches FIFO's whole five days in under three contact minutes, and the first insight reaches the ground 1.8 minutes after capture, in the same pass."
 3. Queries: add a query live.
    > "A new customer request reorders 19,000 tiles in under 60 milliseconds."
 
@@ -33,7 +33,7 @@ Say every rupee figure as "an assumption, sourced". Numbers marked ⏳ get refre
    > "Same satellite data, second objective: where Karnataka's next gigawatt goes. Ranked by cost per unit, including grid, road access and heat. The real Pavagada park ranks in our top 4% (median). Even our best cell costs ₹2.98 a unit against a ₹2.6 tariff, which is why location and scale decide who profits."
 
 **3:00–3:50 · AI depth** (screen: Hardware, then About → Gates)
-> "Onboard model: ResNet-18 pretrained on Sentinel-2, quantized to int8. 98.0% on EuroSAT, calibration error 0.0065, because the scheduler multiplies probabilities by rupees. Since EuroSAT is Europe, we added an India head trained on our own chips: 83% agreement with ESA WorldCover on held-out land. About a millisecond per tile on a laptop CPU, 0.9 to 1.2 depending on load. The Gates panel shows every target, including the two we miss."
+> "Onboard model: ResNet-18 pretrained on Sentinel-2, quantized to int8. 98.3% on EuroSAT, calibration error 0.005, because the scheduler multiplies probabilities by rupees. Since EuroSAT is Europe, we added an India head trained on our own chips: 83% agreement with ESA WorldCover on held-out land. 0.33 milliseconds per tile on a laptop CPU, after distilling it into a 0.69 M-parameter model that still scores 98.3%. The Gates panel shows every target, including the two we miss."
 
 **3:50–4:30 · Track C** (screen: Evidence)
 > "Hasdeo Arand: open-cast mines advancing into dense forest between 2023 and 2025. Mine-expansion leads are 88% real in our audit, and Sentinel-1 radar independently shows the canopy loss: VH backscatter drops 3.5 to 7.5 dB on those tiles. Each card is hash-chained."
