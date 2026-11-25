@@ -1,0 +1,26 @@
+{
+  "construction": {
+    "a_dndvi": 0.25,
+    "b_dndbi": 0.0,
+    "c_dbsi": 0.1,
+    "min_px": 25,
+    "chip_ha": 1.0,
+    "ndvi1_max": 0.35,
+    "bsi_bare": 0.15,
+    "osm_frac": 0.02,
+    "tuned": true
+  },
+  "sand": {
+    "c_dbsi": 0.1,
+    "buffer_px": 30,
+    "min_px": 8,
+    "wc80_chip": 0.25
+  },
+  "clearing": {
+    "forest_ndvi": 0.5,
+    "d_ndvi": 0.25,
+    "min_px": 8,
+    "wc10_chip": 0.5,
+    "wc_ndvi": 0.35
+  }
+}

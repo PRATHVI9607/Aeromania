@@ -30,7 +30,7 @@ CAVEAT = ("Indices-and-rules baseline, not a learned model. OSM landuse=construc
 # Frozen defaults. construction is overwritten by tuning on blr west half (config/change_thresholds.json).
 DEFAULTS = {
     "construction": {"a_dndvi": 0.15, "b_dndbi": 0.05, "c_dbsi": 0.10, "min_px": 8, "chip_ha": 0.5,
-                     "osm_frac": 0.02, "tuned": False},
+                     "ndvi1_max": 0.35, "bsi_bare": 0.15, "osm_frac": 0.02, "tuned": False},
     # literature-sensible: MNDWI>0 water (Xu 2006); BSI rise 0.10; 300 m buffer = 30 px
     "sand": {"c_dbsi": 0.10, "buffer_px": 30, "min_px": 8, "wc80_chip": 0.25},
     # forest NDVI>0.5; clearing = dNDVI < -0.25 (Hansen-style loss, dry-season pair); WC tree chips relax to 0.35
@@ -76,7 +76,7 @@ def detect(kind, x0, x1, valid, thr, ctx=None):
     buf = None
     if kind == "construction":
         m = ((d["ndvi"] < -thr["a_dndvi"]) & ((d["ndbi"] > thr["b_dndbi"]) | (d["bsi"] > thr["c_dbsi"]))
-             & (i1["mndwi"] < 0) & (i0["mndwi"] < 0))
+             & (i1["mndwi"] < 0) & (i0["mndwi"] < 0) & (i1["ndvi"] < thr.get("ndvi1_max", 1.0)))
     elif kind == "sand":
         w0, w1 = i0["mndwi"] > 0, i1["mndwi"] > 0
         near = ((w0 | w1) & valid)
@@ -93,6 +93,13 @@ def detect(kind, x0, x1, valid, thr, ctx=None):
         raise ValueError(kind)
     m = remove_small(m & valid, thr["min_px"])
     return m, i0, i1, buf, d
+
+
+def stages(i1, mask, thr):
+    """Two-stage split of a construction mask. built: NDBI>0 and BSI below bare-soil level at t1
+    (roofs/concrete); cleared: the rest (veg -> bare earthwork / layouts, also ambiguous with harvested crops)."""
+    built = mask & (i1["ndbi"] > 0) & (i1["bsi"] < thr["bsi_bare"])
+    return mask & ~built, built
 
 
 # ---------------------------------------------------------------- mosaic helpers
@@ -138,6 +145,7 @@ def prf(pred, lab):
     p = tp / (tp + fp) if tp + fp else 0.0
     r = tp / (tp + fn) if tp + fn else 0.0
     return {"precision": round(p, 4), "recall": round(r, 4), "f1": round(2 * p * r / (p + r), 4) if p + r else 0.0,
+            "f05": round(1.25 * p * r / (0.25 * p + r), 4) if p + r else 0.0,
             "tp": tp, "fp": fp, "fn": fn, "n": int(len(pred)), "n_pos": int(lab.sum())}
 
 
@@ -147,14 +155,15 @@ def tune_construction(x0, x1, valid, osm, ok_chip, thr):
     west, east = col < G // 2, col >= G // 2
     lab = osm >= thr["osm_frac"]
     best = None
-    for a, b, mn in itertools.product((0.10, 0.15, 0.20, 0.25, 0.30), (0.0, 0.03, 0.06, 0.10), (4, 8, 12)):
+    for a, b, mn in itertools.product((0.25, 0.30, 0.35), (0.0, 0.03, 0.06, 0.10), (16, 25)):   # a>=0.25: dry-season crop NDVI swing is ~0.2
         t = dict(thr, a_dndvi=a, b_dndbi=b, min_px=mn)
         m = detect("construction", x0, x1, valid, t)[0]
-        sev = chipify(m).reshape(N, -1).sum(1) / CHIP_PX
-        pred = (sev * paths.CHIP_HA >= t["chip_ha"]) & ok_chip
-        s = prf(pred[west & ok_chip], lab[west & ok_chip])
-        if best is None or s["f1"] > best[0]:
-            best = (s["f1"], t, pred)
+        ha_c = chipify(m).reshape(N, -1).sum(1) / CHIP_PX * paths.CHIP_HA
+        for cha in (0.5, 1.0, 2.0):
+            pred = (ha_c >= cha) & ok_chip
+            s = prf(pred[west & ok_chip], lab[west & ok_chip])
+            if best is None or s["f1"] > best[0]:
+                best = (s["f1"], dict(t, chip_ha=cha), pred)
     _, t, pred = best
     t["tuned"] = True
     return t, {"west_tune": prf(pred[west & ok_chip], lab[west & ok_chip]),
@@ -175,31 +184,41 @@ def injected_test(kind, x0, x1, valid, thr, ctx_fn, base_sev, rng, per_size=20):
     i0, i1 = indices(x0), indices(x1)
     if kind == "construction":
         pool_m = valid & (i1["ndbi"] > 0.05) & (i1["ndvi"] < 0.15) & (i1["mndwi"] < 0)
-        veg = i0["ndvi"] > 0.3
+        veg = i0["ndvi"] > 0.4
+        need_frac = 0.5
     else:
         pool_m = valid & (i1["ndvi"] < 0.2) & (i1["bsi"] > 0) & (i1["mndwi"] < 0)
         veg = i0["ndvi"] > thr["forest_ndvi"]
+        need_frac = 0.9
     pool = x1[:, pool_m]
     if pool.shape[1] < 500:
         return {"error": "too few source pixels", "pool_px": int(pool.shape[1])}
     pool = pool[:, rng.choice(pool.shape[1], min(pool.shape[1], 200000), replace=False)]
     cv = chipify(valid).reshape(N, -1).mean(1)
     cveg = chipify(veg & valid).reshape(N, -1).mean(1)
-    cand = np.flatnonzero((cv >= 0.99) & (cveg >= 0.9) & (base_sev == 0))
+    cand = np.flatnonzero((cv >= 0.99) & (cveg >= need_frac) & (base_sev == 0))
     res = {"n_candidate_chips": int(len(cand)), "pool_px": int(pool.shape[1]), "recall_by_size": {},
            "chip_detect_by_size": {}, "seed": 11}
     if len(cand) < per_size:
         res["error"] = "not enough fully-vegetated clean chips"
         return res
     chips_x0, chips_x1 = x0.reshape(5, G, C, G, C), x1.reshape(5, G, C, G, C)
+    vegc = chipify(veg & valid)
     for ha in SIZES_HA:
-        pick = rng.choice(cand, per_size, replace=False)
-        hit = chip_hit = 0
-        for i in pick:
+        hit = chip_hit = done = 0
+        for i in rng.permutation(cand):
+            if done == per_size:
+                break
             r, c = divmod(int(i), G)
             a0, a1 = chips_x0[:, r, :, c, :].copy(), chips_x1[:, r, :, c, :].copy()
             side = max(2, int(round(np.sqrt(ha * 100))))
-            y, x = (int(v) for v in rng.integers(2, C - side - 1, 2))
+            for _ in range(200):   # box must be entirely vegetated at t0
+                y, x = (int(v) for v in rng.integers(2, C - side - 1, 2))
+                if vegc[i, y:y + side, x:x + side].all():
+                    break
+            else:
+                continue   # no fully vegetated box of this size in the chip: try next chip
+            done += 1
             _paint(a1, rng, pool, y, x, ha)
             v = np.ones((C, C), bool)
             ctx = ctx_fn(int(i)) if ctx_fn else None
@@ -207,8 +226,9 @@ def injected_test(kind, x0, x1, valid, thr, ctx_fn, base_sev, rng, per_size=20):
             frac = m[y:y + side, x:x + side].mean()
             hit += frac >= 0.5
             chip_hit += bool(m.any())
-        res["recall_by_size"][str(ha)] = round(hit / per_size, 3)
-        res["chip_detect_by_size"][str(ha)] = round(chip_hit / per_size, 3)
+        res["recall_by_size"][str(ha)] = round(hit / max(done, 1), 3)
+        res["chip_detect_by_size"][str(ha)] = round(chip_hit / max(done, 1), 3)
+        res.setdefault("n_trials", {})[str(ha)] = done
     return res
 
 
@@ -261,6 +281,323 @@ def qa_grid(aoi, kind, recs, x0c, x1c, maskc, lo, hi, top=12):
     plt.close(fig)
 
 
+
+# ---------------------------------------------------------------- Track A: wards, survey, anchors
+WARDS = paths.CONFIG / "ref" / "bbmp_wards.geojson"
+ANCHORS = {"boeing_india_etc": {"lat": 13.2, "lon": 77.7, "radius_px": 40,
+                                "desc": "Boeing India Engineering & Technology Center, Hightech Defence & Aerospace Park (approx coords)"}}
+PUBLISHED = {"pp_per_yr": 0.5, "src": "Landsat study of Bengaluru agglomeration: built-up 12.6% (2000) -> 22.8% (2020)"}
+
+
+def _geo(aoi):
+    from pyproj import Transformer
+    sc = json.loads((paths.VAULT / "scenes.json").read_text(encoding="utf-8"))[aoi]
+    x0, y0 = sc["origin_xy"]
+    return sc, x0, y0, Transformer.from_crs(4326, sc["epsg"], always_xy=True), Transformer.from_crs(sc["epsg"], 4326, always_xy=True)
+
+
+def rasterize_wards(aoi):
+    """-> (ward index raster [M,M] uint16, 0 = outside any ward; ward props list indexed from 1)."""
+    from rasterio import features
+    from rasterio.transform import from_origin
+    from shapely.geometry import box, shape
+    from shapely.ops import transform
+    sc, x0, y0, fwd, _ = _geo(aoi)
+    gj = json.loads(WARDS.read_text(encoding="utf-8"))
+    aoi_box = box(x0, y0 - M * 10, x0 + M * 10, y0)
+    shapes, props = [], []
+    for f in gj["features"]:
+        g = transform(fwd.transform, shape(f["geometry"]))
+        if g.intersects(aoi_box):
+            props.append({"id": f["properties"]["KGISWardNo"], "name": f["properties"]["KGISWardName"]})
+            shapes.append((g, len(props)))
+    r = features.rasterize(shapes, out_shape=(M, M), transform=from_origin(x0, y0, 10, 10), fill=0, dtype="uint16") if shapes \
+        else np.zeros((M, M), np.uint16)
+    return r, props
+
+
+def survey(aoi, thr, i0, i1, valid, ok_px, mask, cleared, built, ha_built_tile, recs):
+    sc, x0, y0, _, inv = _geo(aoi)
+    t0, t1 = sc["dates"]["t0"]["datetime"], sc["dates"]["t1"]["datetime"]
+    from datetime import datetime
+    yrs = (datetime.fromisoformat(t1) - datetime.fromisoformat(t0)).days / 365.25
+    wr, props = rasterize_wards(aoi)
+    props = props + [{"id": "peri", "name": "Outside BBMP (peri-urban)"}]
+    wr = np.where(wr == 0, len(props), wr).astype(np.int64)
+    K = len(props) + 1
+    px_ha = 0.01
+    ok = valid & ok_px
+    b0 = (i0["ndbi"] > 0) & (i0["ndvi"] < 0.2) & ok
+    b1 = (i1["ndbi"] > 0) & (i1["ndvi"] < 0.2) & ok
+    coherent = remove_small(built, 25)
+    cnt = lambda a: np.bincount(wr[a], minlength=K)
+    n_b0, n_new, n_clr, n_coh, n_val = cnt(b0), cnt(built), cnt(cleared), cnt(coherent & built), cnt(ok)
+    ys, xs = np.indices((M, M))
+    cy = np.bincount(wr[mask], weights=ys[mask], minlength=K) / np.maximum(cnt(mask), 1)
+    cx = np.bincount(wr[mask], weights=xs[mask], minlength=K) / np.maximum(cnt(mask), 1)
+    tile_id = (ys // C) * G + (xs // C)
+    pair = np.bincount(wr[built] * N + tile_id[built], minlength=K * N).reshape(K, N)
+    rate = json.loads((paths.CONFIG / "value.json").read_text(encoding="utf-8"))["params"]["rupees_per_ha"]
+    rate_a, rate_src = rate["value"]["A"], rate["source"]
+    rows = []
+    for k in range(1, K):
+        if n_val[k] == 0:
+            continue
+        lon, lat = inv.transform(x0 + (cx[k] + .5) * 10, y0 - (cy[k] + .5) * 10)
+        new_ha, conf = n_new[k] * px_ha, (n_coh[k] / n_new[k] if n_new[k] else 0.0)
+        rows.append({"ward_id": props[k - 1]["id"], "ward": props[k - 1]["name"], "valid_ha": round(n_val[k] * px_ha, 1),
+                     "built_t0_ha": round(n_b0[k] * px_ha, 1), "new_built_ha": round(new_ha, 2),
+                     "cleared_ha": round(n_clr[k] * px_ha, 2),
+                     "growth_pct": round(100 * new_ha / (n_b0[k] * px_ha), 2) if n_b0[k] else None,
+                     "ha_per_yr": round(new_ha / yrs, 2), "confidence": round(conf, 3),
+                     "rupees_expected": round(new_ha * rate_a * conf), "hotspot": [round(lat, 5), round(lon, 5)],
+                     "top_tiles": [int(t) for t in np.argsort(-pair[k])[:3] if pair[k][t] > 0]})
+    rows.sort(key=lambda r: -r["rupees_expected"])
+    nb0, nb1, nv = int(b0.sum()), int(b1.sum()), int(ok.sum())
+    f0, f1 = nb0 / nv, nb1 / nv
+    aoi_sum = {"years": round(yrs, 3), "new_built_ha": round(float(built.sum()) * px_ha, 1),
+               "cleared_ha": round(float(cleared.sum()) * px_ha, 1),
+               "new_built_ha_per_yr": round(float(built.sum()) * px_ha / yrs, 1),
+               "built_frac_t0": round(f0, 4), "built_frac_t1": round(f1, 4),
+               "built_pp_per_yr": round(100 * (f1 - f0) / yrs, 3), "published": PUBLISHED,
+               "growth_caveat": "Built proxy is NDBI>0 & NDVI<0.2 at 10 m (includes bare/fallow soil); extent is a 30 km "
+                                "peri-urban box, not the agglomeration; published figure is a 20-year Landsat average. "
+                                "Order-of-magnitude sanity only."}
+    out = {"aoi": aoi, "dates": [t0, t1], "rupees_per_ha_A": rate_a, "rupees_source": rate_src,
+           "rupees_note": "assumption; expected = new_built_ha x rupees_per_ha x confidence",
+           "confidence_def": "share of ward new-built px in connected components >= 25 px (0.25 ha); spatial-coherence "
+                             "heuristic, not a calibrated probability",
+           "built_t0_def": "NDBI>0 and NDVI<0.2 at t0 (proxy)", "aoi_summary": aoi_sum, "wards_ranked": rows[:15],
+           "n_wards_with_data": len(rows)}
+    (paths.REPORTS / f"survey_{aoi}.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    return aoi_sum, wr, props
+
+
+def anchor_check(aoi, mask, built, cleared, ok_px):
+    _, x0, y0, fwd, _ = _geo(aoi)
+    res = {}
+    for k, a in ANCHORS.items():
+        x, y = fwd.transform(a["lon"], a["lat"])
+        c, r = int((x - x0) / 10), int((y0 - y) / 10)
+        if not (0 <= c < M and 0 <= r < M):
+            res[k] = {"status": "outside_aoi", "col_row": [c, r], **a}
+            continue
+        R = a["radius_px"]
+        sl = (slice(max(r - R, 0), r + R), slice(max(c - R, 0), c + R))
+        res[k] = {"status": "not_located_not_flagged",
+                  "visual_note": "Given coords (13.2N 77.7E) fall on Kempegowda airport (no 2023->2025 construction there). "
+                                 "The Boeing campus (~17 ha) could not be identified in the 10 m t0/t1 mosaics with confidence, "
+                                 "so no found/missed claim is made; engine flags 0 ha in this window.",
+                  "col_row": [c, r], "window_ha": round(mask[sl].size * 0.01, 1), "flagged_ha": round(mask[sl].sum() * 0.01, 2),
+                  "built_ha": round(built[sl].sum() * 0.01, 2), "cleared_ha": round(cleared[sl].sum() * 0.01, 2), **a}
+    return res
+
+
+ACRE = 4046.856
+TIERS = ((100, 30), (25, 24), (10, 12), (1, 6), (0.1, 3))   # (min acres, buffer m): KTCDA Act 2025 tiers
+
+
+def lake_buffer_m(area_m2):
+    ac = area_m2 / ACRE
+    return next((b for a, b in TIERS if ac >= a), 0)
+
+
+def fetch_lakes(aoi, cache_path=None):
+    """OSM natural=water polygons for the AOI bbox (cached once). Returns [{name, geom(UTM), area_m2}]."""
+    import time
+    import requests
+    from shapely.geometry import LineString, Polygon
+    from shapely.ops import linemerge, polygonize, transform
+    sc, x0, y0, fwd, inv = _geo(aoi)
+    cache = cache_path or paths.LABELS / f"osm_lakes_{aoi}.json"
+    if not cache.exists() or '"waterway"' not in cache.read_text(encoding="utf-8"):   # refetch if drains missing
+        w, n = inv.transform(x0, y0)
+        e, s_ = inv.transform(x0 + M * 10, y0 - M * 10)
+        bb = f"{s_},{w},{n},{e}"
+        q = (f'[out:json][timeout:180];(way["natural"="water"]({bb});relation["natural"="water"]({bb});'
+             f'way["waterway"~"^(drain|canal|stream|ditch)$"]({bb}););out geom;')
+        for k in range(6):
+            try:
+                r = requests.post(("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")[k % 2],
+                                  data={"data": q}, timeout=240, headers={"User-Agent": "herald-hackathon/0.1"})
+                r.raise_for_status()
+                cache.write_text(json.dumps(r.json()), encoding="utf-8")
+                break
+            except Exception as ex:
+                print("overpass failed:", str(ex)[:80])
+                time.sleep(5 * (k + 1))
+        else:
+            return None
+    lakes, drains = [], []
+    for el in json.loads(cache.read_text(encoding="utf-8"))["elements"]:
+        tg = el.get("tags", {})
+        if tg.get("waterway") in ("drain", "canal", "stream", "ditch") and tg.get("natural") != "water":
+            if len(el.get("geometry", [])) >= 2:
+                drains.append(transform(fwd.transform, LineString([(g["lon"], g["lat"]) for g in el["geometry"]])))
+            continue
+        if tg.get("water") in ("river", "canal", "stream", "stream_pool", "drain", "ditch", "wastewater", "basin", "fountain", "moat"):
+            continue
+        polys = []
+        if el["type"] == "way" and len(el.get("geometry", [])) >= 4:
+            pts = [(g["lon"], g["lat"]) for g in el["geometry"]]
+            if pts[0] == pts[-1]:
+                polys.append(Polygon(pts))
+        elif el["type"] == "relation":   # shortcut: outer rings only, holes ignored
+            lines = [LineString([(g["lon"], g["lat"]) for g in m["geometry"]]) for m in el.get("members", [])
+                     if m.get("role") == "outer" and len(m.get("geometry", [])) >= 2]
+            if lines:
+                polys += list(polygonize(linemerge(lines)))
+        for pg in polys:
+            g = transform(fwd.transform, pg.buffer(0))
+            if not g.is_empty:
+                lakes.append({"name": tg.get("name"), "geom": g, "area_m2": g.area})
+    return lakes, drains
+
+
+def drain_mask(aoi, drains, dist_m=50):
+    """Pixels within dist_m of an OSM drain/canal/stream/ditch line (proximity context only)."""
+    from rasterio import features
+    from rasterio.transform import from_origin
+    from shapely.ops import unary_union
+    _, x0, y0, _, _ = _geo(aoi)
+    if not drains:
+        return np.zeros((M, M), bool)
+    g = unary_union(drains).buffer(dist_m)
+    return features.rasterize([(g, 1)], out_shape=(M, M), transform=from_origin(x0, y0, 10, 10), fill=0, dtype="uint8",
+                              all_touched=True).astype(bool)
+
+
+def buffer_flags(aoi, lakes, changed):
+    """Flag changed px inside the tiered buffer ring (water body excluded). Possible encroachment only."""
+    from rasterio import features
+    from rasterio.transform import from_origin
+    from shapely.geometry import Point
+    _, x0, y0, fwd, inv = _geo(aoi)
+    tr = from_origin(x0, y0, 10, 10)
+    shp, meta = [], []
+    for lk in lakes or []:
+        w = lake_buffer_m(lk["area_m2"])
+        if w:
+            ring = lk["geom"].buffer(w).difference(lk["geom"])
+            if not ring.is_empty:
+                shp.append((ring, len(meta) + 1))
+                meta.append((lk, w))
+    lab = features.rasterize(shp, out_shape=(M, M), transform=tr, fill=0, dtype="int32", all_touched=True) if shp \
+        else np.zeros((M, M), np.int32)
+    flagged = changed & (lab > 0)
+    ys, xs = np.nonzero(flagged)
+    per = {}
+    for y, x in zip(ys, xs):
+        lk, w = meta[lab[y, x] - 1]
+        px, py = x0 + (x + .5) * 10, y0 - (y + .5) * 10
+        d = lk["geom"].distance(Point(px, py))
+        e = per.setdefault(int(lab[y, x]), {"name": lk["name"], "lake_acres": round(lk["area_m2"] / ACRE, 1), "buffer_m": w,
+                                            "px": 0, "dmin": 1e9, "xy": None})
+        e["px"] += 1
+        if d < e["dmin"]:
+            e["dmin"], e["xy"] = d, (px, py)
+    out = []
+    for e in sorted(per.values(), key=lambda e: -e["px"]):
+        lon, lat = inv.transform(*e["xy"])
+        out.append({"label": "possible buffer encroachment - verify on ground", "lake": e["name"], "lake_acres": e["lake_acres"],
+                    "buffer_m": e["buffer_m"], "ha": round(e["px"] * 0.01, 2),
+                    "min_dist_to_water_m": round(e["dmin"]), "lat": round(lat, 5), "lon": round(lon, 5)})
+    return lab > 0, out, {"n_lakes_osm": len(lakes or []), "n_lakes_buffered": len(meta)}
+
+
+STAGES = ("veg", "cleared", "built")
+
+
+def stage_maps(aoi, d, thr):
+    """Per-pixel class at date d: [3,M,M] bool (veg, cleared, built) + valid (SCL clear, not water)."""
+    x, scl = load_aoi(aoi, d)
+    v = ~ndi.binary_dilation(np.isin(scl, INVALID_SCL), iterations=2)
+    i = indices(x)
+    v &= i["mndwi"] <= 0
+    veg = i["ndvi"] >= thr["ndvi1_max"]
+    bu = (i["ndbi"] > 0) & (i["bsi"] < thr["bsi_bare"]) & ~veg
+    return np.stack([veg & v, ~veg & ~bu & v, bu & v]), v
+
+
+def site_ledger(aoi, thr, mask, wr, props, ring, ring_hits, drain, drain_stats, min_px=25, top=200):
+    from datetime import datetime
+    sc, x0, y0, _, inv = _geo(aoi)
+    lab, n = ndi.label(mask, structure=np.ones((3, 3)))
+    idx = np.arange(1, n + 1)
+    size = ndi.sum(mask, lab, idx)
+    keep = idx[size >= min_px]
+    order = [d for d in ("c1", "t1", "c2") if (paths.CHIPS / f"{aoi}_{d}.npy").exists()]
+    order.sort(key=lambda d: sc["dates"][d]["datetime"])
+    frac = {}
+    for d in order:
+        st, v = stage_maps(aoi, d, thr)
+        frac[d] = {"n": ndi.sum(v, lab, keep), **{s_: ndi.sum(st[k], lab, keep) for k, s_ in enumerate(STAGES)}}
+    com = np.array(ndi.center_of_mass(mask, lab, keep)).reshape(-1, 2)
+    ring_n = ndi.sum(ring, lab, keep)
+    drain_n = ndi.sum(drain, lab, keep)
+    rank = {"veg": 0, "cleared": 1, "built": 2}
+    sites = []
+    for j, sid in enumerate(keep):
+        obs, stg = [], {}
+        for d in order:
+            f = frac[d]
+            if f["n"][j] >= 0.5 * size[sid - 1]:
+                st = max(STAGES, key=lambda s_: f[s_][j])
+                stg[d] = st
+                obs.append(st)
+            else:
+                stg[d] = "no_data"
+        if not obs:
+            status, conf = "no_data", 0.0
+        else:
+            conf = sum(o != "veg" for o in obs) / len(obs)
+            if stg.get("t1") == "built":
+                status = "completed"
+            elif any(rank[b] > rank[a] for a, b in zip(obs, obs[1:])):
+                status = "active"
+            elif obs[-1] == "veg":
+                status = "reverted_or_seasonal"
+            elif obs[0] == "cleared" and obs[-1] == "cleared":
+                status = "stalled"
+            else:
+                status = "active" if obs[-1] == "built" else "stalled"
+        first = next((d for d in order if stg[d] not in ("veg", "no_data")), None)
+        cy, cx = com[j]
+        lon, lat = inv.transform(x0 + (cx + .5) * 10, y0 - (cy + .5) * 10)
+        w = int(wr[min(int(round(cy)), M - 1), min(int(round(cx)), M - 1)])
+        last = obs[-1] if obs else None
+        bflag, dflag = bool(ring_n[j] > 0), bool(drain_n[j] > 0)
+        sites.append({"site": int(sid), "ha": round(size[sid - 1] * 0.01, 2), "ward": props[w - 1]["name"] if w else None,
+                      "lat": round(lat, 5), "lon": round(lon, 5), "stage": stg, "first_seen": first, "status": status,
+                      "buffer_flag": bflag, "near_drain": dflag, "latest_stage": last,
+                      "intervene_window": bool(last == "cleared" and (bflag or dflag)), "confidence": round(conf, 2)})
+    # enforcement order: buffer (cleared first) > near-drain (cleared first) > rest; then footprint
+    tier = lambda r: (0 if r["buffer_flag"] and r["intervene_window"] else 1 if r["buffer_flag"] else
+                      2 if r["near_drain"] and r["intervene_window"] else 3 if r["near_drain"] else 4)
+    sites.sort(key=lambda r: (tier(r), -r["ha"]))
+    for k, r in enumerate(sites):
+        r["rank"], r["tier"] = k + 1, tier(r)
+    biggest = sorted(sites, key=lambda r: -r["ha"])[:10]
+    counts = {}
+    for r in sites:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    out = {"aoi": aoi, "min_site_ha": min_px * 0.01, "dates_order": order, "n_sites": len(sites), "status_counts": counts,
+           "n_buffer_flagged_sites": sum(r["buffer_flag"] for r in sites),
+           "n_near_drain_sites": sum(r["near_drain"] for r in sites),
+           "n_intervene_window": sum(r["intervene_window"] for r in sites), "buffer_flags": ring_hits[:30], "drain": drain_stats,
+           "tier_def": "0 buffer-flagged & still cleared, 1 buffer-flagged, 2 near-drain & still cleared, 3 near-drain, 4 other; "
+                       "ranked by tier then footprint; flags are 'possible, verify on ground' (10 m px vs 3-30 m buffers; "
+                       "drain 50 m is proximity context, not an encroachment call)",
+           "largest_sites": biggest,
+           "confidence_def": "share of post-t0 observed dates (c1,t1,c2; clear pixels only) at which the site is not vegetation",
+           "status_def": "completed: built at t1; active: stage advanced across observed dates; stalled: cleared at first "
+                         "observed date and still bare; reverted_or_seasonal: vegetation again at last date",
+           "note": "stages at 10 m from indices (veg NDVI>=0.35; built NDBI>0 & BSI<0.15); c2 is a later, possibly monsoon, scene",
+           "sites": sites[:top]}
+    (paths.REPORTS / f"sites_{aoi}.json").write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+    return out
+
+
 # ---------------------------------------------------------------- driver
 def run_aoi(aoi, kind, cfg, retune=False):
     lab = np.load(paths.LABELS / f"{aoi}.npz")
@@ -279,14 +616,20 @@ def run_aoi(aoi, kind, cfg, retune=False):
             thr, pr = tune_construction(x0, x1, valid, osm, vf >= VALID_FRAC, thr)
             cfg[kind] = thr
             CFG_PATH.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
-            val["tuning"] = "grid on west half (cols<23), chip F1 vs OSM, frozen"
+            val["tuning"] = "grid on west half (cols<23), chip F1 vs OSM, grid limited to a>=0.25 and min_px>=16 (prior: seasonal crop swing), frozen"
         else:
             pr = None
     mask, i0, i1, buf, d = detect(kind, x0, x1, valid, thr, ctx)
     deltas = {"dndvi": d["ndvi"], "dndbi": d["ndbi"], "dmndwi": d["mndwi"], "dbsi": d["bsi"]}
     sev, vf, ok, means = chip_stats(mask, valid, deltas)
     ha = sev * paths.CHIP_HA
-    cmask = chipify(mask & chip_to_px(ok))
+    okpx = chip_to_px(ok)
+    mask = mask & okpx
+    cmask = chipify(mask)
+    if kind == "construction":
+        cleared, built = stages(i1, mask, thr)
+        ha_cl = chipify(cleared).reshape(N, -1).sum(1) * 0.01
+        ha_bu = chipify(built).reshape(N, -1).sum(1) * 0.01
     recs = []
     s1x = {}
     if kind == "sand":
@@ -310,6 +653,9 @@ def run_aoi(aoi, kind, cfg, retune=False):
             if "monsoon" in s1x:
                 mv = np.abs(s1x["monsoon"][i, 0] - s1x["t0"][i, 0])
                 r["monsoon_activity"] = round(float(np.nanmean(mv[bufc[i]])), 3) if bufc[i].any() else None
+        if kind == "construction":
+            r["ha_cleared"], r["ha_built"] = round(float(ha_cl[i]), 3), round(float(ha_bu[i]), 3)
+            r["cropland"] = round(float(wc[i, 3]), 3)
         recs.append(r)
     # validation
     base_sev = np.where(ok, sev, 1.0)
@@ -337,6 +683,30 @@ def run_aoi(aoi, kind, cfg, retune=False):
         ch = np.array([r.get("s1_dvv") is not None for r in recs])
         val["s1_corroboration"] = {"n_tiles_with_changed_px_and_s1": int(ch.sum()),
                                    "note": "reported per tile, not used as a gate"}
+    if kind == "construction":
+        asum, wr, props = survey(aoi, thr, i0, i1, valid, okpx, mask, cleared, built, ha_bu, recs)
+        lakes = fetch_lakes(aoi)
+        if lakes is None:
+            val["buffer_encroachment"] = {"error": "overpass unavailable"}
+            ring, hits, dm, drain_stats = np.zeros((M, M), bool), [], np.zeros((M, M), bool), {}
+        else:
+            lakes, drains = lakes
+            ring, hits, lk_meta = buffer_flags(aoi, lakes, cleared | built)
+            dm = drain_mask(aoi, drains)
+            dnear = (cleared | built) & dm
+            drain_stats = {"n_osm_drain_lines": len(drains), "near_drain_ha": round(float(dnear.sum()) * 0.01, 1),
+                           "dist_m": 50, "note": "proximity context flag only"}
+            val["buffer_encroachment"] = {"rule": "KTCDA 2025 tiers by lake acres: <0.1 none, 0.1-1: 3 m, 1-10: 6 m, 10-25: 12 m, "
+                                          "25-100: 24 m, >100: 30 m; 10 m pixels are coarse vs the buffer", **lk_meta,
+                                          "n_flagged_lakes": len(hits), "flags": hits[:30],
+                                          "buffer_flag_ha": round(sum(h["ha"] for h in hits), 2), "drain": drain_stats}
+        sl = site_ledger(aoi, thr, mask, wr, props, ring & mask, hits, dm & mask, drain_stats)
+        val["sites"] = {k: sl[k] for k in ("n_sites", "status_counts", "n_buffer_flagged_sites", "n_near_drain_sites", "n_intervene_window")}
+        val["anchor_sites"] = anchor_check(aoi, mask, built, cleared, okpx)
+        val["growth_sanity"] = {k: asum[k] for k in ("built_pp_per_yr", "published", "growth_caveat")}
+        crop_amb = sum(r["ha_cleared"] for r in recs if r["valid"] and r["cropland"] >= 0.5 and r["ha_built"] < 0.1)
+        val["crop_ambiguity"] = {"cleared_only_ha_in_cropland_chips": round(crop_amb, 1),
+                                 "note": "cleared-only tiles in WorldCover-cropland-dominant chips (>=50%) may be harvested/fallow fields"}
     ranked = sorted((r for r in recs if r["valid"]), key=lambda r: -r["ha"])
     thr_ha = 1.0
     summary = {"kind": kind, "thresholds": thr, "total_changed_ha": round(float(ha.sum()), 2),
@@ -363,7 +733,7 @@ def main(argv):
     a = ap.parse_args(argv)
     cfg = json.loads(CFG_PATH.read_text(encoding="utf-8")) if CFG_PATH.exists() else json.loads(json.dumps(DEFAULTS))
     for k, v in DEFAULTS.items():
-        cfg.setdefault(k, v)
+        cfg[k] = {**v, **cfg.get(k, {})}
     aois = json.loads((paths.CONFIG / "aois.json").read_text(encoding="utf-8"))["aois"]
     for ao in sorted(aois, key=lambda x: x["kind"] != "construction"):   # blr first: tunes thresholds
         if a.aoi and ao["id"] != a.aoi:

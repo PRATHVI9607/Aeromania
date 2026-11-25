@@ -1,0 +1,338 @@
+{
+ "aoi": "blr",
+ "dates": [
+  "2023-02-07T05:25:17.869000+00:00",
+  "2025-02-06T05:25:21.203000+00:00"
+ ],
+ "rupees_per_ha_A": 84000,
+ "rupees_source": "A: recoverable property tax per ha of newly detected built-up = Rs 14,000/property/yr (GBA finance-panel estimate Rs 700-1,000 cr/yr from ~5 lakh unassessed properties, low end) x 25 properties/ha (assumption, plotted layouts) x 0.24 share unassessed (5 of ~20.5 lakh). Sources: newsfirstprime.com (BBMP unassessed properties), deccanherald.com (BBMP FY24-25 Rs 4,930 cr). C: placeholder enforcement value per ha, to be re-derived in M8.",
+ "rupees_note": "assumption; expected = new_built_ha x rupees_per_ha x confidence",
+ "confidence_def": "share of ward new-built px in connected components >= 25 px (0.25 ha); spatial-coherence heuristic, not a calibrated probability",
+ "built_t0_def": "NDBI>0 and NDVI<0.2 at t0 (proxy)",
+ "aoi_summary": {
+  "years": 1.999,
+  "new_built_ha": 262.6,
+  "cleared_ha": 1870.8,
+  "new_built_ha_per_yr": 131.4,
+  "built_frac_t0": 0.1803,
+  "built_frac_t1": 0.2088,
+  "built_pp_per_yr": 1.426,
+  "published": {
+   "pp_per_yr": 0.5,
+   "src": "Landsat study of Bengaluru agglomeration: built-up 12.6% (2000) -> 22.8% (2020)"
+  },
+  "growth_caveat": "Built proxy is NDBI>0 & NDVI<0.2 at 10 m (includes bare/fallow soil); extent is a 30 km peri-urban box, not the agglomeration; published figure is a 20-year Landsat average. Order-of-magnitude sanity only."
+ },
+ "wards_ranked": [
+  {
+   "ward_id": "peri",
+   "ward": "Outside BBMP (peri-urban)",
+   "valid_ha": 72769.4,
+   "built_t0_ha": 11536.2,
+   "new_built_ha": 212.96,
+   "cleared_ha": 1698.48,
+   "growth_pct": 1.85,
+   "ha_per_yr": 106.55,
+   "confidence": 0.328,
+   "rupees_expected": 5860680,
+   "hotspot": [
+    13.17764,
+    77.61688
+   ],
+   "top_tiles": [
+    1059,
+    22,
+    2061
+   ]
+  },
+  {
+   "ward_id": "81",
+   "ward": "Horamavu",
+   "valid_ha": 990.1,
+   "built_t0_ha": 238.1,
+   "new_built_ha": 8.21,
+   "cleared_ha": 15.4,
+   "growth_pct": 3.45,
+   "ha_per_yr": 4.11,
+   "confidence": 0.403,
+   "rupees_expected": 278040,
+   "hotspot": [
+    13.0542,
+    77.65818
+   ],
+   "top_tiles": [
+    2100,
+    2053,
+    1916
+   ]
+  },
+  {
+   "ward_id": "83",
+   "ward": "Kalkere",
+   "valid_ha": 259.9,
+   "built_t0_ha": 77.6,
+   "new_built_ha": 5.15,
+   "cleared_ha": 4.78,
+   "growth_pct": 6.64,
+   "ha_per_yr": 2.58,
+   "confidence": 0.379,
+   "rupees_expected": 163800,
+   "hotspot": [
+    13.04691,
+    77.6742
+   ],
+   "top_tiles": [
+    2056,
+    2057,
+    2011
+   ]
+  },
+  {
+   "ward_id": "6",
+   "ward": "Kogilu",
+   "valid_ha": 1627.8,
+   "built_t0_ha": 457.2,
+   "new_built_ha": 5.65,
+   "cleared_ha": 21.36,
+   "growth_pct": 1.24,
+   "ha_per_yr": 2.83,
+   "confidence": 0.287,
+   "rupees_expected": 136080,
+   "hotspot": [
+    13.10351,
+    77.62449
+   ],
+   "top_tiles": [
+    1541,
+    1724,
+    1585
+   ]
+  },
+  {
+   "ward_id": "15",
+   "ward": "Kuvempunagar",
+   "valid_ha": 736.3,
+   "built_t0_ha": 137.3,
+   "new_built_ha": 1.84,
+   "cleared_ha": 4.23,
+   "growth_pct": 1.34,
+   "ha_per_yr": 0.92,
+   "confidence": 0.543,
+   "rupees_expected": 84000,
+   "hotspot": [
+    13.08048,
+    77.53597
+   ],
+   "top_tiles": [
+    1802,
+    1850,
+    1757
+   ]
+  },
+  {
+   "ward_id": "1",
+   "ward": "Kempegowda Ward",
+   "valid_ha": 1137.5,
+   "built_t0_ha": 335.6,
+   "new_built_ha": 3.64,
+   "cleared_ha": 16.62,
+   "growth_pct": 1.08,
+   "ha_per_yr": 1.82,
+   "confidence": 0.264,
+   "rupees_expected": 80640,
+   "hotspot": [
+    13.10578,
+    77.6011
+   ],
+   "top_tiles": [
+    1630,
+    1583,
+    1539
+   ]
+  },
+  {
+   "ward_id": "16",
+   "ward": "Kammagondanahalli",
+   "valid_ha": 435.2,
+   "built_t0_ha": 146.3,
+   "new_built_ha": 2.84,
+   "cleared_ha": 25.53,
+   "growth_pct": 1.94,
+   "ha_per_yr": 1.42,
+   "confidence": 0.303,
+   "rupees_expected": 72240,
+   "hotspot": [
+    13.08704,
+    77.52697
+   ],
+   "top_tiles": [
+    1756,
+    1755,
+    1709
+   ]
+  },
+  {
+   "ward_id": "12",
+   "ward": "Kodigehalli",
+   "valid_ha": 243.7,
+   "built_t0_ha": 112.7,
+   "new_built_ha": 1.05,
+   "cleared_ha": 0.69,
+   "growth_pct": 0.93,
+   "ha_per_yr": 0.53,
+   "confidence": 0.676,
+   "rupees_expected": 59640,
+   "hotspot": [
+    13.06084,
+    77.5687
+   ],
+   "top_tiles": [
+    1946,
+    1947
+   ]
+  },
+  {
+   "ward_id": "10",
+   "ward": "Kempapura",
+   "valid_ha": 583.3,
+   "built_t0_ha": 159.4,
+   "new_built_ha": 2.48,
+   "cleared_ha": 7.19,
+   "growth_pct": 1.56,
+   "ha_per_yr": 1.24,
+   "confidence": 0.262,
+   "rupees_expected": 54600,
+   "hotspot": [
+    13.04695,
+    77.59717
+   ],
+   "top_tiles": [
+    2090,
+    2042,
+    1995
+   ]
+  },
+  {
+   "ward_id": "3",
+   "ward": "Someshwara Ward",
+   "valid_ha": 386.8,
+   "built_t0_ha": 101.6,
+   "new_built_ha": 1.37,
+   "cleared_ha": 4.17,
+   "growth_pct": 1.35,
+   "ha_per_yr": 0.69,
+   "confidence": 0.46,
+   "rupees_expected": 52920,
+   "hotspot": [
+    13.10401,
+    77.57205
+   ],
+   "top_tiles": [
+    1533,
+    1671,
+    1578
+   ]
+  },
+  {
+   "ward_id": "4",
+   "ward": "Atturu Layout",
+   "valid_ha": 514.8,
+   "built_t0_ha": 182.1,
+   "new_built_ha": 2.37,
+   "cleared_ha": 13.19,
+   "growth_pct": 1.3,
+   "ha_per_yr": 1.19,
+   "confidence": 0.219,
+   "rupees_expected": 43680,
+   "hotspot": [
+    13.09777,
+    77.5528
+   ],
+   "top_tiles": [
+    1623,
+    1668,
+    1667
+   ]
+  },
+  {
+   "ward_id": "8",
+   "ward": "Jakkuru",
+   "valid_ha": 1159.5,
+   "built_t0_ha": 347.8,
+   "new_built_ha": 2.95,
+   "cleared_ha": 7.24,
+   "growth_pct": 0.85,
+   "ha_per_yr": 1.48,
+   "confidence": 0.166,
+   "rupees_expected": 41160,
+   "hotspot": [
+    13.08117,
+    77.61244
+   ],
+   "top_tiles": [
+    1677,
+    1818,
+    1955
+   ]
+  },
+  {
+   "ward_id": "9",
+   "ward": "Amrutahalli",
+   "valid_ha": 395.3,
+   "built_t0_ha": 172.1,
+   "new_built_ha": 0.51,
+   "cleared_ha": 0.21,
+   "growth_pct": 0.3,
+   "ha_per_yr": 0.26,
+   "confidence": 0.961,
+   "rupees_expected": 41160,
+   "hotspot": [
+    13.05002,
+    77.61494
+   ],
+   "top_tiles": [
+    2046
+   ]
+  },
+  {
+   "ward_id": "94",
+   "ward": "Hennur",
+   "valid_ha": 85.7,
+   "built_t0_ha": 40.3,
+   "new_built_ha": 0.62,
+   "cleared_ha": 2.46,
+   "growth_pct": 1.54,
+   "ha_per_yr": 0.31,
+   "confidence": 0.742,
+   "rupees_expected": 38640,
+   "hotspot": [
+    13.04138,
+    77.63482
+   ],
+   "top_tiles": [
+    2093,
+    2096
+   ]
+  },
+  {
+   "ward_id": "5",
+   "ward": "Yelahanka Satellite Town",
+   "valid_ha": 404.8,
+   "built_t0_ha": 98.8,
+   "new_built_ha": 0.6,
+   "cleared_ha": 0.49,
+   "growth_pct": 0.61,
+   "ha_per_yr": 0.3,
+   "confidence": 0.733,
+   "rupees_expected": 36960,
+   "hotspot": [
+    13.0887,
+    77.59021
+   ],
+   "top_tiles": [
+    1720
+   ]
+  }
+ ],
+ "n_wards_with_data": 35
+}
