@@ -794,7 +794,7 @@
    "growth_per_road_km": 0.18
   }
  ],
- "drain_road_sites": 9,
- "drain_road_sites_note": "near_drain sites within 100 m of an OSM motorway-secondary road, among the 200 ranked sites listed in sites file (not all changed sites)",
+ "drain_road_sites": 13,
+ "drain_road_sites_note": "near_drain sites within 100 m of an OSM motorway-secondary road, among the 598 ranked sites listed in sites file (not all changed sites)",
  "roads_note": "Planning indicator, not traffic measurement: construction growth per km of mapped major road (OSM, incomplete). High values = growth outrunning road capacity."
 }

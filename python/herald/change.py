@@ -289,7 +289,7 @@ def find_pits(w0, w1, cor, valid, thr, ring_bare=None):
         rect = rectness(r.coords)
         if rect < thr["rect_min"]:
             continue
-        sl = tuple(slice(max(a - 2, 0), b + 2) for a, b in zip(r.bbox[:2], r.bbox[2:]))
+        sl = tuple(slice(max(a - 2, 0), b + 2) for a, b in zip(r.bbox[:2], r.bbox[2:], strict=True))
         mk = lab[sl] == r.label
         a0 = int((w0[sl] & ndi.binary_dilation(mk, iterations=2)).sum())
         old = float(w0[sl][mk].mean())
@@ -317,7 +317,9 @@ def sand_detect(x0, x1, i0, i1, d, valid, thr, occ):
     lab, pits = find_pits(w0, w1, cor, valid, thr, bare)
     pitm = np.isin(lab, [p["label"] for p in pits]) if pits else np.zeros(lab.shape, bool)
     moist = ndi.binary_dilation(w0, iterations=thr["moist_px"])
-    sd = lambda x: np.sqrt(np.maximum(ndi.uniform_filter(x * x, 5) - ndi.uniform_filter(x, 5) ** 2, 0))
+    def sd(x):
+        return np.sqrt(np.maximum(ndi.uniform_filter(x * x, 5) - ndi.uniform_filter(x, 5) ** 2, 0))
+
     dtex = sd(x1[2]) - sd(x0[2])
     dist = (cor & ~w0 & ~w1 & ~moist & (i1["bsi"] > thr["bsi_bar"]) & (d["bsi"] > thr["c_dbsi"]) & (dtex > thr["d_tex"]))
     dist = remove_small(dist & valid, thr["dist_min_px"]) & ~pitm
@@ -427,7 +429,9 @@ def qa_grid(aoi, kind, recs, x0c, x1c, maskc, lo, hi, top=12):
     fig, axs = plt.subplots(rows, 6, figsize=(12, 2.1 * rows), squeeze=False)
     for ax in axs.ravel():
         ax.axis("off")
-    rgb = lambda x: np.clip((x[[2, 1, 0]] - lo[:, None, None]) / (hi - lo)[:, None, None], 0, 1).transpose(1, 2, 0) ** (1 / 1.6)
+    def rgb(x):
+        return np.clip((x[[2, 1, 0]] - lo[:, None, None]) / (hi - lo)[:, None, None], 0, 1).transpose(1, 2, 0) ** (1 / 1.6)
+
     for k, r in enumerate(sel):
         i, row, c0 = r["i"], k // 2, (k % 2) * 3
         for j, (img, t) in enumerate(((rgb(x0c[i] / 1e4), "t0"), (rgb(x1c[i] / 1e4), "t1"), (maskc[i], f"#{i} {r['ha']:.1f} ha"))):
@@ -547,14 +551,14 @@ def ward_road_km(geoms, roads):
 def add_roads(aoi, out):
     """Add road fields to out['wards_all'] and out['wards_ranked'] rows, plus growth_outrunning_roads and drain_road_sites."""
     from shapely.geometry import Point
-    from shapely.ops import transform, unary_union
+    from shapely.ops import unary_union
     roads = fetch_roads(aoi)
     if roads is None:
         return out
     _, _, _, fwd, _ = _geo(aoi)
     geoms, props, aoi_box = _ward_geoms(aoi)
     peri = aoi_box.difference(unary_union([g.buffer(0) for g in geoms]))
-    km = dict(zip([p["name"] for p in props] + ["Outside BBMP (peri-urban)"], ward_road_km([g.buffer(0) for g in geoms] + [peri], roads)))
+    km = dict(zip([p["name"] for p in props] + ["Outside BBMP (peri-urban)"], ward_road_km([g.buffer(0) for g in geoms] + [peri], roads), strict=True))
     for r in out["wards_all"]:
         km_major, km_all = km.get(r["ward"], (0.0, 0.0))
         r.update(road_km_major=round(km_major, 1), road_km_all=round(km_all, 1),
@@ -592,7 +596,9 @@ def survey(aoi, thr, i0, i1, valid, ok_px, mask, cleared, built, wr, props, cats
     b0 = (i0["ndbi"] > 0) & (i0["ndvi"] < 0.2) & ok
     b1 = (i1["ndbi"] > 0) & (i1["ndvi"] < 0.2) & ok
     coherent = remove_small(built, 25)
-    cnt = lambda a: np.bincount(wr[a], minlength=K)
+    def cnt(a):
+        return np.bincount(wr[a], minlength=K)
+
     n_b0, n_new, n_clr, n_coh, n_val = cnt(b0), cnt(built), cnt(cleared), cnt(coherent & built), cnt(ok)
     n_lay, n_bld = cnt(cats["new_layout"]), cnt(cats["building_construction"])
     ys, xs = np.indices((M, M))
@@ -737,7 +743,7 @@ def buffer_flags(aoi, lakes, changed):
     flagged = changed & (lab > 0)
     ys, xs = np.nonzero(flagged)
     per = {}
-    for y, x in zip(ys, xs):
+    for y, x in zip(ys, xs, strict=True):
         lk, w = meta[lab[y, x] - 1]
         px, py = x0 + (x + .5) * 10, y0 - (y + .5) * 10
         d = lk["geom"].distance(Point(px, py))
@@ -790,7 +796,7 @@ def lake_water_check(aoi, lakes, i0, i1, ok, thr, rain_note, road):
     from rasterio import features
     from rasterio.transform import from_origin
     _, x0, y0, _, inv = _geo(aoi)
-    lab = features.rasterize([(l["geom"], k + 1) for k, l in enumerate(lakes)], out_shape=(M, M),
+    lab = features.rasterize([(lk["geom"], k + 1) for k, lk in enumerate(lakes)], out_shape=(M, M),
                              transform=from_origin(x0, y0, 10, 10), fill=0, dtype="int32")
     K = len(lakes) + 1
     w0, w1 = (i0["mndwi"] > 0) & ok, (i1["mndwi"] > 0) & ok
@@ -798,7 +804,9 @@ def lake_water_check(aoi, lakes, i0, i1, ok, thr, rain_note, road):
     veg = i1["ndvi"] >= thr["ndvi1_max"]
     built = (i1["ndbi"] > 0) & (i1["bsi"] < thr["bsi_bare"]) & ~veg
     bare = ~veg & ~built
-    cnt = lambda m: np.bincount(lab[m], minlength=K) * 0.01
+    def cnt(m):
+        return np.bincount(lab[m], minlength=K) * 0.01
+
     ys, xs = np.indices((M, M))
     nb = lost & (bare | built)
     nline = np.bincount(lab[nb & road], minlength=K)
@@ -823,9 +831,11 @@ RAIN_NOTE = ("Both dates are February (dry season) but rainfall differs between 
              "so a lead is not proof of filling. Verify on ground.")
 
 
+CONSTR = ("new_layout", "building_construction")
+
+
 def site_ledger(aoi, thr, mask, cleared, built, road_all, o1, wr, props, wc, ring, ring_hits, drain, drain_stats,
-                lake_leads, min_px=20, top=200):
-    from datetime import datetime
+                lake_leads, min_px=20, top=100):
     sc, gx, gy, _, inv = _geo(aoi)
     lab, n = ndi.label(mask, structure=np.ones((3, 3)))
     idx = np.arange(1, n + 1)
@@ -870,9 +880,13 @@ def site_ledger(aoi, thr, mask, cleared, built, road_all, o1, wr, props, wc, rin
     for k in cats:
         cats[k] = (cat_of[lab] == CATS.index(k) + 1) & mask
     # ranked lead list: lakes first, then buffer-flagged sites, then new_layout, building, agri
-    tier = lambda r: 1 if r["buffer_flag"] else {"new_layout": 2, "building_construction": 2}.get(r["category"], 4)
-    leads = [{"category": "lake_filling_lead", "tier": 0, "ha": round(l["lost_to_bare_ha"] + l["lost_to_built_ha"], 2),
-              "ward": None, "buffer_flag": False, **l} for l in lake_leads if l["lake_filling_lead"]]
+    def tier(r):
+        if r["buffer_flag"] and r["category"] in CONSTR:
+            return 1
+        return {"new_layout": 2, "building_construction": 2}.get(r["category"], 4)
+
+    leads = [{"category": "lake_filling_lead", "tier": 0, "ha": round(lk["lost_to_bare_ha"] + lk["lost_to_built_ha"], 2),
+              "ward": None, "buffer_flag": False, **lk} for lk in lake_leads if lk["lake_filling_lead"]]
     for r in sites:
         r["tier"] = tier(r)
     sites.sort(key=lambda r: (tier(r), -r["ha"]))
@@ -885,18 +899,22 @@ def site_ledger(aoi, thr, mask, cleared, built, road_all, o1, wr, props, wc, rin
         c["n"] += 1
         c["ha"] = round(c["ha"] + r["ha"], 2)
     out = {"aoi": aoi, "min_site_ha": min_px * 0.01, "n_sites": len(sites), "category_counts": cnt,
-           "n_buffer_flagged_sites": sum(r["buffer_flag"] for r in sites), "n_near_drain_sites": sum(r["near_drain"] for r in sites),
+           "n_buffer_flagged_sites": sum(r["buffer_flag"] for r in sites if r["category"] in CONSTR),
+           "n_near_drain_sites": sum(r["near_drain"] for r in sites if r["category"] in CONSTR),
+           "n_buffer_flagged_sites_all_categories": sum(r["buffer_flag"] for r in sites),
+           "n_near_drain_sites_all_categories": sum(r["near_drain"] for r in sites),
            "buffer_flags": ring_hits[:30], "drain": drain_stats,
            "category_def": {"new_layout": "changed site with >= %d new thin-bright-line px, density >= %s of site px and >= 2 orientations "
                             "(each >= %s of line px)" % (thr["layout_min_road_px"], thr["layout_density"], thr["layout_orient_share"]),
                             "building_construction": "not a layout; built-stage px (NDBI>0, BSI<0.15) >= %s of site" % thr["building_frac"],
                             "lake_filling_lead": "OSM lake water lost at t0->t1 and replaced by bare/built >= 0.2 ha (see caveat)",
                             "agri_ambiguous": "cleared, no road grid: possibly harvested/fallow field or other earthwork"},
-           "tier_def": "0 lake_filling_lead, 1 buffer-flagged site, 2 new_layout, 3 building_construction, 4 agri_ambiguous; ha desc "
+           "tier_def": "0 lake_filling_lead, 1 buffer-flagged new_layout or building_construction site, 2 other new_layout or "
+                       "building_construction (shared tier), 4 agri_ambiguous (buffer-flagged or not); ha desc "
                        "within tier. Buffer/drain flags are 'possible, verify on ground'.",
            "confidence_def": "per-category precision from reports/audit_blr.json (reviewer visual audit, not field-verified); null if no audit",
            "stage_info_note": "stage at c1/t1/c2 is informational only; c1 is often cloud/no_data and c2 is a 2026 monsoon scene",
-           "rainfall_caveat": RAIN_NOTE, "sites": ranked[:top]}
+           "rainfall_caveat": RAIN_NOTE, "sites": [r for r in ranked if r["category"] != "agri_ambiguous"] + [r for r in ranked if r["category"] == "agri_ambiguous"][:top]}
     return out, cats, ranked
 
 
@@ -974,7 +992,7 @@ def run_aoi(aoi, kind, cfg, retune=False):
         from rasterio import features
         from rasterio.transform import from_origin
         _, gx, gy, _, _ = _geo(aoi)
-        ctx["exclude"] = features.rasterize([(l["geom"], 1) for l in lakes], out_shape=(M, M),
+        ctx["exclude"] = features.rasterize([(lk["geom"], 1) for lk in lakes], out_shape=(M, M),
                                             transform=from_origin(gx, gy, 10, 10), fill=0, dtype="uint8").astype(bool) if lakes \
             else None
         ctx["wet_chip"] = chip_to_px(wc[:, WC_IDX[80]] + wc[:, 8] >= thr["wet_chip"])
@@ -982,12 +1000,10 @@ def run_aoi(aoi, kind, cfg, retune=False):
         vf = chipify(valid).reshape(N, -1).mean(1)
         osm = lab["osm_constr"]
         if retune or not thr.get("tuned"):
-            thr, pr = tune_construction(x0, x1, valid, osm, vf >= VALID_FRAC, thr)
+            thr, _ = tune_construction(x0, x1, valid, osm, vf >= VALID_FRAC, thr)
             cfg[kind] = thr
             CFG_PATH.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
             val["tuning"] = "grid on west half (cols<23), chip F1 vs OSM, grid limited to a>=0.25 and min_px>=16 (prior: seasonal crop swing), frozen"
-        else:
-            pr = None
     mask, i0, i1, buf, d = detect(kind, x0, x1, valid, thr, ctx)
     deltas = {"dndvi": d["ndvi"], "dndbi": d["ndbi"], "dmndwi": d["mndwi"], "dbsi": d["bsi"]}
     sev, vf, ok, means = chip_stats(mask, valid, deltas)
@@ -1012,7 +1028,6 @@ def run_aoi(aoi, kind, cfg, retune=False):
     if kind == "sand":
         sx = ctx["_sand"]
         pitc, distc = chipify(sx["pit"]), chipify(sx["dist"])
-        pit_lab = chipify(sx["pit_lab"])
         n_pit = np.zeros(N, int)
         n_new = np.zeros(N, int)
         pit_ha = np.zeros(N)
@@ -1130,8 +1145,6 @@ def run_aoi(aoi, kind, cfg, retune=False):
                "n_tiles_changed": int(((ha > 0) & ok).sum()), "n_tiles_over_1ha": int((ha >= thr_ha).sum()),
                "n_invalid_tiles": int((~ok).sum()), "top20": ranked[:20]}
     # captures: each capture vs t0, same frozen rules + validity gate (compact records for the sim)
-    slim = lambda i, kk, sv, v, vfr: {"i": i, "kind": kind, "sev": round(float(sv), 5), "ha": round(float(sv) * paths.CHIP_HA, 3),
-                                      "valid": bool(v), "valid_frac": round(float(vfr), 3)}
     captures = {"t1": [{k: r[k] for k in ("i", "kind", "sev", "ha", "valid", "valid_frac")} for r in recs]}
     for dname in ("c1", "c2"):
         if not (paths.CHIPS / f"{aoi}_{dname}.npy").exists():
@@ -1140,12 +1153,24 @@ def run_aoi(aoi, kind, cfg, retune=False):
         vd = valid_mask(s0, sd)
         md = detect(kind, x0, xd, vd, thr, ctx)[0]
         sv, vfr, okd, _ = chip_stats(md, vd, {})
-        captures[dname] = [slim(i, None, sv[i], okd[i], vfr[i]) for i in range(N)]
+        # captures_rule: c1/c2 can differ in season from t0 (c1 is pre-monsoon leaf-off, c2 a 2026 scene), so a lone t0->c change is
+        # mostly phenology. A capture's change is confirmed only where the seasonally matched t0->t1 pair also changed:
+        # per tile sev = min(sev_c, sev_t1), ha likewise, kind = the t1 kind (none where t1 has no change).
+        t1r = {r["i"]: r for r in recs}
+        cap = []
+        for i in range(N):
+            sev_c = min(float(sv[i]), t1r[i]["sev"])
+            cap.append({"i": i, "kind": t1r[i]["kind"] if sev_c > 0 else "none", "sev": round(sev_c, 5),
+                        "ha": round(min(float(sv[i]) * paths.CHIP_HA, t1r[i]["ha"]), 3),
+                        "valid": bool(okd[i]), "valid_frac": round(float(vfr[i]), 3)})
+        captures[dname] = cap
         del xd, sd, vd, md
     captures = {k: captures[k] for k in ("c1", "t1", "c2") if k in captures}
     out = {"aoi": aoi, "pair": ["t0", "t1"], "tiles": recs, "captures": captures,
            "captures_note": "each capture vs t0, same frozen rules and valid_frac>=0.85 gate; c1/c2 can differ in season from t0 "
-                            "(c2 is a 2026 scene), so their sev includes seasonal change",
+                            "(c2 is a 2026 scene), so their raw sev includes seasonal change; see captures_rule",
+           "captures_rule": "c1/c2 change is confirmed only where the seasonally matched t0->t1 pair also changed: per tile "
+                            "sev=min(sev_c,sev_t1), ha=min(ha_c,ha_t1), kind=t1 kind (none where t1 has no change)",
            "summary": summary, "validation": val}
     paths.ensure(paths.REPORTS)
     (paths.REPORTS / f"change_{aoi}.json").write_text(json.dumps(out), encoding="utf-8")
