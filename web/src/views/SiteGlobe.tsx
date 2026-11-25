@@ -26,7 +26,7 @@ export default function SiteGlobe({ bbox, imgUrl, lat, lon }: { bbox: number[]; 
       layer.current = v.imageryLayers.addImageryProvider(p);
     });
     pt.current.position = Cartesian3.fromDegrees(lon, lat, 0);
-    const pad = Math.max(e - w, n - s) * 1.5;
+    const pad = Math.max(e - w, n - s) * 0.4;
     v.camera.flyTo({ destination: Rectangle.fromDegrees(w - pad, s - pad, e + pad, n + pad), duration: reduced() ? 0 : 2.4, easingFunction: EasingFunction.CUBIC_IN_OUT });
     return () => { gone = true; };
   }, [bbox.join(","), imgUrl]); // eslint-disable-line

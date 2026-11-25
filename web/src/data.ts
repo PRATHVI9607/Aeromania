@@ -5,7 +5,12 @@ export interface Data {
   params: Params; meta: Record<string, ParamMeta>; results: any | null; reports: Record<string, any>; sample: string[]; synthetic: boolean;
 }
 
-async function get(path: string): Promise<any | null> {
+const cache = new Map<string, Promise<any | null>>();
+/** one fetch per file for the whole session, shared by loadData, useJson and the views */
+function get(path: string): Promise<any | null> {
+  let p = cache.get(path); if (!p) { p = fetchOnce(path); cache.set(path, p); } return p;
+}
+async function fetchOnce(path: string): Promise<any | null> {
   try {
     const r = await fetch(`/data/${path}`);
     if (!r.ok || (r.headers.get("content-type") ?? "").includes("html")) return null;

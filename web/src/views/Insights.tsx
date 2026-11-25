@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { ViewProps } from "./props";
 import { Rupee } from "../Assume";
 import { inr, ha as fha } from "../fmt";
@@ -26,6 +26,8 @@ export function Insights({ data }: ViewProps) {
   const [show, setShow] = useState<Record<string, boolean>>({ new_construction: true, agri_ambiguous: false, lake_filling_lead: false });
   const [sel, setSel] = useState<Site | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // warm the before/after crops (both are crops of these two mosaics) after first paint
+  useEffect(() => { const id = setTimeout(() => (["blr_t0.jpg", "blr_t1.jpg"].forEach((f) => { new Image().src = `/data/img/${f}`; })), 400); return () => clearTimeout(id); }, []);
   const [d3, setD3] = useState(false);
   const [onlyFlag, setOnlyFlag] = useState(false);
 
@@ -91,7 +93,7 @@ export function Insights({ data }: ViewProps) {
           {d3 && rect ? <div className="mosaic"><Suspense fallback={<Skeleton rows={4} label="loading 3D" />}><Ledger3D items={items3} rect={rect} imgUrl="/data/img/blr_t1.jpg" selRank={sel?.rank ?? null} onPick={(r) => { const x = list.find((y) => y.rank === r); if (x) pick(x); }} /></Suspense><span className="hint">column height = changed ha</span></div> :
           <div className="mosaic">
             <div className="zoomer" style={{ transform: `translate(${view.x * 100}%, ${view.y * 100}%) scale(${view.k})` }}>
-              <img src="/data/img/blr_t1.jpg" alt="Bengaluru north mosaic at t1" />
+              <img src="/data/img/blr_t1.jpg" alt="Bengaluru north mosaic at t1" width={MS} height={MS} decoding="async" />
               {geo && <svg viewBox={`0 0 ${MS} ${MS}`}>
                 {list.map((s) => { const [fx, fy] = geo(s.lat, s.lon); const on = sel === s; const k = view.k;
                   return <g key={s.rank} className="mk" tabIndex={0} role="button" aria-label={`lead rank ${s.rank}, ${s.ha} ha`} onClick={() => pick(s)} onKeyDown={(e) => e.key === "Enter" && pick(s)}>

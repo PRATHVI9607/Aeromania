@@ -24,6 +24,8 @@ export function App() {
 
 function Shell({ data }: { data: Data }) {
   const [tab, setTab] = useState(0);
+  const [seen0, setSeen0] = useState(true); // Mission stays mounted once opened: one Cesium viewer, paused while hidden
+  useEffect(() => { if (tab === 0) setSeen0(true); }, [tab]);
   const [queries, setQueries] = useState<Query[]>(data.queries);
   const [rho, setRho] = useState(5);
   const { out, ms, runs } = useSched(data.tiles, data.wins, data.params, queries, rho);
@@ -55,8 +57,8 @@ function Shell({ data }: { data: Data }) {
       </nav>
       <main id="panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <Suspense fallback={<Skeleton rows={5} label="loading globe" />}>
-          <div className="view" key={tab}>
-          {tab === 0 && <Mission {...common} />}
+          {seen0 && <div className="view" style={tab === 0 ? undefined : { display: "none" }}><Mission {...common} active={tab === 0} /></div>}
+          {tab !== 0 && <div className="view" key={tab}>
           {tab === 1 && <Fifo {...common} setRho={setRho} />}
           {tab === 2 && <Insights {...common} />}
           {tab === 3 && <Siting {...common} />}
@@ -65,9 +67,10 @@ function Shell({ data }: { data: Data }) {
           {tab === 6 && <Economics data={data} />}
           {tab === 7 && <Hardware data={data} />}
           {tab === 8 && <About data={data} ms={ms} runs={runs} />}
-          </div>
+          </div>}
         </Suspense>
       </main>
+      <footer className="attr">Contains modified Copernicus Sentinel data 2023-2026 · © OpenStreetMap contributors (ODbL) · ESA WorldCover · JRC Global Surface Water · NASA POWER · Copernicus DEM · Natural Earth (globe imagery)</footer>
     </div>
   );
 }

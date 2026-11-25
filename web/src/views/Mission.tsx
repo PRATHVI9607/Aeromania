@@ -31,7 +31,8 @@ function interp(track: ViewProps["data"]["track"], t: number): [number, number] 
   return [a.lat + (b.lat - a.lat) * f, a.lon + dl * f];
 }
 
-export default function Mission({ data, out }: ViewProps) {
+export default function Mission({ data, out, active: shown }: ViewProps & { active: boolean }) {
+  const shownRef = useRef(shown); shownRef.current = shown;
   const box = useRef<HTMLDivElement>(null);
   const viewer = useRef<Viewer | null>(null);
   const scene = useRef<any>({});
@@ -63,6 +64,7 @@ export default function Mission({ data, out }: ViewProps) {
       navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, requestRenderMode: true,
       maximumRenderTimeChange: Infinity, shouldAnimate: false, skyBox: false, skyAtmosphere: false, creditContainer: document.createElement("div"),
     });
+    v.useBrowserRecommendedResolution = false; v.resolutionScale = Math.min(window.devicePixelRatio || 1, 2); v.scene.postProcessStages.fxaa.enabled = true;
     v.scene.globe.enableLighting = true; v.scene.globe.showWaterEffect = false; v.scene.globe.showGroundAtmosphere = true;
     const sky = new SkyAtmosphere(); sky.brightnessShift = -0.25; v.scene.skyAtmosphere = sky;
     // stars: offline point field instead of the SkyBox image set
@@ -112,6 +114,8 @@ export default function Mission({ data, out }: ViewProps) {
   }, [data.track, data.stations, aois, t0]);
 
   const bytesRef = useRef<{ b: number[]; max: number }>({ b: [], max: 1 });
+  // hidden tab: stop Cesium's render loop entirely, resume when shown
+  useEffect(() => { const v = viewer.current; if (v && !v.isDestroyed()) { v.useDefaultRenderLoop = shown; if (shown) v.scene.requestRender(); } }, [shown]);
   const wRef = useRef(wins); wRef.current = wins;
   const stRef = useRef(data.stations); stRef.current = data.stations;
   useEffect(() => {
@@ -121,7 +125,7 @@ export default function Mission({ data, out }: ViewProps) {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
       const S = scene.current, v = viewer.current;
-      if (!S.sat || !v) return;
+      if (!S.sat || !v || !shownRef.current) return;
       if (play) tRef.current = (tRef.current + (dt * SPEEDS[speed]) / 60) % tEnd;
       const tt = tRef.current;
       const [lat, lon] = interp(data.track, tt);
@@ -165,7 +169,7 @@ export default function Mission({ data, out }: ViewProps) {
         cl = (cl + dl * Math.min(1, dt * 3) + 540) % 360 - 180; cb += (Math.max(-55, Math.min(55, lat * 0.8)) - cb) * Math.min(1, dt * 3);
         v.camera.setView({ destination: P(cl, cb, 1.6e7) });
       } else { cl = lon; cb = lat * 0.8; }
-      v.scene.requestRender();
+      if (play || (followRef.current && S.rd.intro) || on.size) v.scene.requestRender(); // idle (paused, no live pass): Cesium renders only on camera or tile changes
       if (now - ui > 100) { ui = now; setT(tt); }
     };
     raf = requestAnimationFrame(loop);
