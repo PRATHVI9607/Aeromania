@@ -48,6 +48,10 @@ Scoring map: Economic/strategic impact 30% (₹ panel, named payers), Technical 
 |---|---|---|
 | City revenue dept (BBMP/GBA) | A: rank wards for property-tax survey; new built-up not on the roll = unassessed | BBMP collected ₹4,930 cr in FY24-25; ~5 lakh of ~20.5 lakh properties reported unassessed; a finance-panel estimate puts the gap at ₹700–1,000 cr/yr. Per ha of newly detected built-up: ₹14,000/property/yr × 25 properties/ha × 0.24 unassessed ≈ **₹84,000/ha/yr** (`config/value.json`) |
 | City planners (BDA RMP-2041, BMRDA) | A: growth hotspots vs planned roads/water/metro | decision support, no ₹ claimed |
+| BBMP / lake authority (KTCDA) | A: new construction inside lake no-build buffers (SC 5 Mar 2019 restored RMP-2015 30 m; KTCDA 2025 tiers buffer by lake size) | flood-risk enforcement lead; "possible encroachment, verify on ground" — never a legal finding at 10 m |
+
+**Framing: "Bengaluru grows faster than it is mapped."** One construction ledger (per site: ward, footprint ha, stage over 4 dates — cleared → built, or stalled — buffer flag, confidence) feeds three decisions: lake-buffer enforcement, tax-roll survey triage, infrastructure planning.
+**Floors / height: not claimed.** 10 m optical cannot see height. HERALD does *tip-and-cue*: it flags sites so expensive sub-metre tasking (e.g. ISRO Cartosat-3, 0.25 m) or a field visit is spent on tens of sites instead of thousands.
 | State mining / forest departments | C: evidence of illegal sand mining / clearing | 100 ha flagged/yr × ₹5 lakh per verified ha = ₹5 crore/yr |
 | Satellite operator (the constellation owner) | Platform: fewer contact minutes to hit same value | Contact minutes saved × editable $/min (no vendor price claimed; AWS Ground Station publishes no per-minute figure) |
 
