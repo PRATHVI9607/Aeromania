@@ -478,6 +478,39 @@ def cmd_extra(args):
     return 0
 
 
+def cmd_b10(args):
+    """L1C B10 (cirrus, 60 m) per vault scene from Earth Search sentinel-2-l1c (anonymous s3 JP2), bilinear to the
+    10 m chip grid -> vault/chips/{aoi}_{date}_b10.npy float16 [2116,64,64] TOA reflectance."""
+    from pystac_client import Client
+    cat = Client.open(S2_STAC)
+    scenes = json.loads((VAULT / "scenes.json").read_text(encoding="utf-8"))
+    for aid, s in scenes.items():
+        if args.aoi not in (None, aid):
+            continue
+        for d, e in s["dates"].items():
+            p = CHIPS / f"{aid}_{d}_b10.npy"
+            if p.exists():
+                continue
+            l1c = e["item_id"].replace("_L2A", "_L1C")
+            it = retry(lambda l1c=l1c: next(iter(cat.search(collections=["sentinel-2-l1c"], ids=[l1c]).items()), None))
+            if it is None:
+                raise RuntimeError(f"no L1C item {l1c}")
+            href = it.assets["cirrus"].href.replace("sentinel-s2-l2a", "sentinel-s2-l1c")  # catalog bug on some 2023 items
+            off = float(it.properties.get("s2:processing_baseline", "0")) >= 4.0
+
+            def go(href=href, s=s):
+                with rasterio.Env(AWS_NO_SIGN_REQUEST="YES", GDAL_HTTP_MAX_RETRY="5"), rasterio.open(href) as src, \
+                        WarpedVRT(src, crs=f"EPSG:{s['epsg']}", transform=aoi_transform(s["origin_xy"]), width=SIDE,
+                                  height=SIDE, resampling=Resampling.bilinear) as v:
+                    return v.read(1)
+            dn = retry(go).astype(np.float32)
+            refl = np.clip(dn - (BOA_OFFSET if off else 0), 0, None) / 10000
+            save_atomic(p, tile_chips(refl[None].astype(np.float16))[:, 0])
+            log(f"{aid} {d} {l1c} offset={off} dn min {dn[dn > 0].min():.0f} refl mean {refl.mean():.4f}")
+    write_manifest()
+    return 0
+
+
 def cmd_verify(_):
     bad = verify_manifest()
     print("vault verify:", "OK" if not bad else f"FAILED {bad[:10]}")
@@ -498,11 +531,11 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(prog="herald vault")
     ap.add_argument("cmd", choices=["vault"])
-    ap.add_argument("action", choices=["build", "verify", "pack", "manifest", "extra"])
+    ap.add_argument("action", choices=["build", "verify", "pack", "manifest", "extra", "b10"])
     ap.add_argument("--aoi")
     ap.add_argument("--quick", action="store_true", help="t0,t1 only; skip hasdeo S1")
     a = ap.parse_args(argv)
-    return {"build": cmd_build, "extra": cmd_extra, "verify": cmd_verify, "pack": cmd_pack,
+    return {"build": cmd_build, "extra": cmd_extra, "b10": cmd_b10, "verify": cmd_verify, "pack": cmd_pack,
             "manifest": lambda _: (write_manifest(), 0)[1]}[a.action](a)
 
 
