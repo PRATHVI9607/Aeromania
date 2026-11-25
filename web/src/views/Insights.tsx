@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { ViewProps } from "./props";
 import { Rupee } from "../Assume";
 import { inr, ha as fha } from "../fmt";
-import { BeforeAfter, Chip, Num, Skeleton, Stat, ViewHead } from "../ui";
+import { BeforeAfter, Chip, Num, Skeleton, Stat, ViewHead, Guard } from "../ui";
 
 const Ledger3D = lazy(() => import("./Ledger3D"));
 
@@ -90,7 +90,7 @@ export function Insights({ data }: ViewProps) {
             ))}
             <label><input type="checkbox" checked={onlyFlag} onChange={(e) => setOnlyFlag(e.target.checked)} />lake-buffer only</label>
           </div>
-          {d3 && rect ? <div className="mosaic"><Suspense fallback={<Skeleton rows={4} label="loading 3D" />}><Ledger3D items={items3} rect={rect} imgUrl="/data/img/blr_t1.jpg" selRank={sel?.rank ?? null} onPick={(r) => { const x = list.find((y) => y.rank === r); if (x) pick(x); }} /></Suspense><span className="hint">column height = changed ha</span></div> :
+          {d3 && rect ? <div className="mosaic"><Guard label="3D ledger"><Suspense fallback={<Skeleton rows={4} label="loading 3D" />}><Ledger3D items={items3} rect={rect} imgUrl="/data/img/blr_t1.jpg" selRank={sel?.rank ?? null} onPick={(r) => { const x = list.find((y) => y.rank === r); if (x) pick(x); }} /></Suspense></Guard><span className="hint">column height = changed ha</span></div> :
           <div className="mosaic">
             <div className="zoomer" style={{ transform: `translate(${view.x * 100}%, ${view.y * 100}%) scale(${view.k})` }}>
               <img src="/data/img/blr_t1.jpg" alt="Bengaluru north mosaic at t1" width={MS} height={MS} decoding="async" />

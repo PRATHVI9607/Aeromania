@@ -17,7 +17,7 @@ export function Skeleton({ rows = 3, label = "loading" }: { rows?: number; label
   );
 }
 
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState } from "react";
 import { reduced, useTween } from "./anim";
 
 /** Number that counts up from 0 on mount and tweens on change. */
@@ -62,4 +62,17 @@ export function BeforeAfter({ before, after, size = 300, labels }: { before: Rea
       <i className="handle" style={{ transform: `translateX(${(p / 100) * size}px)` }}><b /></i>
     </div>
   );
+}
+
+
+/** Error boundary: a view (or a WebGL globe) that fails to start shows a notice instead of blanking the whole app. */
+export class Guard extends Component<{ label: string; children: React.ReactNode }, { err: string | null }> {
+  state = { err: null as string | null };
+  static getDerivedStateFromError(e: unknown) { return { err: e instanceof Error ? e.message : String(e) }; }
+  componentDidCatch(e: unknown) { console.warn(`[${this.props.label}]`, e); }
+  render() {
+    if (!this.state.err) return this.props.children;
+    return <div className="card guard" role="alert"><b>{this.props.label} could not start on this device.</b>
+      <p className="muted">{/webgl|cesiumwidget/i.test(this.state.err) ? "This view needs WebGL. Try Chrome with hardware acceleration on; every other view still works." : this.state.err}</p></div>;
+  }
 }

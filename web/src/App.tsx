@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Skeleton } from "./ui";
+import { Skeleton, Guard } from "./ui";
 import { loadData, type Data } from "./data";
 import { useSched } from "./useSched";
 import type { Query } from "./types";
@@ -57,16 +57,16 @@ function Shell({ data }: { data: Data }) {
       </nav>
       <main id="panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <Suspense fallback={<Skeleton rows={5} label="loading globe" />}>
-          {seen0 && <div className="view" style={tab === 0 ? undefined : { display: "none" }}><Mission {...common} active={tab === 0} /></div>}
+          {seen0 && <div className="view" style={tab === 0 ? undefined : { display: "none" }}><Guard label="3D mission globe"><Mission {...common} active={tab === 0} /></Guard></div>}
           {tab !== 0 && <div className="view" key={tab}>
-          {tab === 1 && <Fifo {...common} setRho={setRho} />}
-          {tab === 2 && <Insights {...common} />}
-          {tab === 3 && <Siting {...common} />}
-          {tab === 4 && <QueriesView {...common} setQueries={setQueries} ms={ms} />}
-          {tab === 5 && <Evidence {...common} />}
-          {tab === 6 && <Economics data={data} />}
-          {tab === 7 && <Hardware data={data} />}
-          {tab === 8 && <About data={data} ms={ms} runs={runs} />}
+          {tab === 1 && <Guard label="FIFO vs HERALD"><Fifo {...common} setRho={setRho} /></Guard>}
+          {tab === 2 && <Guard label="Insights"><Insights {...common} /></Guard>}
+          {tab === 3 && <Guard label="Siting"><Siting {...common} /></Guard>}
+          {tab === 4 && <Guard label="Queries"><QueriesView {...common} setQueries={setQueries} ms={ms} /></Guard>}
+          {tab === 5 && <Guard label="Evidence"><Evidence {...common} /></Guard>}
+          {tab === 6 && <Guard label="Economics"><Economics data={data} /></Guard>}
+          {tab === 7 && <Guard label="Hardware"><Hardware data={data} /></Guard>}
+          {tab === 8 && <Guard label="About"><About data={data} ms={ms} runs={runs} /></Guard>}
           </div>}
         </Suspense>
       </main>
