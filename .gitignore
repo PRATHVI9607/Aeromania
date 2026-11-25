@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+web/dist/
+vault/raw/
+vault/chips/
+vault/*.zip
+data/
+*.ckpt
+*.pt
+!reports/**
+.codegraph/
+.claude/settings.local.json

@@ -1,0 +1,8 @@
+{
+  "_note": "30x30 km AOIs. Centers are starting points; vault builder snaps to one MGRS tile + one relative orbit and records the final UTM box in vault/scenes.json.",
+  "aois": [
+    {"id": "blr",    "name": "Bengaluru north (Yelahanka-Devanahalli corridor)", "pack": "A", "kind": "construction", "center": [13.17, 77.62], "season_months": [1, 2, 3],    "years": [2023, 2025]},
+    {"id": "sone",   "name": "Sone river near Koilwar, Bihar",                   "pack": "C", "kind": "sand",         "center": [25.50, 84.75], "season_months": [1, 2, 3, 4], "years": [2023, 2025]},
+    {"id": "hasdeo", "name": "Hasdeo Arand forest edge, Chhattisgarh",           "pack": "C", "kind": "clearing",     "center": [22.82, 82.68], "season_months": [1, 2, 3],    "years": [2023, 2025]}
+  ]
+}
