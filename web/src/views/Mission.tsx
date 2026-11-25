@@ -69,7 +69,7 @@ export default function Mission({ data, out }: ViewProps) {
         position: P((b[0] + b[2]) / 2, (b[1] + b[3]) / 2), point: { pixelSize: 5, color: Color.WHITE, outlineColor: Color.BLACK, outlineWidth: 1 },
         label: { text: id, font: "12px ui-monospace, monospace", fillColor: Color.WHITE, outlineColor: Color.BLACK, outlineWidth: 3, style: LabelStyle.FILL_AND_OUTLINE,
           horizontalOrigin: up ? HorizontalOrigin.LEFT : HorizontalOrigin.RIGHT, verticalOrigin: up ? VerticalOrigin.BOTTOM : VerticalOrigin.TOP,
-          pixelOffset: new Cartesian2(up ? 9 : -9, up ? -8 : 8), disableDepthTestDistance: Infinity } });
+          pixelOffset: new Cartesian2(up ? 9 : -9, up ? -8 : 8) } });
     });
     const pts = v.scene.primitives.add(new PointPrimitiveCollection());
     const stPts = new Map<string, any>();
@@ -77,11 +77,13 @@ export default function Mission({ data, out }: ViewProps) {
     const sat = pts.add({ position: P(0, 0, 786000), pixelSize: 11, color: Color.WHITE, outlineColor: amber, outlineWidth: 3 });
     const lines = v.scene.primitives.add(new PolylineCollection());
     const mat = (c: Color) => Material.fromType("Color", { color: c });
-    const trail = Array.from({ length: SEGS }, (_, j) => lines.add({ positions: [P(0, 0), P(1, 1)], width: 2.2, material: mat(amber.withAlpha(0.9 * Math.pow(1 - j / SEGS, 1.6) + 0.04)), show: false }));
+    const trail = Array.from({ length: SEGS }, (_, j) => lines.add({ positions: [P(0, 0), P(1, 1)], width: 2.2, material: mat(amber.withAlpha(0.8 * Math.pow(1 - j / SEGS, 1.2) + 0.15)), show: false }));
     const swath = lines.add({ positions: [P(0, 0), P(1, 1)], width: 4, material: mat(amber), show: false });
     const nadir = lines.add({ positions: [P(0, 0), P(1, 1)], width: 1, material: mat(Color.WHITE.withAlpha(0.35)), show: false });
     const arcs = Array.from({ length: 3 }, () => lines.add({ positions: [P(0, 0), P(1, 1)], width: 2.5, material: mat(teal.withAlpha(0.95)), show: false }));
-    scene.current = { sat, stPts, trail, swath, nadir, arcs };
+    // camera follow starts only after the first imagery tiles are in, so tile loading is not starved
+    const rd = { ok: false }; v.scene.globe.tileLoadProgressEvent.addEventListener((n: number) => { if (n === 0) rd.ok = true; });
+    scene.current = { rd, sat, stPts, trail, swath, nadir, arcs };
     const [lon0, lat0] = interp(data.track, t0);
     v.camera.setView({ destination: P(lon0, lat0 * 0.6, 1.6e7) });
     viewer.current = v;
@@ -94,7 +96,7 @@ export default function Mission({ data, out }: ViewProps) {
   const stRef = useRef(data.stations); stRef.current = data.stations;
   useEffect(() => {
     let raf = 0, last = performance.now(), ui = 0, tr = 0;
-    const [la0, lo0] = interp(data.track, tRef.current); let cl = lo0, cb = la0 * 0.6;
+    const [la0, lo0] = interp(data.track, tRef.current); let cl = lo0, cb = la0 * 0.8;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
@@ -130,11 +132,11 @@ export default function Mission({ data, out }: ViewProps) {
         const w = act[i], st = w && stRef.current.find((s) => s.id === w.station);
         a.show = !!st; if (st) a.positions = [P(lon, lat, 786000), P(st.lon, st.lat, 0)];
       });
-      if (followRef.current) {
+      if (followRef.current && S.rd.ok) {
         const dl = ((lon - cl + 540) % 360) - 180;
-        cl = (cl + dl * Math.min(1, dt * 3) + 540) % 360 - 180; cb += (Math.max(-55, Math.min(55, lat * 0.6)) - cb) * Math.min(1, dt * 3);
+        cl = (cl + dl * Math.min(1, dt * 3) + 540) % 360 - 180; cb += (Math.max(-55, Math.min(55, lat * 0.8)) - cb) * Math.min(1, dt * 3);
         v.camera.setView({ destination: P(cl, cb, 1.6e7) });
-      } else { cl = lon; cb = lat * 0.6; }
+      } else { cl = lon; cb = lat * 0.8; }
       v.scene.requestRender();
       if (now - ui > 100) { ui = now; setT(tt); }
     };

@@ -110,7 +110,7 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   // Precomputed results.json while queries are unchanged (python run); live worker recompute once edited.
   const pre = data.results?.by_rho?.[String(rho)];
   const precomputed = !!pre && queries === data.queries;
-  const out = live ? (precomputed ? { ...live, results: pre } : live) : null;
+  const out = useMemo(() => (live ? (precomputed ? { ...live, results: pre } : live) : null), [live, pre, precomputed]);
   // one flat array so a rho change morphs every curve and counter together
   const flat = useMemo(() => out ? [...POL.flatMap((q) => out.results[q.id].timeline.cum_value), out.results.B1.metrics.ub] : [], [out]);
   const tw = useTween(flat, 600);
