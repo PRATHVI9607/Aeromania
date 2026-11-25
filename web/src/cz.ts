@@ -12,7 +12,7 @@ export function makeViewer(el: HTMLElement, baseLayer?: ImageryLayer | false): V
   });
   v.useBrowserRecommendedResolution = false; v.resolutionScale = Math.min(window.devicePixelRatio || 1, 2); v.scene.postProcessStages.fxaa.enabled = true;
   v.scene.globe.showWaterEffect = false;
-  v.scene.backgroundColor = Color.fromCssColorString("#1c1917");
-  v.scene.globe.baseColor = Color.fromCssColorString("#241f1b");
+  v.scene.backgroundColor = Color.fromCssColorString("#0b0e12");
+  v.scene.globe.baseColor = Color.fromCssColorString("#10151c");
   return v;
 }

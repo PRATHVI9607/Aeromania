@@ -90,8 +90,8 @@ function Radar({ card, site }: { card: any; site: any }) {
         {pts.length > 0 && (
           <div className="deep-chart">
             <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Mean VH backscatter in dB: ${pts.map((p) => `${p[0]} ${p[1]}`).join(", ")}`}>
-              {pts.map((p, i) => <g key={p[0]}><rect x={X(i) - 22} y={Y(p[1])} width="44" height={H - 34 - Y(p[1])} fill={p[0] === "t1" ? "var(--acc)" : "var(--line2)"} rx="2" /><text x={X(i)} y={Y(p[1]) - 4} fontSize="11" fill="var(--tx)" textAnchor="middle">{p[1]}</text><text x={X(i)} y={H - 18} fontSize="11" fill="var(--mut)" textAnchor="middle">{p[0]}</text></g>)}
-              <text x="4" y={H - 3} fontSize="10" fill="var(--mut)">mean VH dB, whole crop</text>
+              {pts.map((p, i) => <g key={p[0]}><rect x={X(i) - 22} y={Y(p[1])} width="44" height={H - 34 - Y(p[1])} fill={p[0] === "t1" ? "#f2a93b" : "#2d3742"} rx="2" /><text x={X(i)} y={Y(p[1]) - 4} fontSize="11" fill="#dde3ea" textAnchor="middle">{p[1]}</text><text x={X(i)} y={H - 18} fontSize="11" fill="#8e9ba8" textAnchor="middle">{p[0]}</text></g>)}
+              <text x="4" y={H - 3} fontSize="10" fill="#8e9ba8">mean VH dB, whole crop</text>
             </svg>
           </div>
         )}

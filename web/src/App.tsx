@@ -12,7 +12,6 @@ import { Evidence } from "./views/Evidence";
 import { Economics, Hardware, About } from "./views/Static";
 
 import { Tabs, Empty } from "./kit";
-import { setTheme, useTheme } from "./theme";
 const DeepC = lazy(() => import.meta.glob("./deep/TrackC.tsx")["./deep/TrackC.tsx"]?.() as Promise<any> ?? Promise.resolve({ default: () => <Empty title="Deep dive not installed">web/src/deep/TrackC.tsx is not present in this build.</Empty> }));
 const Mission = lazy(() => import("./views/Mission"));
 
@@ -31,7 +30,7 @@ const VIEWS: V[] = [
 ];
 const GROUPS = ["", "Track A", "Track B", "Track C", "System"];
 const GROUP_NOTE: Record<string, string> = { "Track A": "Real-data change insights", "Track B": "Onboard AI and scheduler", "Track C": "Protective evidence", System: "" };
-const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === location.hash.replace(/^#\/?/, "").split("?")[0]));
+const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === location.hash.replace(/^#\/?/, "")));
 
 export function App() {
   const [data, setData] = useState<Data | null>(null);
@@ -43,7 +42,6 @@ export function App() {
 }
 
 function Shell({ data }: { data: Data }) {
-  const theme = useTheme();
   const [i, setI] = useState(fromHash);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("herald.side") === "0");
   const [seen0, setSeen0] = useState(VIEWS[i].id === "mission"); // Mission stays mounted once opened: one Cesium viewer, paused while hidden
@@ -95,8 +93,6 @@ function Shell({ data }: { data: Data }) {
             {data.sample.length > 0 && <span className="badge warn" title={data.sample.join(", ")}>sample data: {data.sample.join(", ")}</span>}
             {date && <span className="badge" title="Date of the latest Sentinel-2 scene in the Bengaluru pair">Data as of {date}</span>}
             <span className="badge ok" title="Every file is served from this origin; no network requests are made after load">Offline, 0 external requests</span>
-            <button type="button" className="themebtn" aria-pressed={theme === "dark"} aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">{theme === "dark" ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></> : <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />}</svg>{theme === "dark" ? "Light" : "Dark"}</button>
           </div>
         </header>
         <main id="panel" ref={mainRef} tabIndex={-1}>

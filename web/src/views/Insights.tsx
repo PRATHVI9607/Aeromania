@@ -17,9 +17,9 @@ const Ledger3D = lazy(() => import("./Ledger3D"));
 const N = 46, MS = 640;
 const NEW = new Set(["new_layout", "building_construction"]);
 const CAT: Record<string, { label: string; color: string; note: string }> = {
-  new_construction: { label: "New construction", color: "#C2410C", note: "new layout or building; sub-type split is unreliable at 10 m" },
-  agri_ambiguous: { label: "Cleared, ambiguous", color: "#0F766E", note: "cleared land without a road grid: may be harvested or fallow field" },
-  lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#2563EB", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
+  new_construction: { label: "New construction", color: "#f2a93b", note: "new layout or building; sub-type split is unreliable at 10 m" },
+  agri_ambiguous: { label: "Cleared, ambiguous", color: "#6fd3c0", note: "cleared land without a road grid: may be harvested or fallow field" },
+  lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#6aa5e8", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
 };
 const cat = (c: string) => (NEW.has(c) ? "new_construction" : c);
 const pct = (x: number | null | undefined) => (x == null ? "n/a" : `${(x * 100).toFixed(0)}%`);
@@ -58,9 +58,6 @@ export function Insights({ data }: ViewProps) {
     && (!cropOnly || s.crop) && (!stF || s.status === stF) && (bin == null || (s.ha >= EDGES[bin] && s.ha < EDGES[bin + 1]))), [allW, show, onlyFlag, ward, minHa, minConf, cropOnly, bin, stF]);
   const { sorted, th } = useSort(list, "prio");
   useEffect(() => setLimit(25), [list]);
-  useEffect(() => { // deep link: #/ledger?open=<site id>
-    const o = new URLSearchParams(location.hash.split("?")[1] ?? "").get("open"); const r = o ? allW.find((s) => s.id === o) : null; if (r) setSel(r);
-  }, [allW.length]); // eslint-disable-line
   const items3 = useMemo(() => list.slice(0, 150).map((x) => ({ rank: x.rank, lat: x.lat, lon: x.lon, ha: x.ha, color: CAT[cat(x.category)].color })), [list]);
   const byWard = useMemo(() => { const m = new Map<string, number>(); for (const s of list) m.set(s.wardn, (m.get(s.wardn) ?? 0) + s.ha); return [...m].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, v]) => ({ label, v })); }, [list]);
   const byCat = useMemo(() => Object.keys(CAT).map((k) => ({ label: CAT[k].label, v: list.filter((s) => cat(s.category) === k).reduce((a, s) => a + s.ha, 0) })).filter((x) => x.v > 0), [list]);

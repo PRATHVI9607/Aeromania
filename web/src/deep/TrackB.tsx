@@ -157,16 +157,16 @@ function Gantt({ rows, data, selId, setSel, ready }: { rows: PassRow[]; data: Da
       <div className="deep-gantt" ref={box}>
         <svg viewBox={`0 0 ${W} ${H}`} role="application" aria-label="Pass timeline. Left and right arrows change the selected pass." tabIndex={0}
           onKeyDown={(e) => { if (e.key === "ArrowRight") { e.preventDefault(); step(1); } else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); } }}>
-          {ticks.map((t) => <g key={t}><line x1={X(t)} x2={X(t)} y1={T - 6} y2={H - 22} stroke="var(--line)" /><text x={X(t) + 4} y={H - 8} fontSize="11" fill="var(--mut)">{view < 0 ? `day ${Math.round(t / 1440) + 1}` : hm(t % 1440)}</text></g>)}
-          {stations.map((s, k) => <g key={s.id}><text x={L - 10} y={T + k * RH + RH / 2 + 4} fontSize="11" fill="var(--mut)" textAnchor="end">{s.name.replace(/ \(.*/, "")}</text><line x1={L} x2={W - R} y1={T + (k + 1) * RH} y2={T + (k + 1) * RH} stroke="var(--panel2)" /></g>)}
-          {caps.filter((c) => c.t >= a && c.t <= b).map((c, k) => <g key={k}><path d={`M${X(c.t)} ${T - 20}l5 5-5 5-5-5z`} fill="var(--tx)"><title>{`capture ${c.aoi} ${c.date} at ${hm(c.t % 1440)} (day ${Math.floor(c.t / 1440) + 1})`}</title></path></g>)}
+          {ticks.map((t) => <g key={t}><line x1={X(t)} x2={X(t)} y1={T - 6} y2={H - 22} stroke="#222a33" /><text x={X(t) + 4} y={H - 8} fontSize="11" fill="#8e9ba8">{view < 0 ? `day ${Math.round(t / 1440) + 1}` : hm(t % 1440)}</text></g>)}
+          {stations.map((s, k) => <g key={s.id}><text x={L - 10} y={T + k * RH + RH / 2 + 4} fontSize="11" fill="#8e9ba8" textAnchor="end">{s.name.replace(/ \(.*/, "")}</text><line x1={L} x2={W - R} y1={T + (k + 1) * RH} y2={T + (k + 1) * RH} stroke="#171d25" /></g>)}
+          {caps.filter((c) => c.t >= a && c.t <= b).map((c, k) => <g key={k}><path d={`M${X(c.t)} ${T - 20}l5 5-5 5-5-5z`} fill="#dde3ea"><title>{`capture ${c.aoi} ${c.date} at ${hm(c.t % 1440)} (day ${Math.floor(c.t / 1440) + 1})`}</title></path></g>)}
           {vis.map((r) => {
             const k = stations.findIndex((s) => s.id === r.pass.station), x0 = X(Math.max(a, r.pass.start_min)), w = Math.max(3, X(Math.min(b, r.pass.end_min)) - x0), y = T + k * RH + 6, h = RH - 12;
             const f = r.cap > 0 ? Math.min(1, r.used / r.cap) : 0, on = r.pass.id === selId;
             return (
               <g key={r.pass.id} onClick={() => setSel(r.pass.id)} onMouseMove={(e) => { const bb = box.current!.getBoundingClientRect(); setHov({ r, x: e.clientX - bb.left, y: e.clientY - bb.top }); }} onMouseLeave={() => setHov(null)}>
-                <rect className="pass" x={x0} y={y} width={w} height={h} rx="2" fill="var(--panel2)" stroke={on ? "var(--acc)" : "var(--line2)"} strokeWidth={on ? 2 : 1} />
-                <rect className="pass" x={x0} y={y + h * (1 - f)} width={w} height={h * f} rx="2" fill="var(--acc)" opacity={on ? 1 : 0.8} />
+                <rect className="pass" x={x0} y={y} width={w} height={h} rx="2" fill="#171d25" stroke={on ? "#f2a93b" : "#2d3742"} strokeWidth={on ? 2 : 1} />
+                <rect className="pass" x={x0} y={y + h * (1 - f)} width={w} height={h * f} rx="2" fill="#f2a93b" opacity={on ? 1 : 0.8} />
                 <title>{`${r.pass.station} ${hm(r.pass.start_min % 1440)}, ${(r.pass.end_min - r.pass.start_min).toFixed(1)} min, ${(f * 100).toFixed(0)}% used`}</title>
               </g>
             );
