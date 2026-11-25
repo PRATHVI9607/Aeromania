@@ -18,7 +18,7 @@ export function Siting({ data }: ViewProps) {
   const top: any[] = kind === "solar" ? s.top_solar : s.top_wind;
   const sp = data.reports.siting?.params?.[kind] ?? {};
   const meta = (k: string) => ({ assumption: true, source: `${sp[k]?.src ?? sp[k]?.source ?? s.params.note}` });
-  const rsKey = kind === "solar" ? "tariff_rs_kwh" : "tariff_rs_kwh";
+  const rsKey = Object.keys(sp).find((k) => /tariff/.test(k)) ?? "tariff_rs_kwh";
   const v = s.validation;
   const pv = v?.pavagada_park;
   const onMove = (ev: React.MouseEvent<SVGSVGElement>) => {

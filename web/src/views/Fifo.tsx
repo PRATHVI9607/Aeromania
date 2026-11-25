@@ -71,13 +71,25 @@ function Curves({ out, data }: { out: NonNullable<ViewProps["out"]>; data: ViewP
   );
 }
 
-export function Fifo({ data, out, rho, setRho }: ViewProps & { setRho: (n: number) => void }) {
-  if (!out || !data.wins.length) return <div className="boot">scheduling</div>;
+export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { setRho: (n: number) => void }) {
+  if (!live || !data.wins.length) return <div className="boot">scheduling</div>;
+  // Precomputed results.json while queries are unchanged (python run); live worker recompute once edited.
+  const pre = data.results?.by_rho?.[String(rho)];
+  const precomputed = !!pre && queries === data.queries;
+  const out = precomputed ? { ...live, results: pre } : live;
   const f = out.results.B1.metrics, h = out.results.H2.metrics;
-  const saved = f.minutes_to_90 !== null && h.minutes_to_90 !== null ? f.minutes_to_90 - h.minutes_to_90 : null;
+  const sim = data.reports.sim, rob = sim?.robustness;
+  const rr = (r: number) => sim?.by_rho?.[r]?.ratio_vs_fifo?.H2;
+  const sr = sim?.by_rho?.[rho];
+  const match = { h: (sr?.minutes_to_match_fifo?.H2 ?? null) as number | null, f: (sr?.fifo_minutes_used ?? null) as number | null };
+  const saved = match.h !== null && match.f !== null ? match.f - match.h : null;
   const rpm = data.params.rupees_per_contact_min;
   return (
     <div className="grid2">
+      <div className="span2">
+        <h2 className="headline">Same antenna, same minutes, far more value</h2>
+        <p className="muted">HERALD vs FIFO value at rho 1 / 2 / 5 / 10: {[1, 2, 5, 10].map((r) => rr(r) != null ? `${rr(r).toFixed(1)}x` : "n/a").join(" / ")}. First insight after capture (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></p>
+      </div>
       <section className="span2 bar">
         <label>Oversubscription rho
           <input type="range" min={0} max={3} step={1} value={[1, 2, 5, 10].indexOf(rho)} onChange={(e) => setRho([1, 2, 5, 10][+e.target.value])} aria-valuetext={`rho ${rho}`} />
@@ -89,20 +101,28 @@ export function Fifo({ data, out, rho, setRho }: ViewProps & { setRho: (n: numbe
         <div className="kv"><span>HERALD value</span><b className="mono"><Rupee v={h.value} name="rupees_per_ha" meta={data.meta.rupees_per_ha} value={data.params.rupees_per_ha} /></b></div>
         <div className="kv"><span>FIFO value</span><b className="mono"><Rupee v={f.value} name="rupees_per_ha" meta={data.meta.rupees_per_ha} value={data.params.rupees_per_ha} /></b></div>
         <div className="card">
-          <span>Contact minutes saved to 90% of total value</span>
-          <b className="mono big">{saved !== null ? `${saved.toFixed(1)} min` : f.minutes_to_90 === null && h.minutes_to_90 !== null ? "FIFO never reaches 90%" : "neither reaches 90%"}</b>
-          <span className="mono">FIFO {f.minutes_to_90?.toFixed(1) ?? "n/a"} vs HERALD {h.minutes_to_90?.toFixed(1) ?? "n/a"} min
-            {saved !== null && <> = <Rupee v={saved * rpm} name="rupees_per_contact_min" meta={data.meta.rupees_per_contact_min} value={rpm} /></>}</span>
+          <span>Contact minutes for HERALD to match FIFO's final value</span>
+          <b className="mono big">{match.h !== null ? `${match.h.toFixed(1)} min` : "n/a"}</b>
+          <span className="mono">FIFO used {match.f !== null ? match.f.toFixed(0) : "n/a"} min{saved !== null && <> : saves {saved.toFixed(0)} min = <Rupee v={saved * rpm} name="rupees_per_contact_min" meta={data.meta.rupees_per_contact_min} value={rpm} /></>}</span>
         </div>
       </section>
-      <Timeline r={out.results.B1} data={data} title="FIFO (B1)" />
-      <Timeline r={out.results.H2} data={data} title="HERALD (H2)" />
+      <Timeline r={live.results.B1} data={data} title="FIFO (B1)" />
+      <Timeline r={live.results.H2} data={data} title="HERALD (H2)" />
       <section className="panel span2">
         <h3>Cumulative realized value <small>{data.wins.length} contact windows</small></h3>
         <Curves out={out} data={data} />
         <div className="legend">{POL.map((q) => <span key={q.id}><i style={{ background: q.color }} />{q.id} {q.name} <b className="mono">{((out.results[q.id].metrics.pct_ub ?? 0) * 100).toFixed(0)}%</b></span>)}
           <span><i className="dash" />upper bound</span></div>
       </section>
+      {rob && <section className="panel span2">
+        <h3>Robustness <small>the win is not an artifact of the assumptions</small></h3>
+        <dl className="dl">
+          <dt>H1 (full chips only, no packet assumption)</dt><dd className="mono">{rob.H1_vs_B1.toFixed(1)}x FIFO, {rob.H1_vs_B2.toFixed(1)}x cloud-filter FIFO at rho 5</dd>
+          <dt>H2 packet-value fraction</dt><dd className="mono">{Object.entries(rob.H2_packet_fraction_sensitivity_rho5).map(([k, v]: any) => `${k}: ${v.H2_vs_B1.toFixed(1)}x`).join(", ")} vs FIFO</dd>
+        </dl>
+        <p className="muted">{rob.note}</p>
+        {sim.headline_note && <p className="muted">{sim.headline_note}</p>}
+      </section>}
     </div>
   );
 }

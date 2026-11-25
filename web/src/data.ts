@@ -2,7 +2,7 @@ import type { ParamMeta, Params, Query, Station, Tile, TrackPt, Window } from ".
 
 export interface Data {
   tiles: Tile[]; wins: Window[]; track: TrackPt[]; stations: Station[]; queries: Query[];
-  params: Params; meta: Record<string, ParamMeta>; reports: Record<string, any>; sample: string[]; synthetic: boolean;
+  params: Params; meta: Record<string, ParamMeta>; results: any | null; reports: Record<string, any>; sample: string[]; synthetic: boolean;
 }
 
 async function get(path: string): Promise<any | null> {
@@ -26,8 +26,8 @@ function normTrack(j: any): TrackPt[] {
 }
 
 export async function loadData(): Promise<Data> {
-  const [t, w, tr, q, repIdx, st] = await Promise.all(
-    ["tiles.json", "windows.json", "track.json", "queries.json", "reports/index.json", "reports/stations.json"].map(get));
+  const [t, w, tr, q, repIdx, st, results] = await Promise.all(
+    ["tiles.json", "windows.json", "track.json", "queries.json", "reports/index.json", "reports/stations.json", "results.json"].map(get));
   const missing = [["tiles", t], ["windows", w], ["track", tr], ["queries", q]].filter(([, v]) => !v).map(([k]) => k as string);
   if (missing.length) throw new Error(`required data files missing in web/public/data: ${missing.join(", ")}. Run the sim step.`);
   const tiles: Tile[] = normTiles(t);
@@ -40,7 +40,7 @@ export async function loadData(): Promise<Data> {
   const reports: Record<string, any> = {};
   await Promise.all((repIdx ?? []).map(async (f: string) => { reports[f.replace(/\.json$/, "")] = await get(`reports/${f}`); }));
   const synthetic = [t, w, tr, q].some((x) => x && x.synthetic === true);
-  return { tiles, wins, track, stations, queries, params, meta, reports, sample: [], synthetic };
+  return { tiles, wins, track, stations, queries, params, meta, results, reports, sample: [], synthetic };
 }
 
 /** Fetch one optional JSON from /data; null if absent. */
