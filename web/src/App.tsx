@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Skeleton } from "./ui";
 import { loadData, type Data } from "./data";
 import { useSched } from "./useSched";
 import type { Query } from "./types";
@@ -17,7 +18,7 @@ export function App() {
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => { loadData().then(setData, (e) => setErr(String(e.message ?? e))); }, []);
   if (err) return <div className="boot bad">{err}</div>;
-  if (!data) return <div className="boot">loading data</div>;
+  if (!data) return <div className="app"><header className="top"><div className="brand">HERALD</div></header><main><Skeleton rows={6} label="loading data" /></main></div>;
   return <Shell data={data} />;
 }
 
@@ -33,11 +34,13 @@ function Shell({ data }: { data: Data }) {
     const n = (tab + d + TABS.length) % TABS.length;
     setTab(n); refs.current[n]?.focus();
   };
+  const [ind, setInd] = useState({ x: 0, w: 0 });
+  useLayoutEffect(() => { const b = refs.current[tab]; if (b) setInd({ x: b.offsetLeft, w: b.offsetWidth }); }, [tab]);
   const common = { data, out, queries, rho };
   return (
     <div className="app">
-      <header>
-        <div className="brand">HERALD<span>the satellite that sends home answers, not pictures.</span></div>
+      <header className="top">
+        <div className="brand">HERALD<span>{"\u2014"} the satellite that sends home answers, not pictures.</span></div>
         <div className="flags">
           {data.synthetic && <span className="badge warn">synthetic orbit data</span>}
           {data.sample.length > 0 && <span className="badge warn" title={data.sample.join(", ")}>sample data: {data.sample.join(", ")}</span>}
@@ -48,9 +51,11 @@ function Shell({ data }: { data: Data }) {
           <button key={t} ref={(el) => { refs.current[i] = el; }} role="tab" id={`tab-${i}`} aria-selected={tab === i}
             aria-controls="panel" tabIndex={tab === i ? 0 : -1} onClick={() => setTab(i)}>{t}</button>
         ))}
+        <i className="ind" style={{ transform: `translateX(${ind.x}px) scaleX(${ind.w / 100})` }} />
       </nav>
       <main id="panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-        <Suspense fallback={<div className="boot">loading globe</div>}>
+        <Suspense fallback={<Skeleton rows={5} label="loading globe" />}>
+          <div className="view" key={tab}>
           {tab === 0 && <Mission {...common} />}
           {tab === 1 && <Fifo {...common} setRho={setRho} />}
           {tab === 2 && <Insights {...common} />}
@@ -60,6 +65,7 @@ function Shell({ data }: { data: Data }) {
           {tab === 6 && <Economics data={data} />}
           {tab === 7 && <Hardware data={data} />}
           {tab === 8 && <About data={data} ms={ms} runs={runs} />}
+          </div>
         </Suspense>
       </main>
     </div>

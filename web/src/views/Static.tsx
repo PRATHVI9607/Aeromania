@@ -3,6 +3,7 @@ import { Rupee } from "../Assume";
 import { Gates } from "./Gates";
 import { bytes } from "../fmt";
 import { useJson } from "../useJson";
+import { ViewHead } from "../ui";
 
 const Card = ({ title, payer, children }: { title: string; payer: string; children: React.ReactNode }) => (
   <section className="panel"><h3>{title} <small>{payer}</small></h3><dl className="dl">{children}</dl></section>
@@ -101,6 +102,7 @@ const LIMITS = [
 export function About({ data, ms, runs }: { data: Data; ms: number | null; runs: number }) {
   return (
     <div className="grid2">
+      <div className="span2"><ViewHead kicker="Honest limits" title="What this prototype is, and what it is not" sub="Gates report real numbers, including the ones that miss." /></div>
       <Gates data={data} ms={ms} runs={runs} />
       <section className="panel"><h3>Honest limitations</h3><ul className="limits">{LIMITS.map((l) => <li key={l}>{l}</li>)}</ul></section>
       <section className="panel"><h3>Protective use</h3>

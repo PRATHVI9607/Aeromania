@@ -1,3 +1,4 @@
+import { Skeleton, ViewHead } from "../ui";
 import { useState } from "react";
 import { useJson } from "../useJson";
 import { Rupee } from "../Assume";
@@ -10,7 +11,7 @@ export function Siting({ data }: ViewProps) {
   const s = useJson<any>("siting.json");
   const [kind, setKind] = useState<"solar" | "wind">("solar");
   const [hover, setHover] = useState<any>(null);
-  if (s === undefined) return <div className="boot">loading</div>;
+  if (s === undefined) return <Skeleton />;
   if (s === null) return <section className="panel"><h3>Siting <small>not generated yet</small></h3><p className="muted">web/public/data/siting.json is missing. Run the siting step (python -m herald siting).</p></section>;
   const [w, so, e, n] = s.bbox as number[];
   const flip = s.cells[0].lat < s.cells[s.cells.length - 1].lat; // image row 0 must be north
@@ -29,18 +30,16 @@ export function Siting({ data }: ViewProps) {
   };
   return (
     <div className="ins">
-      <div className="kicker">Track A, objective 2</div>
-      <h2 className="headline">Where the next gigawatt should go</h2>
-      <p className="muted">Solar and wind sites ranked by irradiance, slope, land use and grid distance, validated against the real Pavagada park. 60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source).</p>
-      <div className="insgrid">
+      <ViewHead kicker="Track A, objective 2" title="Where the next gigawatt should go" sub="Solar and wind sites ranked by irradiance, slope, land use and grid distance, validated against the real Pavagada park. 60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source)." />
+      <div className="grid2">
         <section className="panel">
           <h3>Heatmap
             <span className="controls">
               {(["solar", "wind"] as const).map((k) => <button key={k} className={kind === k ? "on" : ""} aria-pressed={kind === k} onClick={() => setKind(k)}>{k}</button>)}
             </span></h3>
-          <div className="mosaic" style={{ width: SZ, height: SZ }}>
+          <div className="mosaic" style={{ width: "100%", maxWidth: SZ, aspectRatio: "1" }}>
             <img src={`/data/${s.images[kind]}`} alt={`${kind} suitability heatmap`} width={SZ} height={SZ} style={{ transform: flip ? "scaleY(-1)" : undefined, imageRendering: "pixelated" }} />
-            <svg viewBox={`0 0 ${SZ} ${SZ}`} width={SZ} height={SZ} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+            <svg viewBox={`0 0 ${SZ} ${SZ}`} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
               {top.map((t) => { const [x, y] = pos(t.lat, t.lon); return <g key={t.rank}><circle cx={x} cy={y} r={7} fill="none" stroke="#fff" strokeWidth={1.5} /><text x={x} y={y - 10} fill="#fff" fontSize={10} textAnchor="middle" fontFamily="monospace">{t.rank}</text></g>; })}
             </svg>
           </div>
