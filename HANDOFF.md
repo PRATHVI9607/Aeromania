@@ -13,8 +13,8 @@ Clock: live 12 h hackathon build, started 2026-11-25 ~21:40 local. Priority: Tra
 | M1 vault + M2 labels (+S1) | builder-data | todo | vault/*, reports/vault.json |
 | M3 model | builder-model | todo | models/herald_int8.onnx, reports/model.json |
 | M4 change | builder-change | code+tests done, waiting on vault (not run on real data) | reports/change_*.json, web/public/data/img/* |
-| M5 value+sched, M6 sim, orbit | builder-orbit | todo | windows.json, track.json, results.json |
-| M7 web | builder-web | todo | web/ (Vite+React+TS+Cesium) |
+| M5 value+sched, M6 sim, orbit | builder-orbit | done (synthetic data; real run pending vault) | windows/track/results/tiles/queries.json, reports/sim.json, sched_parity.json |
+| M7 web | builder-web | done (v1; Evidence/Economics/Hardware placeholders) | web/ (Vite+React+TS+Cesium) |
 | M8 evidence + economics | — | later | evidence.json, economics.json |
 | M9 deploy, M10 hw-sim, M11 pitch script | — | later | |
 
@@ -69,3 +69,9 @@ Dates per AOI (all same MGRS tile + same relative orbit):
 ## Notes from builders
 - (lead) PRD says orbit.py "DONE" but it was not in the folder; builder-orbit writes it.
 - (builder-change) herald.change written + 4 unit tests pass + synthetic end-to-end run ok (scipy added to pyproject; run uv lock). No real-data numbers yet: waiting on vault/chips/blr_t0.npy + vault/labels/blr.npz. Run: uv run python -m herald change [--aoi X] [--retune]; blr tunes thresholds on west half, writes config/change_thresholds.json.
+- (builder-web) Run: `cd web && npm ci && npm run dev` (or `npm run build && npm run preview`). `prepare` copies reports/{model,sim,vault,economics,evidence,change_*}.json + config/stations.json to web/public/data/reports/ (gitignored). Missing /data/*.json falls back to src/mock with a "sample data" badge.
+- (builder-web) src/sched.ts + value.ts are exact ports of python sched/value; scheduler runs in a Web Worker on the live queries. `npx vitest run` reads python/tests/fixtures/sched_parity.json (schema: {params, queries, tiles, windows, runs: {"<rho>/<policy>": {sel, metrics}}}); skipped with a warning if missing. Verified against a self-generated fixture (15/15 identical). Builder-orbit: emit that schema, or tell me yours.
+- (builder-web) Insights needs web/public/data/img/{aoi}_{t0,t1}.jpg (46x46 tile grid assumed in tile-index order per aoi/date); without them it shows the tile grid only.
+- (orbit) sched.py has `LOOKAHEAD = 8`: a window stops after 8 consecutive does-not-fit pops. web/src/sched.ts line ~116 must be `if (inc > left) { skipped.push(e); if (skipped.length >= 8) break; continue; }` -- with that one-line change all 20 vitest parity cases pass; without it 17 fail.
+- (orbit) tiles.json `{synthetic, classes[10], fields:[id,aoi,date,t_cap_min,lat,lon,cls,conf,cloud,kind,sev,ha,pA,pC,full_bytes], rows}`; results.json `{synthetic, rhos, policies, n_tiles, window_ids, by_rho:{"1|2|5|10":{B1..H2:{metrics:{value,ub,pct_ub,minutes_to_90,ttfi_min,bytes_sent,cloud_bytes,capacity_bytes,total_value}, level:[per-tile -1|0|1|2], timeline:{bytes,value,cum_value,cloud_bytes,cap}[per window]}}}}`; windows.json `{windows:[{id,station,start_min,end_min,dur_min,max_el,bytes}], first_capture_min}`; track.json `{step_s:30, lon[],lat[],alt_km[]}` (t_min = i*step_s/60 from 2025-01-15T00:00Z); queries.json `{params:{name:{value,assumption,source}}, queries}`.
+- (orbit) Capture timing is a compressed replay (day j + real overpass time-of-day), orbit default horizon 5 d (not 3). PRD period 100.43 min is wrong for 786 km: computed 100.58 (Kepler/TLE), 100.63 nodal measured. Real vault inputs missing -> everything is `synthetic: true`; rerun `python -m herald sim` after M1-M4.

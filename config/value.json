@@ -1,0 +1,22 @@
+{"_note": "Every param here is a modeled assumption, not a measurement. Editable in the UI.",
+ "params": {
+  "rupees_per_ha": {"value": {"A": 6000, "C": 4000}, "assumption": true,
+    "source": "PRD s8: Rs 6000 per check-site-equivalent; we treat 1 ha of detected change as one check-site unit. Pack C rate is a placeholder (enforcement-visit cost per ha)."},
+  "level_names": {"value": ["packet", "thumb", "full"], "assumption": false, "source": "HANDOFF"},
+  "level_fraction": {"value": [0.70, 0.85, 1.0], "assumption": true,
+    "source": "PRD s8: packet ~70% of decision value; thumb/full are modeled, not measured."},
+  "level_bytes": {"value": [256, 2400], "assumption": false,
+    "source": "HANDOFF: packet 256 B, thumb 2400 B; full = measured zlib(level 6) size of the chip (proxy for CCSDS-122), cumulative sizes."},
+  "half_life_h": {"value": 48, "assumption": true, "source": "Freshness half-life of an alert; modeled."},
+  "pull_threshold": {"value": 5000, "assumption": true,
+    "source": "H2 pulls the full chip only if tile value >= this many rupees; modeled."},
+  "cloud_drop": {"value": 0.7, "assumption": false, "source": "B2 CloudScout-style filter threshold (PRD s10)."},
+  "link_mbps": {"value": 100, "assumption": false, "source": "PRD s9"},
+  "link_efficiency": {"value": 0.7, "assumption": true, "source": "PRD s9"},
+  "rupees_per_contact_min": {"value": 5000, "assumption": true, "source": "Editable ground-station cost per contact minute; placeholder."}
+ },
+ "queries": [
+  {"id": "q_lender", "name": "Lender (generic): Bengaluru construction, sev>=0.05, priority 1", "pack": "A", "aois": ["blr"], "min_sev": 0.05, "priority": 1.0},
+  {"id": "q_mines", "name": "State mines dept (generic): Sone sand, sev>=0.03, priority 1.5", "pack": "C", "aois": ["sone"], "min_sev": 0.03, "priority": 1.5},
+  {"id": "q_forest", "name": "State forest dept (generic): Hasdeo clearing, priority 1.2", "pack": "C", "aois": ["hasdeo"], "min_sev": 0.03, "priority": 1.2}
+ ]}

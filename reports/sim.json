@@ -1,0 +1,180 @@
+{
+ "synthetic": true,
+ "physics": {
+  "period_kepler_min": 100.58,
+  "period_tle_min": 100.58,
+  "period_nodal_measured_min": 100.63,
+  "prd_period_min": 100.43,
+  "note": "PRD 100.43 is not what a 786 km circular orbit gives; computed value reported.",
+  "inclination_deg": 98.62,
+  "mean_alt_km": 797.8,
+  "max_pass_min": 10.56,
+  "prd_max_pass_min": 10.47,
+  "gb_per_max_pass": 5.54,
+  "prd_gb_per_max_pass": 5.51,
+  "swath_km": 290.0
+ },
+ "checks": {
+  "period_ok": true,
+  "inclination_ok": true,
+  "max_pass_ok": true,
+  "min_el_ok": true,
+  "windows_nonempty": true
+ },
+ "headline_rho5": {
+  "ratio_vs_fifo": {
+   "H1": 10.402,
+   "H2": 13.345
+  },
+  "minutes_to_90": {
+   "B1": null,
+   "B2": null,
+   "B3": 1720.1649,
+   "H1": 1697.3616,
+   "H2": 777.8236
+  },
+  "minutes_saved_vs_fifo": {
+   "H1": null,
+   "H2": null
+  },
+  "pct_ub": {
+   "B1": 0.0716,
+   "B2": 0.08,
+   "B3": 0.7399,
+   "H1": 0.745,
+   "H2": 0.9557
+  }
+ },
+ "by_rho": {
+  "1": {
+   "ratio_vs_fifo": {
+    "H1": 1.574,
+    "H2": 1.619
+   },
+   "minutes_to_90": {
+    "B1": 1711.9712,
+    "B2": 1582.4173,
+    "B3": 799.719,
+    "H1": 798.8452,
+    "H2": 723.3272
+   },
+   "minutes_saved_vs_fifo": {
+    "H1": 913.126,
+    "H2": 988.644
+   },
+   "pct_ub": {
+    "B1": 0.6088,
+    "B2": 0.6631,
+    "B3": 0.9578,
+    "H1": 0.9585,
+    "H2": 0.9855
+   }
+  },
+  "2": {
+   "ratio_vs_fifo": {
+    "H1": 4.349,
+    "H2": 4.625
+   },
+   "minutes_to_90": {
+    "B1": null,
+    "B2": null,
+    "B3": 887.3902,
+    "H1": 884.9406,
+    "H2": 725.6176
+   },
+   "minutes_saved_vs_fifo": {
+    "H1": null,
+    "H2": null
+   },
+   "pct_ub": {
+    "B1": 0.2114,
+    "B2": 0.2428,
+    "B3": 0.9178,
+    "H1": 0.9192,
+    "H2": 0.9775
+   }
+  },
+  "5": {
+   "ratio_vs_fifo": {
+    "H1": 10.402,
+    "H2": 13.345
+   },
+   "minutes_to_90": {
+    "B1": null,
+    "B2": null,
+    "B3": 1720.1649,
+    "H1": 1697.3616,
+    "H2": 777.8236
+   },
+   "minutes_saved_vs_fifo": {
+    "H1": null,
+    "H2": null
+   },
+   "pct_ub": {
+    "B1": 0.0716,
+    "B2": 0.08,
+    "B3": 0.7399,
+    "H1": 0.745,
+    "H2": 0.9557
+   }
+  },
+  "10": {
+   "ratio_vs_fifo": {
+    "H1": 13.005,
+    "H2": 23.061
+   },
+   "minutes_to_90": {
+    "B1": null,
+    "B2": null,
+    "B3": null,
+    "H1": null,
+    "H2": 1145.9308
+   },
+   "minutes_saved_vs_fifo": {
+    "H1": null,
+    "H2": null
+   },
+   "pct_ub": {
+    "B1": 0.0413,
+    "B2": 0.0497,
+    "B3": 0.5286,
+    "H1": 0.5373,
+    "H2": 0.9528
+   }
+  }
+ },
+ "g5_ms_per_1000_tiles_H2": 4.99,
+ "capture_overpasses_10d_cycle": {
+  "blr": [
+   {
+    "t_min": 8978.0,
+    "cross_track_km": 25.6
+   }
+  ],
+  "sone": [
+   {
+    "t_min": 319.83,
+    "cross_track_km": 74.6
+   }
+  ],
+  "hasdeo": [
+   {
+    "t_min": 320.67,
+    "cross_track_km": 64.0
+   },
+   {
+    "t_min": 4647.83,
+    "cross_track_km": 120.7
+   }
+  ]
+ },
+ "capture_phase_min_utc": {
+  "blr": 338.0,
+  "sone": 319.83,
+  "hasdeo": 320.67
+ },
+ "n_tiles": 19044,
+ "n_windows": 214,
+ "n_windows_used": 207,
+ "mapping": "see herald/sim.py docstring: compressed replay (day index synthetic, time-of-day from real overpass); pA=P(Ind+Res+Hwy)xgate; pC sand=P(River+SeaLake)xgate, clearing=P(Forest@t0)xgate"
+}

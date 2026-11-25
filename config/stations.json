@@ -1,0 +1,9 @@
+{"_note": "Approximate public coordinates of EO ground stations (lat, lon deg; elev m).",
+ "stations": [
+  {"id": "bengaluru", "name": "Bengaluru", "lat": 13.034, "lon": 77.513, "elev_m": 900},
+  {"id": "svalbard", "name": "Svalbard (SvalSat)", "lat": 78.231, "lon": 15.389, "elev_m": 450},
+  {"id": "kiruna", "name": "Kiruna (Esrange)", "lat": 67.890, "lon": 21.066, "elev_m": 400},
+  {"id": "fairbanks", "name": "Fairbanks (Gilmore Creek)", "lat": 64.978, "lon": -147.511, "elev_m": 300},
+  {"id": "hartebeesthoek", "name": "Hartebeesthoek", "lat": -25.887, "lon": 27.707, "elev_m": 1400},
+  {"id": "punta_arenas", "name": "Punta Arenas", "lat": -53.138, "lon": -70.880, "elev_m": 30}
+ ]}
