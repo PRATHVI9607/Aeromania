@@ -163,7 +163,7 @@ def read_scl_native(item, origin, epsg):
     return retry(go)
 
 
-def tile_geometry(items, center, epsg_cache={}):
+def tile_geometry(items, center):
     """Return (epsg, origin) of a 30 km square near `center`, snapped to the tile's 20 m grid and kept inside the
     tile bbox (center shifted if needed)."""
     a = items[0].assets["blue"].extra_fields
@@ -201,7 +201,7 @@ def pick_s2(aoi, log_):
         epsg, origin = tile_geometry(its, cx)
         cache = {}
 
-        def cloud(it):  # AOI cloud + nodata from SCL
+        def cloud(it, cache=cache, origin=origin, epsg=epsg):  # AOI cloud + nodata from SCL
             if it.id not in cache:
                 try:
                     scl = read_scl_native(it, origin, epsg)
@@ -211,7 +211,7 @@ def pick_s2(aoi, log_):
                     cache[it.id] = (1.0, 1.0)
             return cache[it.id]
 
-        def seasonal(y):
+        def seasonal(y, its=its):
             return sorted([i for i in its if i.datetime.year == y and i.datetime.month in months
                            and i.properties.get("eo:cloud_cover", 100) <= 40],
                           key=lambda i: i.properties.get("eo:cloud_cover", 100))[:8]
@@ -326,7 +326,9 @@ def build_s1(aoi_id, scene, aoi):
     if not groups:
         raise RuntimeError("no S1 RTC covering AOI")
     key, its = max(groups.items(), key=lambda kv: len(kv[1]))
-    nearest = lambda tgt: min(its, key=lambda i: abs(i.datetime.replace(tzinfo=None) - tgt))
+    def nearest(tgt):
+        return min(its, key=lambda i: abs(i.datetime.replace(tzinfo=None) - tgt))
+
     mon_year = d0.year if d0.month < 7 else d0.year + 1  # first Jul-Sep after t0
     mon = [i for i in its if i.datetime.year == mon_year and i.datetime.month in (7, 8, 9)]
     pick = {"t0": nearest(d0), "t1": nearest(d1)}
@@ -444,7 +446,7 @@ def cmd_extra(args):
         if "x1" not in s["dates"]:
             cx = a["center"]
             pt = {"type": "Point", "coordinates": [cx[1], cx[0]]}
-            its = retry(lambda: list(cat.search(collections=["sentinel-2-l2a"], intersects=pt,
+            its = retry(lambda pt=pt: list(cat.search(collections=["sentinel-2-l2a"], intersects=pt,
                                                 datetime="2023-01-01/2025-12-31", max_items=1500).items()))
             used = {v["item_id"] for v in s["dates"].values()}
             its = [i for i in its if group_key(i)[0] == "MGRS-" + s["mgrs"] and group_key(i)[1] == s["rel_orbit"]
@@ -453,7 +455,7 @@ def cmd_extra(args):
             its = sorted(its, key=lambda i: -i.properties.get("s2:thin_cirrus_percentage", 0))[:25]
             sc = []
             for it in its:
-                scl = retry(lambda: read_scl_native(it, s["origin_xy"], s["epsg"]))
+                scl = retry(lambda it=it, s=s: read_scl_native(it, s["origin_xy"], s["epsg"]))
                 cl, nd = (float(v) for v in scl_fractions(scl))
                 if 0.20 <= cl <= 0.80 and nd <= 0.01:
                     sc.append((float((scl == 10).mean()), cl, it))

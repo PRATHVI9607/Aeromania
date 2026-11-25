@@ -89,7 +89,6 @@ def audit(argv=()):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from PIL import Image
     for aoi in AOIS:
         d, ld = _load(aoi)
         ld = ld[:15]

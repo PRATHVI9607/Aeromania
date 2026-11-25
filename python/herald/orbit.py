@@ -66,7 +66,7 @@ def windows(days=5):
         topo = wgs84.latlon(s["lat"], s["lon"], elevation_m=s["elev_m"])
         t, ev = sat.find_events(topo, t0(), end, altitude_degrees=MIN_EL)
         rise = None
-        for ti, e in zip(t, ev):
+        for ti, e in zip(t, ev, strict=True):
             tm = (ti.tt - t0().tt) * 1440
             if e == 0:
                 rise, peak = tm, 0.0

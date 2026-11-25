@@ -49,9 +49,9 @@ def test_invariants():
     f = fx()
     for rho in RHOS:
         res = {p: sched.run(p, f["tiles"], f["windows"], f["params"], f["queries"], rho) for p in sched.POLICIES}
-        for p, o in res.items():
+        for o in res.values():
             tl = o["timeline"]
-            assert all(b <= c + 1e-6 for b, c in zip(tl["bytes"], tl["cap"]))              # capacity respected
+            assert all(b <= c + 1e-6 for b, c in zip(tl["bytes"], tl["cap"], strict=True))              # capacity respected
             assert all(f["tiles"][i]["t_cap_min"] <= f["windows"][w]["start_min"] for i, _, w in o["sel"])  # eligibility
             assert o["metrics"]["value"] <= o["metrics"]["ub"] + 1e-6                        # UB
             assert len({(i, L) for i, L, _ in o["sel"]}) == len(o["sel"])                    # nothing sent twice

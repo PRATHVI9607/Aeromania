@@ -18,7 +18,7 @@ from rasterio.features import rasterize
 from rasterio.transform import from_origin
 from rasterio.vrt import WarpedVRT
 from shapely import distance as sdist
-from shapely.geometry import LineString, MultiLineString, Point, Polygon
+from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import polygonize, unary_union, transform as shp_transform
 
 from herald.labels import WC_URL, wc_tile_names
@@ -179,7 +179,7 @@ def nearest_km(x, y, geoms):
     if not geoms:
         return np.full(x.shape, np.inf)
     u = unary_union(geoms)
-    return sdist(np.array([Point(a, b) for a, b in zip(x.ravel(), y.ravel())]), u).reshape(x.shape) / 1000
+    return sdist(np.array([Point(a, b) for a, b in zip(x.ravel(), y.ravel(), strict=True)]), u).reshape(x.shape) / 1000
 
 
 def cover(geoms, g, px=100):
@@ -196,18 +196,24 @@ def features(cfg, g):
     P = json.loads((CACHE / "power.json").read_text(encoding="utf-8"))
     from scipy.interpolate import RegularGridInterpolator as RGI
     nl, no = len(P["lats"]), len(P["lons"])
-    ip = lambda k: RGI((P["lats"], P["lons"]), np.array([p[k] for p in P["pts"]]).reshape(nl, no))(np.c_[lat.ravel(), lon.ravel()]).reshape(N, N)
+    def ip(k):
+        return RGI((P["lats"], P["lons"]), np.array([p[k] for p in P["pts"]]).reshape(nl, no))(np.c_[lat.ravel(), lon.ravel()]).reshape(N, N)
+
     dem = np.load(CACHE / "dem.npy")
     dem = np.where(np.isnan(dem), np.nanmean(dem), dem)
     gy, gx = np.gradient(dem, DEM_PX)
     slope = np.degrees(np.arctan(np.hypot(gx, gy)))
-    blk = lambda a: a.reshape(N, a.shape[0] // N, N, a.shape[1] // N).mean(axis=(1, 3))
+    def blk(a):
+        return a.reshape(N, a.shape[0] // N, N, a.shape[1] // N).mean(axis=(1, 3))
+
     jrc = np.load(CACHE / "jrc.npy")
     flood, wet = blk(jrc > cfg["exclusion"]["flood_occurrence_pct"]["v"]), blk(jrc > 50) > 0
     from scipy.ndimage import distance_transform_edt
     wc = np.load(CACHE / "wc.npy")
     wcf = np.stack([blk((wc == c).astype(np.float32)) for c in WC_CLASSES], axis=-1)
-    el = lambda n: json.loads((CACHE / f"osm_{n}.json").read_text(encoding="utf-8"))
+    def el(n):
+        return json.loads((CACHE / f"osm_{n}.json").read_text(encoding="utf-8"))
+
     lines = [(geo, volt(t)) for geo, t in osm_geoms(el("lines"))]
     subs = [geo.centroid for geo, _ in osm_geoms(el("subs"), area=True)]
     roads = [(geo, t.get("highway", "").replace("_link", "")) for geo, t in osm_geoms(el("roads"))]
@@ -320,8 +326,8 @@ def a1_a2_link(cfg, g, c, S, qa=True):
     meta = json.loads((VAULT / "meta" / "pvg.json").read_text(encoding="utf-8"))
     if not (VAULT / "chips" / "pvg_t1.npy").exists():
         return None
-    ld = lambda d: ch.load_aoi("pvg", d)
-    x0, s0 = ld("t0"); x1, s1 = ld("t1")
+    x0, s0 = ch.load_aoi("pvg", "t0")
+    x1, s1 = ch.load_aoi("pvg", "t1")
     valid = ch.valid_mask(s0, s1)
     a0, a1 = pv_mask(x0, A), pv_mask(x1, A)
     br0 = x0[0] / np.maximum(x0[2], 1e-6)
@@ -335,8 +341,10 @@ def a1_a2_link(cfg, g, c, S, qa=True):
     gj = (((ox + (px + .5) * 10) - g["x0"]) // 1000).astype(int)[None, :] * np.ones((ch.M, 1), int)
     inb = (gi >= 0) & (gi < N) & (gj >= 0) & (gj < N)
     flat = np.where(inb, gi * N + gj, N * N)
-    cnt = lambda m: np.bincount(flat[m & valid], minlength=N * N + 1)[:N * N].reshape(N, N)
-    tot, npx, cpx, chpx = cnt(np.ones_like(valid)), cnt(newpv), cnt(cons), cnt(chg)
+    def cnt(m):
+        return np.bincount(flat[m & valid], minlength=N * N + 1)[:N * N].reshape(N, N)
+
+    tot, npx, chpx = cnt(np.ones_like(valid)), cnt(newpv), cnt(chg)
     cover_ok = tot >= 5000                               # cell at least half inside the AOI
     share = np.where(cover_ok, chpx / np.maximum(tot, 1), 0)
     conv = share > A["converted_share"]["v"]
@@ -362,7 +370,7 @@ def a1_a2_link(cfg, g, c, S, qa=True):
                         "Thresholds calibrated on OSM solar polygons vs nearby land: the rule fires on ~52-55% of polygon pixels "
                         "and ~2-5% of surrounding land (which includes unmapped PV), so it undercounts PV area and picks up dark soil/rock/fallow as noise. "
                         "A 10 m pixel cannot see panel rows; new_pv_ha is a lower-confidence estimate (seasonal dry-season pair, same month both years) and detections are leads, not a survey."),
-        converted_mask_cells=[[int(i), int(j), round(float(share[i, j]), 2)] for i, j in zip(*np.where(conv & cover_ok))])
+        converted_mask_cells=[[int(i), int(j), round(float(share[i, j]), 2)] for i, j in zip(*np.where(conv & cover_ok), strict=True)])
     out["qa_verdict"] = ("Looked at top-6 tiles: 2 of 6 (tiles 805, 804: farmland -> grey panel blocks with access roads and a substation yard) are real new PV; "
                          "the other 4 (1425, 1471, 1424, 1609) are dark rock/burn-scar/shadowed hillside false positives. Precision on top tiles ~33%; "
                          "the rule cannot separate dark terrain from panels at 10 m. Hand-written after viewing the image; re-check it if thresholds change.")
@@ -373,14 +381,21 @@ def a1_a2_link(cfg, g, c, S, qa=True):
         t0c, t1c = np.load(CHIPS_ / "pvg_t0.npy", mmap_mode="r"), np.load(CHIPS_ / "pvg_t1.npy", mmap_mode="r")
         mc = ch.chipify(newpv)
         sel = np.argsort(-tile_ha)[:6]
-        rgb = lambda a: np.clip(a[[2, 1, 0]].astype(np.float32) / 1e4 / .25, 0, 1).transpose(1, 2, 0) ** (1 / 1.6)
+        def rgb(a):
+            return np.clip(a[[2, 1, 0]].astype(np.float32) / 1e4 / .25, 0, 1).transpose(1, 2, 0) ** (1 / 1.6)
+
         fig, ax = plt.subplots(6, 3, figsize=(7.5, 15), squeeze=False)
         for r_, t in enumerate(sel):
             for k, im in enumerate((rgb(t0c[t]), rgb(t1c[t]), mc[t])):
-                ax[r_, k].imshow(im, cmap="gray"); ax[r_, k].axis("off")
-            ax[r_, 0].set_title(f"tile {t}  t0", fontsize=8); ax[r_, 1].set_title(f"t1  new PV {tile_ha[t]:.1f} ha", fontsize=8); ax[r_, 2].set_title("mask", fontsize=8)
+                ax[r_, k].imshow(im, cmap="gray")
+                ax[r_, k].axis("off")
+            ax[r_, 0].set_title(f"tile {t}  t0", fontsize=8)
+            ax[r_, 1].set_title(f"t1  new PV {tile_ha[t]:.1f} ha", fontsize=8)
+            ax[r_, 2].set_title("mask", fontsize=8)
         ensure(REPORTS / "qa")
-        fig.tight_layout(); fig.savefig(REPORTS / "qa" / "pvg_solar.png", dpi=90); plt.close(fig)
+        fig.tight_layout()
+        fig.savefig(REPORTS / "qa" / "pvg_solar.png", dpi=90)
+        plt.close(fig)
         out["qa_png"] = "reports/qa/pvg_solar.png"
     return out
 
@@ -445,7 +460,6 @@ def main(argv=None):
     S, W = solar(c, cfg), wind(c, cfg)
     S["cluster_mw"], S["lab"] = clusters(S, cfg["solar"], cfg["solar"]["tariff_rs_kwh"]["v"])
     W["cluster_mw"], W["lab"] = clusters(W, cfg["wind"], cfg["wind"]["tariff_rs_kwh"]["v"])
-    cell_ha = 100.0
 
     # validation 1/2: OSM solar footprints
     park = c["solar_cover"] >= cfg["validation"]["park_cell_min_cover"]["v"]
@@ -472,7 +486,9 @@ def main(argv=None):
         return solar(c, P)["score"]
     base = set(top_idx(S["score"]))
     tariff = cfg["solar"]["tariff_rs_kwh"]["v"]
-    viable = lambda sc: int((-sc[~np.isnan(sc)] < tariff).sum())
+    def viable(sc):
+        return int((-sc[~np.isnan(sc)] < tariff).sum())
+
     cases = {"capex low": (None, cfg["solar"]["capex_cr_per_mw"]["lo"]), "capex base": (None, None), "capex high": (None, cfg["solar"]["capex_cr_per_mw"]["hi"]),
              "ha_per_mw 1.6": (1.6, None), "ha_per_mw 2.0": (2.0, None)}
     sc = {k: variant(*a) for k, a in cases.items()}
@@ -484,13 +500,17 @@ def main(argv=None):
         note="Ranking is by LCOE so tariff does not change the order, only which cells are viable (LCOE < tariff).")
     val["pavagada_lcoe_percentiles_note"] = "percentile = share of ranked cells with higher LCOE"
 
-    tot = lambda r: dict(ranked_cells=int((~np.isnan(r["score"])).sum()), mw=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mw"])))),
-                         mwh_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mwh"])))),
-                         revenue_rs_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["rev"])))))
+    def tot(r):
+        return dict(ranked_cells=int((~np.isnan(r["score"])).sum()), mw=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mw"])))),
+                    mwh_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mwh"])))),
+                    revenue_rs_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["rev"])))))
+
     ts, tw = top_idx(S["score"]), top_idx(W["score"])
     blk_ok = np.where(S["cluster_mw"] >= cfg["solar"]["block_mw"]["v"], S["score"], np.nan)
     tb = top_idx(blk_ok)
-    nb = lambda r, k: len({int(l) for l in r["lab"][r["cluster_mw"] >= cfg[k]["block_mw"]["v"]]})
+    def nb(r, k):
+        return len({int(c_) for c_ in r["lab"][r["cluster_mw"] >= cfg[k]["block_mw"]["v"]]})
+
     link = a1_a2_link(cfg, g, c, S)
     val["vs_previous_run"] = prev["validation"].get("vs_previous_run") if prev and "vs_previous_run" in prev["validation"] else None if not prev else dict(
         top20_overlap=len({(t["lat"], t["lon"]) for t in prev["top_solar"]} & {(round(float(c["lat"].ravel()[k]), 4), round(float(c["lon"].ravel()[k]), 4)) for k in ts}),

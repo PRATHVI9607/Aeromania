@@ -1,4 +1,3 @@
-import json
 
 import numpy as np
 from shapely.geometry import LineString, Point
@@ -30,14 +29,18 @@ def test_solar_math():
 
 def test_exclusions_and_slope():
     c = cells()
-    c["wc"][0, 0] = 0; c["wc"][0, 0, 0] = .6           # tree 60%
-    c["wc"][0, 1] = 0; c["wc"][0, 1, 7] = .6           # water
+    c["wc"][0, 0] = 0
+    c["wc"][0, 0, 0] = .6           # tree 60%
+    c["wc"][0, 1] = 0
+    c["wc"][0, 1, 7] = .6           # water
     c["prot"][1, 0] = .8                               # protected
     c["f5"][1, 1] = 0                                  # too steep
     r = st.solar(c, CFG)
     assert np.isnan(r["score"][0, 0]) and np.isnan(r["score"][0, 1]) and np.isnan(r["score"][1, 0])
     assert np.isnan(r["score"][1, 1])                  # zero usable ha
-    b = cells(); b["wc"][0, 0] = 0; b["wc"][0, 0, 4] = 1
+    b = cells()
+    b["wc"][0, 0] = 0
+    b["wc"][0, 0, 4] = 1
     assert np.isnan(st.solar(b, CFG)["score"][0, 0])
     assert not np.isnan(st.solar(b, CFG, built_ok=np.array([[True, False], [False, False]]))["score"][0, 0])
 

@@ -44,7 +44,6 @@ def test_invalid_chip_not_scored():
     x1 = x0.copy()
     x1[:, 40:60, 40:60] = 0.2
     m = ch.detect("construction", x0, x1, v, ch.DEFAULTS["construction"])[0]
-    full = np.tile(m, (ch.G, ch.G)) if False else None  # chip-level gating is in chip_stats
     big = np.zeros((ch.M, ch.M), bool)
     vb = np.zeros((ch.M, ch.M), bool)
     big[:64, :64], vb[:64, :64] = m, v

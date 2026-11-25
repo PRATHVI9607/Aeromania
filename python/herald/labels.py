@@ -16,11 +16,11 @@ from pyproj import Transformer
 from rasterio.enums import Resampling
 from rasterio.features import rasterize
 from rasterio.vrt import WarpedVRT
-from shapely.geometry import LineString, Polygon, shape
+from shapely.geometry import LineString, Polygon
 from shapely.ops import linemerge, polygonize, transform as shp_transform
 
 from herald.paths import CHIPS, LABELS, REPORTS, VAULT, ensure
-from herald.vault import (CLOUD_CLASSES, CROP, DATES, ENV, NCHIP, SIDE, aoi_transform, all_aois, dates_for, load_aois, log, retry,
+from herald.vault import (CLOUD_CLASSES, ENV, NCHIP, SIDE, aoi_transform, all_aois, dates_for, load_aois, log, retry,
                           scl_fractions, tile_chips, write_manifest)
 
 WC_CLASSES = (10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100)
@@ -57,7 +57,7 @@ def worldcover(meta) -> np.ndarray:
             log(f"  worldcover {name} unavailable: {str(e)[:80]}")
             continue
         grid = np.where(grid == 0, a, grid)
-    log(f"  worldcover class mix: " + ", ".join(f"{c}:{(grid == c).mean():.1%}" for c in WC_CLASSES if (grid == c).any()))
+    log("  worldcover class mix: " + ", ".join(f"{c}:{(grid == c).mean():.1%}" for c in WC_CLASSES if (grid == c).any()))
     return np.stack([chip_fractions(grid == c) for c in WC_CLASSES], axis=1)
 
 
@@ -107,7 +107,7 @@ def qa_png(aid, date, scl, chips, path):
     ok = np.where(nodata < 0.5)[0]
     pick = ok[np.argsort(cloud[ok])][np.linspace(0, len(ok) - 1, 16).astype(int)]  # spread low->high cloud
     fig, ax = plt.subplots(4, 4, figsize=(8, 8))
-    for a, i in zip(ax.ravel(), pick):
+    for a, i in zip(ax.ravel(), pick, strict=True):
         rgb = np.clip(chips[i, [2, 1, 0]].astype(np.float32) / 3000, 0, 1).transpose(1, 2, 0) ** 0.8
         a.imshow(rgb)
         m = np.isin(scl[i], CLOUD_CLASSES)
