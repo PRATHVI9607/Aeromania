@@ -12,7 +12,9 @@ const TABS = ["Mission", "FIFO vs HERALD", "Insights", "Queries", "Evidence", "E
 
 export function App() {
   const [data, setData] = useState<Data | null>(null);
-  useEffect(() => { loadData().then(setData); }, []);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { loadData().then(setData, (e) => setErr(String(e.message ?? e))); }, []);
+  if (err) return <div className="boot bad">{err}</div>;
   if (!data) return <div className="boot">loading data</div>;
   return <Shell data={data} />;
 }

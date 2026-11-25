@@ -1,5 +1,4 @@
 import type { ParamMeta, Params, Query, Station, Tile, TrackPt, Window } from "./types";
-import { defaultMeta, defaultParams, mockQueries, mockTiles, mockTrack, mockWindows, stations as mockStations } from "./mock/mock";
 
 export interface Data {
   tiles: Tile[]; wins: Window[]; track: TrackPt[]; stations: Station[]; queries: Query[];
@@ -29,19 +28,20 @@ function normTrack(j: any): TrackPt[] {
 export async function loadData(): Promise<Data> {
   const [t, w, tr, q, repIdx, st] = await Promise.all(
     ["tiles.json", "windows.json", "track.json", "queries.json", "reports/index.json", "reports/stations.json"].map(get));
-  const sample: string[] = [];
-  const tiles: Tile[] = t ? normTiles(t) : (sample.push("tiles"), mockTiles());
-  const track = tr ? normTrack(tr) : (sample.push("track"), mockTrack());
-  const wins: Window[] = w ? w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0)) : (sample.push("windows"), mockWindows(track));
-  const queries: Query[] = q ? q.queries : (sample.push("queries"), mockQueries);
-  const stations: Station[] = st?.stations ?? (st ? [] : mockStations);
-  let params = defaultParams, meta = defaultMeta;
-  if (q?.params) {
-    params = Object.fromEntries(Object.entries(q.params).map(([k, v]: [string, any]) => [k, v.value])) as unknown as Params;
-    meta = Object.fromEntries(Object.entries(q.params).map(([k, v]: [string, any]) => [k, { assumption: !!v.assumption, source: v.source }]));
-  } else sample.push("params");
+  const missing = [["tiles", t], ["windows", w], ["track", tr], ["queries", q]].filter(([, v]) => !v).map(([k]) => k as string);
+  if (missing.length) throw new Error(`required data files missing in web/public/data: ${missing.join(", ")}. Run the sim step.`);
+  const tiles: Tile[] = normTiles(t);
+  const track = normTrack(tr);
+  const wins: Window[] = w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0));
+  const queries: Query[] = q.queries;
+  const stations: Station[] = st?.stations ?? [];
+  const params = Object.fromEntries(Object.entries(q.params).map(([k, v]: [string, any]) => [k, v.value])) as unknown as Params;
+  const meta: Record<string, ParamMeta> = Object.fromEntries(Object.entries(q.params).map(([k, v]: [string, any]) => [k, { assumption: !!v.assumption, source: v.source }]));
   const reports: Record<string, any> = {};
   await Promise.all((repIdx ?? []).map(async (f: string) => { reports[f.replace(/\.json$/, "")] = await get(`reports/${f}`); }));
   const synthetic = [t, w, tr, q].some((x) => x && x.synthetic === true);
-  return { tiles, wins, track, stations, queries, params, meta, reports, sample, synthetic };
+  return { tiles, wins, track, stations, queries, params, meta, reports, sample: [], synthetic };
 }
+
+/** Fetch one optional JSON from /data; null if absent. */
+export const fetchJson = get;
