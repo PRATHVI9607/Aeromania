@@ -4,7 +4,7 @@
 
 Aeromania '26 Mach-A-Thon · "Orbit to Economy: AI in Space" · 12 hours · solo build · 5-min pitch to Boeing judges
 
-> One-liner: **HERALD is a satellite that decides what is worth sending home.** An onboard AI scores every image tile, a value-aware scheduler fills each real ground-station contact window with the highest ₹-value per byte, and the ground gets a tiny "insight packet" first, then a thumbnail, then the full chip only if someone pulls it. Two paying insight packs run on the same engine: **A — city growth / unassessed-construction survey triage** (Bengaluru), **C — illegal sand-mining and forest-clearing evidence** (Bihar, Chhattisgarh).
+> One-liner: **HERALD is a satellite that decides what is worth sending home.** An onboard AI scores every image tile, a value-aware scheduler fills each real ground-station contact window with the highest ₹-value per byte, and the ground gets a tiny "insight packet" first, then a thumbnail, then the full chip only if someone pulls it. Two paying insight packs run on the same engine: **A — "Catch the encroachment before the flood": new construction in Bengaluru lake/drain buffers flagged at the earthwork stage, plus a ward-level construction ledger** (Bengaluru), **C — illegal sand-mining and forest-clearing evidence** (Bihar, Chhattisgarh).
 
 ---
 
@@ -49,6 +49,8 @@ Scoring map: Economic/strategic impact 30% (₹ panel, named payers), Technical 
 | City revenue dept (BBMP/GBA) | A: rank wards for property-tax survey; new built-up not on the roll = unassessed | BBMP collected ₹4,930 cr in FY24-25; ~5 lakh of ~20.5 lakh properties reported unassessed; a finance-panel estimate puts the gap at ₹700–1,000 cr/yr. Per ha of newly detected built-up: ₹14,000/property/yr × 25 properties/ha × 0.24 unassessed ≈ **₹84,000/ha/yr** (`config/value.json`) |
 | City planners (BDA RMP-2041, BMRDA) | A: growth hotspots vs planned roads/water/metro | decision support, no ₹ claimed |
 | BBMP / lake authority (KTCDA) | A: new construction inside lake no-build buffers (SC 5 Mar 2019 restored RMP-2015 30 m; KTCDA 2025 tiers buffer by lake size) | flood-risk enforcement lead; "possible encroachment, verify on ground" — never a legal finding at 10 m |
+
+**Track A headline: "Catch the encroachment before the flood."** On 30 Aug 2022 flooding cost Outer Ring Road firms ₹225 crore in one day (ORRCA letter to the CM); BBMP then identified 696 stormwater-drain encroachments — after the fact — and the state earmarked ₹300 crore to remove encroachments. HERALD flags new earthwork inside lake buffers / near drains while it is still a cleared plot (`intervene_window`), when stopping it costs a notice instead of a demolition. Decision: where enforcement teams go this week.
 
 **Framing: "Bengaluru grows faster than it is mapped."** One construction ledger (per site: ward, footprint ha, stage over 4 dates — cleared → built, or stalled — buffer flag, confidence) feeds three decisions: lake-buffer enforcement, tax-roll survey triage, infrastructure planning.
 **Floors / height: not claimed.** 10 m optical cannot see height. HERALD does *tip-and-cue*: it flags sites so expensive sub-metre tasking (e.g. ISRO Cartosat-3, 0.25 m) or a field visit is spent on tens of sites instead of thousands.
@@ -357,7 +359,7 @@ Tests: pytest (python/tests), vitest (web). Parity test Py↔TS scheduler must p
 
 ## 21. Sources to cite on the final slide
 
-ESA Sentinel-2 L2A / SCL · Copernicus Sentinel-1 RTC via Microsoft Planetary Computer · BBMP ward boundaries (KGIS via DataMeet) · BBMP property-tax figures (Deccan Herald FY24-25; NewsFirst on unassessed properties) · Boeing BIETC campus (boeing.co.in, 2024) · Element84 Earth Search STAC · ESA WorldCover (CC-BY 4.0) · SSL4EO-S12 (Wang et al.) via torchgeo · EuroSAT (Helber et al.) · CloudScout / Phi-Sat-1 (Giuffrida et al.) · CEGA/Berkeley sand-mining detection · UNEP 2019 "Sand and sustainability" · OpenStreetMap contributors (ODbL) · CelesTrak · Skyfield.
+ESA Sentinel-2 L2A / SCL · Copernicus Sentinel-1 RTC via Microsoft Planetary Computer · BBMP ward boundaries (KGIS via DataMeet) · BBMP property-tax figures (Deccan Herald FY24-25; NewsFirst on unassessed properties) · Boeing BIETC campus (boeing.co.in, 2024) · ORRCA ₹225 cr flood loss and BBMP 696 drain encroachments (Deccan Herald, National Herald, Sep 2022) · SC 5 Mar 2019 lake-buffer judgment (LiveLaw) · Element84 Earth Search STAC · ESA WorldCover (CC-BY 4.0) · SSL4EO-S12 (Wang et al.) via torchgeo · EuroSAT (Helber et al.) · CloudScout / Phi-Sat-1 (Giuffrida et al.) · CEGA/Berkeley sand-mining detection · UNEP 2019 "Sand and sustainability" · OpenStreetMap contributors (ODbL) · CelesTrak · Skyfield.
 
 ---
 
