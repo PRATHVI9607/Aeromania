@@ -14,6 +14,7 @@ import numpy as np
 
 from herald import paths
 
+WC_CLASSES = ['Tree', 'Shrub', 'Grass', 'Crop', 'Built', 'Bare', 'Snow', 'Water', 'Wetland', 'Mangrove', 'Moss']  # ESA WorldCover codes 10,20,...,90,95,100
 CLASSES = ["AnnualCrop", "Forest", "HerbaceousVegetation", "Highway", "Industrial",
            "Pasture", "PermanentCrop", "Residential", "River", "SeaLake"]
 # torchgeo EuroSAT data puts B8A last; SSL4EO weights use standard order (B8A at 8). Indices differ for B11.
@@ -121,6 +122,11 @@ def small_cnn():
                          nn.Flatten(), nn.Linear(256, 512), nn.ReLU())
 
 
+def cloud_head():
+    from torch import nn
+    return nn.Sequential(nn.Linear(512, 64), nn.ReLU(), nn.Linear(64, 1))
+
+
 def make_model(pretrained=True, trunk=None):
     import torch
     from torch import nn
@@ -130,12 +136,14 @@ def make_model(pretrained=True, trunk=None):
             super().__init__()
             self.trunk, self.backbone = trunk, name
             self.cls = nn.Linear(512, 10)
-            self.cloud = nn.Sequential(nn.Linear(512, 64), nn.ReLU(), nn.Linear(64, 1))
+            self.cloud = cloud_head()
+            self.wc = nn.Sequential(nn.Linear(512, 128), nn.ReLU(), nn.Linear(128, 11))
             self.proj = nn.Linear(512, 64)
 
         def forward(self, x):
             f = self.trunk(x)
-            return self.cls(f), torch.sigmoid(self.cloud(f)), nn.functional.normalize(self.proj(f), dim=1)
+            return (self.cls(f), torch.sigmoid(self.cloud(f)), nn.functional.normalize(self.proj(f), dim=1),
+                    torch.softmax(self.wc(f), 1))
 
     return Herald(*(trunk if trunk else build_trunk(pretrained)))
 
@@ -144,7 +152,7 @@ def load_model(device="cpu"):
     import torch
     ck = torch.load(PT, map_location="cpu", weights_only=False)
     m = make_model(trunk=(_trunk_like(ck), ck["backbone"]))
-    m.load_state_dict(ck["state"])
+    m.load_state_dict(ck["state"], strict=False)  # old checkpoints lack the wc head
     return m.to(device).eval()
 
 
@@ -268,6 +276,8 @@ def cmd_calibrate(a):
     model = load_model(dev)
     if a.cloud:
         return cloud_stage(model, dev, a)
+    if a.wc:
+        return wc_stage(model, dev, a)
     va, te = get_eurosat("val"), get_eurosat("test")
     lv, _ = evaluate(model, *va, dev)
     lt, acc = evaluate(model, *te, dev)
@@ -293,50 +303,132 @@ def features(model, x, dev, bs=256):
 
 
 def fit_cloud(model, ftr, ytr, fte, yte, epochs=300):
-    """Train ONLY model.cloud on frozen features; returns held-out MAE."""
+    """Train ONLY model.cloud (re-initialised) on frozen features; returns held-out MAE."""
     import torch
+    dev = next(model.parameters()).device
+    model.cloud = cloud_head().to(dev)
     opt = torch.optim.AdamW(model.cloud.parameters(), lr=3e-3, weight_decay=1e-3)
     for _ in range(epochs):
         for idx in torch.randperm(len(ytr)).split(1024):
-            loss = torch.nn.functional.binary_cross_entropy_with_logits(model.cloud(ftr[idx].to(next(model.parameters()).device)).squeeze(1),
-                                                                         ytr[idx].to(next(model.parameters()).device))
+            loss = torch.nn.functional.binary_cross_entropy_with_logits(model.cloud(ftr[idx].to(dev)).squeeze(1), ytr[idx].to(dev))
             opt.zero_grad()
             loss.backward()
             opt.step()
     with torch.no_grad():
-        p = torch.sigmoid(model.cloud(fte.to(next(model.parameters()).device))).squeeze(1).cpu()
+        p = torch.sigmoid(model.cloud(fte.to(dev))).squeeze(1).cpu()
     return float((p - yte).abs().mean())
 
 
-def cloud_stage(model, dev, a):
+def scene_feats(model, dev):
+    """{(aoi, date): (trunk feats [N,512], cloud frac [N] from SCL classes 3,8,9,10, wc [N,11] or None)} for every vault scene."""
     import torch
-    feats = {}
-    for aoi in ("blr", "sone", "hasdeo"):
-        lab = cloud_labels(aoi) if (paths.LABELS / f"{aoi}.npz").exists() else {}
-        fs, ys = [], []
-        for d, y in lab.items():
-            f = paths.CHIPS / f"{aoi}_{d}.npy"
-            if f.exists():
-                fs.append(features(model, np.load(f, mmap_mode="r"), dev))
-                ys.append(torch.from_numpy(y.astype(np.float32)))
-        if fs:
-            feats[aoi] = (torch.cat(fs), torch.cat(ys))
-    if not {"blr", "sone", "hasdeo"} <= feats.keys():
-        print("cloud stage PENDING: vault chips/labels for blr,sone,hasdeo not all present", file=sys.stderr)
+    out = {}
+    for f in sorted(paths.CHIPS.glob("*_scl.npy")):
+        aoi, d = f.stem[:-4].split("_")
+        if not (paths.CHIPS / f"{aoi}_{d}.npy").exists():
+            continue
+        cl = np.isin(np.load(f), (3, 8, 9, 10)).mean((1, 2)).astype(np.float32)
+        wc = np.load(paths.LABELS / f"{aoi}.npz")["wc"] if (paths.LABELS / f"{aoi}.npz").exists() else None
+        out[aoi, d] = (features(model, np.load(paths.CHIPS / f"{aoi}_{d}.npy", mmap_mode="r"), dev), torch.from_numpy(cl), wc)
+    return out
+
+
+def cloud_stage(model, dev, a):
+    """Cloud head on frozen trunk. Headline: train blr+sone (all scenes incl. x1/x2) -> test hasdeo; plus leave-one-AOI-out folds."""
+    import torch
+    sf = scene_feats(model, dev)
+    aois = sorted({k[0] for k in sf})
+    if aois != ["blr", "hasdeo", "sone"]:
+        print("cloud stage PENDING: vault chips for blr,sone,hasdeo not all present", file=sys.stderr)
         return 1
-    ftr = torch.cat([feats["blr"][0], feats["sone"][0]])
-    ytr = torch.cat([feats["blr"][1], feats["sone"][1]])
     for p in model.parameters():
         p.requires_grad = False
+
+    def cat(keys):
+        return torch.cat([sf[k][0] for k in keys]), torch.cat([sf[k][1] for k in keys])
     for p in model.cloud.parameters():
         p.requires_grad = True
-    mae = fit_cloud(model, ftr, ytr, *feats["hasdeo"])
+    out, best = {}, None
+    for variant, keep in (("with_x1x2", lambda k: True), ("without_x1x2", lambda k: not k[1].startswith("x"))):
+        sv = {k: v for k, v in sf.items() if keep(k)}
+        loao = {}
+        for ho in aois:
+            tr = [k for k in sv if k[0] != ho]
+            (ftr, ytr), (fte, yte) = cat(tr), cat([k for k in sv if k[0] == ho])
+            loao[ho] = {"mae": fit_cloud(model, ftr, ytr, fte, yte), "mean_baseline_mae": float((yte - ytr.mean()).abs().mean()),
+                        "train_scenes": sorted(f"{k[0]}_{k[1]}" for k in tr)}
+            print("cloud", variant, ho, loao[ho]["mae"], flush=True)
+            if ho == "hasdeo":  # fit_cloud leaves the blr+sone-trained head in model.cloud
+                state = {k: v.clone() for k, v in model.cloud.state_dict().items()}
+        out[variant] = loao
+        if best is None or loao["hasdeo"]["mae"] < out[best]["hasdeo"]["mae"]:
+            best, best_state = variant, state
+    model.cloud.load_state_dict(best_state)
     ck = torch.load(PT, map_location="cpu", weights_only=False)
     ck["state"] = {k: v.cpu() for k, v in model.state_dict().items()}
     torch.save(ck, PT)
-    update_report({"cloud": {"mae": mae, "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"],
-                             "mean_baseline_mae": float((feats["hasdeo"][1] - ytr.mean()).abs().mean())}})
-    print("cloud MAE hasdeo", mae)
+    update_report({"cloud": {"mae": out[best]["hasdeo"]["mae"], "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"],
+                             "mean_baseline_mae": out[best]["hasdeo"]["mean_baseline_mae"], "kept_variant": best, "loao": out,
+                             "scenes_used": sorted(f"{k[0]}_{k[1]}" for k in sf), "labels": "SCL classes 3,8,9,10 fraction"}})
+    print("cloud kept", best, out[best]["hasdeo"]["mae"])
+    return 0
+
+
+def wc_stage(model, dev, a):
+    """WorldCover head on frozen trunk (EuroSAT outputs untouched). Soft-CE on clear chips (cloud<0.1); test = eastern third of chip columns."""
+    import torch
+    F = torch.nn.functional
+    sf = scene_feats(model, dev)
+    if not sf or any(v[2] is None for v in sf.values()):
+        print("wc stage PENDING: vault labels missing", file=sys.stderr)
+        return 1
+    for p in model.parameters():
+        p.requires_grad = False
+    col = np.arange(46 * 46) % 46
+    X = {"tr": [], "te": []}
+    meta = {"tr": [], "te": []}
+    for (aoi, d), (f, cl, wc) in sf.items():
+        clear = (cl.numpy() < 0.1)
+        for name, m in (("tr", clear & (col < 29)), ("te", clear & (col >= 31))):  # cols 29-30 = buffer
+            X[name].append((f[m], torch.from_numpy(wc[m])))
+            meta[name] += [aoi] * int(m.sum())
+    ftr, ytr = (torch.cat(z) for z in zip(*X["tr"]))
+    fte, yte = (torch.cat(z) for z in zip(*X["te"]))
+    aoi_te = np.array(meta["te"])
+    for p in model.wc.parameters():
+        p.requires_grad = True
+    opt = torch.optim.AdamW(model.wc.parameters(), lr=2e-3, weight_decay=1e-2)
+
+    for ep in range(60):
+        for idx in torch.randperm(len(ytr)).split(512):
+            lp = F.log_softmax(model.wc(ftr[idx].to(dev)), 1)
+            loss = -(ytr[idx].to(dev) * lp).sum(1).mean()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+    with torch.no_grad():
+        P = torch.softmax(model.wc(fte.to(dev)), 1).cpu().numpy()
+    T = yte.numpy()
+    pt, tt = P.argmax(1), T.argmax(1)
+    base = np.bincount(ytr.argmax(1).numpy(), minlength=11).argmax()
+    present = [c for c in range(11) if (tt == c).any() or (pt == c).any()]
+    conf = {WC_CLASSES[c]: {"n_true_dominant": int((tt == c).sum()), "recall": float((pt[tt == c] == c).mean()) if (tt == c).any() else None,
+                            "predicted_as": {WC_CLASSES[j]: int(((tt == c) & (pt == j)).sum()) for j in present if ((tt == c) & (pt == j)).any()}}
+            for c in present if (tt == c).any()}
+    per = {aoi: {"n": int((aoi_te == aoi).sum()), "top1_agreement": float((pt == tt)[aoi_te == aoi].mean()),
+                 "mean_l1": float(np.abs(P - T).sum(1)[aoi_te == aoi].mean())} for aoi in sorted(set(aoi_te))}
+    res = {"top1_agreement": float((pt == tt).mean()), "mean_l1": float(np.abs(P - T).sum(1).mean()),
+           "baseline_top1_majority": float((tt == base).mean()),
+           "baseline_l1_mean_fractions": float(np.abs(ytr.mean(0).numpy() - T).sum(1).mean()),
+           "n_train": len(ytr), "n_test": len(yte), "per_aoi": per, "confusion": conf, "classes": WC_CLASSES,
+           "split": "test = chip columns >= 31 of 46 (eastern third), columns 29-30 dropped as buffer; clear chips cloud<0.1 all dates",
+           "head": "MLP 512-128-11 on frozen trunk, soft cross-entropy; EuroSAT outputs unchanged",
+           "caveat": "ESA WorldCover 2021 is ~77% accurate globally; targets are 10 m labels aggregated to chips, same date for all scenes of an AOI"}
+    ck = torch.load(PT, map_location="cpu", weights_only=False)
+    ck["state"] = {k: v.cpu() for k, v in model.state_dict().items()}
+    torch.save(ck, PT)
+    update_report({"wc": res})
+    print(json.dumps({k: v for k, v in res.items() if k not in ("confusion",)}, indent=1))
     return 0
 
 
@@ -359,8 +451,8 @@ def export_onnx(model, path):
     import torch
     model = model.cpu().eval()
     torch.onnx.export(model, torch.zeros(1, 5, 64, 64), str(path), opset_version=17, dynamo=False,
-                      input_names=["x"], output_names=["logits", "cloud", "emb"],
-                      dynamic_axes={k: {0: "b"} for k in ("x", "logits", "cloud", "emb")})
+                      input_names=["x"], output_names=["logits", "cloud", "emb", "wc"],
+                      dynamic_axes={k: {0: "b"} for k in ("x", "logits", "cloud", "emb", "wc")})
 
 
 def quantize(fp32, int8, calib):
@@ -493,9 +585,9 @@ def cmd_score(a):
     sess = ort_session(INT8)
     paths.ensure(paths.SCORES)
     for f in sorted(files):
-        lg, cl, emb = ort_run(sess, prep(np.load(f)))
+        lg, cl, emb, wc = ort_run(sess, prep(np.load(f)))
         np.savez(paths.SCORES / f"{f.stem}.npz", probs=softmax(lg / T).astype(np.float32),
-                 cloud=cl[:, 0].astype(np.float32), emb=emb.astype(np.float16))
+                 cloud=cl[:, 0].astype(np.float32), emb=emb.astype(np.float16), wc=wc.astype(np.float32))
         print("scored", f.stem, flush=True)
     return 0
 
@@ -509,6 +601,7 @@ def main(argv):
     ap.add_argument("--bs", type=int, default=128)
     ap.add_argument("--scratch", action="store_true")
     ap.add_argument("--cloud", action="store_true")
+    ap.add_argument("--wc", action="store_true")
     ap.add_argument("--change", action="store_true")
     a = ap.parse_args(argv[1:])
     return {"train": cmd_train, "calibrate": cmd_calibrate, "export": cmd_export, "score": cmd_score}[argv[0]](a)

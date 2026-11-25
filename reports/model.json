@@ -25,39 +25,160 @@
     "SeaLake"
   ],
   "onnx": {
-    "calib_chips": 576,
-    "int8_mb": 11.32
+    "calib_chips": 672,
+    "int8_mb": 11.39
   },
   "latency": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "method": "median of 30 runs after 5 warmup, ms/chip amortized",
-    "ms_per_chip_int8_cpu_b1": 4.815554500055441,
-    "ms_per_chip_int8_cpu_b64": 1.3883221796788803,
-    "ms_per_chip_fp32_cpu_b1": 6.5534995001144125,
-    "ms_per_chip_fp32_cpu_b64": 2.7244712578209374,
-    "ms_per_chip_torch_gpu_b64": 0.21824299217598764,
+    "ms_per_chip_int8_cpu_b1": 4.203310500088264,
+    "ms_per_chip_int8_cpu_b64": 1.4292370937596388,
+    "ms_per_chip_fp32_cpu_b1": 6.77332849954837,
+    "ms_per_chip_fp32_cpu_b64": 2.6984402421845743,
+    "ms_per_chip_torch_gpu_b64": 1.1184074296863855,
     "gpu": "NVIDIA GeForce RTX 2050",
     "device": "13th Gen Intel(R) Core(TM) i5-13420H",
-    "ms_per_chip_int8_cpu_b64_t2": 1.0997518203197387,
-    "ms_per_chip_int8_cpu_b64_t4": 1.2047437656121929,
-    "ms_per_chip_int8_cpu_b64_best": 1.0997518203197387,
-    "load_avg_1m": 3.646484375
+    "ms_per_chip_int8_cpu_b64_t2": 1.3698214609405568,
+    "ms_per_chip_int8_cpu_b64_t4": 1.5595529609271352,
+    "ms_per_chip_int8_cpu_b64_best": 1.3698214609405568,
+    "load_avg_1m": 3.69482421875
   },
   "cloud": {
-    "mae": 0.08676914125680923,
+    "mae": 0.08708459883928299,
     "heldout_aoi": "hasdeo",
     "train_aois": [
       "blr",
       "sone"
     ],
-    "mean_baseline_mae": 0.2959120571613312,
+    "mean_baseline_mae": 0.2959119975566864,
     "head": "chip-level MLP on frozen trunk features (512->64->1, sigmoid)",
     "pixel_head_experiment": {
       "mae": 0.1315,
       "pixel_precision": 0.859,
       "pixel_recall": 0.525,
       "verdict": "worse than chip head (0.087), discarded; hasdeo has 9.2% SCL class 10 thin cirrus, ~0% in blr/sone, so recall is low"
-    }
+    },
+    "loao": {
+      "with_x1x2": {
+        "blr": {
+          "mae": 0.13427741825580597,
+          "mean_baseline_mae": 0.35558563470840454,
+          "train_scenes": [
+            "hasdeo_c1",
+            "hasdeo_c2",
+            "hasdeo_t0",
+            "hasdeo_t1",
+            "hasdeo_x1",
+            "sone_c1",
+            "sone_c2",
+            "sone_t0",
+            "sone_t1",
+            "sone_x1",
+            "sone_x2"
+          ]
+        },
+        "hasdeo": {
+          "mae": 0.15141844749450684,
+          "mean_baseline_mae": 0.35497763752937317,
+          "train_scenes": [
+            "blr_c1",
+            "blr_c2",
+            "blr_t0",
+            "blr_t1",
+            "blr_x1",
+            "blr_x2",
+            "sone_c1",
+            "sone_c2",
+            "sone_t0",
+            "sone_t1",
+            "sone_x1",
+            "sone_x2"
+          ]
+        },
+        "sone": {
+          "mae": 0.17588290572166443,
+          "mean_baseline_mae": 0.3544865846633911,
+          "train_scenes": [
+            "blr_c1",
+            "blr_c2",
+            "blr_t0",
+            "blr_t1",
+            "blr_x1",
+            "blr_x2",
+            "hasdeo_c1",
+            "hasdeo_c2",
+            "hasdeo_t0",
+            "hasdeo_t1",
+            "hasdeo_x1"
+          ]
+        }
+      },
+      "without_x1x2": {
+        "blr": {
+          "mae": 0.08628429472446442,
+          "mean_baseline_mae": 0.2869757413864136,
+          "train_scenes": [
+            "hasdeo_c1",
+            "hasdeo_c2",
+            "hasdeo_t0",
+            "hasdeo_t1",
+            "sone_c1",
+            "sone_c2",
+            "sone_t0",
+            "sone_t1"
+          ]
+        },
+        "hasdeo": {
+          "mae": 0.08708459883928299,
+          "mean_baseline_mae": 0.2959119975566864,
+          "train_scenes": [
+            "blr_c1",
+            "blr_c2",
+            "blr_t0",
+            "blr_t1",
+            "sone_c1",
+            "sone_c2",
+            "sone_t0",
+            "sone_t1"
+          ]
+        },
+        "sone": {
+          "mae": 0.08119034022092819,
+          "mean_baseline_mae": 0.28200966119766235,
+          "train_scenes": [
+            "blr_c1",
+            "blr_c2",
+            "blr_t0",
+            "blr_t1",
+            "hasdeo_c1",
+            "hasdeo_c2",
+            "hasdeo_t0",
+            "hasdeo_t1"
+          ]
+        }
+      }
+    },
+    "scenes_used": [
+      "blr_c1",
+      "blr_c2",
+      "blr_t0",
+      "blr_t1",
+      "blr_x1",
+      "blr_x2",
+      "hasdeo_c1",
+      "hasdeo_c2",
+      "hasdeo_t0",
+      "hasdeo_t1",
+      "hasdeo_x1",
+      "sone_c1",
+      "sone_c2",
+      "sone_t0",
+      "sone_t1",
+      "sone_x1",
+      "sone_x2"
+    ],
+    "labels": "SCL classes 3,8,9,10 fraction",
+    "kept_variant": "without_x1x2"
   },
   "embedding_change": {
     "auc_vs_rules": 0.5612698608964453,
@@ -75,6 +196,132 @@
       "4": 0.634625
     },
     "injected_note": "200 unchanged valid blr t1 chips; patched vs same chips unpatched; real built/bare spectra, no spatial texture",
-    "audit_auc": "not run: reports/audit_blr.json absent"
+    "audit_auc": "TODO"
+  },
+  "wc": {
+    "top1_agreement": 0.8312157282332486,
+    "mean_l1": 0.4175589680671692,
+    "baseline_top1_majority": 0.6723284739868931,
+    "baseline_l1_mean_fractions": 0.8649052381515503,
+    "n_train": 12983,
+    "n_test": 7477,
+    "per_aoi": {
+      "blr": {
+        "n": 2305,
+        "top1_agreement": 0.7822125813449023,
+        "mean_l1": 0.5268954634666443
+      },
+      "hasdeo": {
+        "n": 1976,
+        "top1_agreement": 0.8107287449392713,
+        "mean_l1": 0.345192015171051
+      },
+      "sone": {
+        "n": 3196,
+        "top1_agreement": 0.8792240300375469,
+        "mean_l1": 0.3834465444087982
+      }
+    },
+    "confusion": {
+      "Tree": {
+        "n_true_dominant": 1589,
+        "recall": 0.8470736312146003,
+        "predicted_as": {
+          "Tree": 1346,
+          "Shrub": 3,
+          "Grass": 47,
+          "Crop": 168,
+          "Built": 2,
+          "Bare": 1,
+          "Water": 22
+        }
+      },
+      "Shrub": {
+        "n_true_dominant": 200,
+        "recall": 0.03,
+        "predicted_as": {
+          "Tree": 73,
+          "Shrub": 6,
+          "Grass": 2,
+          "Crop": 112,
+          "Water": 7
+        }
+      },
+      "Grass": {
+        "n_true_dominant": 219,
+        "recall": 0.2876712328767123,
+        "predicted_as": {
+          "Tree": 33,
+          "Grass": 63,
+          "Crop": 114,
+          "Bare": 3,
+          "Water": 6
+        }
+      },
+      "Crop": {
+        "n_true_dominant": 5027,
+        "recall": 0.9090909090909091,
+        "predicted_as": {
+          "Tree": 216,
+          "Shrub": 3,
+          "Grass": 112,
+          "Crop": 4570,
+          "Built": 73,
+          "Bare": 4,
+          "Water": 49
+        }
+      },
+      "Built": {
+        "n_true_dominant": 269,
+        "recall": 0.5724907063197026,
+        "predicted_as": {
+          "Tree": 20,
+          "Grass": 5,
+          "Crop": 86,
+          "Built": 154,
+          "Bare": 4
+        }
+      },
+      "Bare": {
+        "n_true_dominant": 73,
+        "recall": 0.0273972602739726,
+        "predicted_as": {
+          "Tree": 2,
+          "Shrub": 3,
+          "Grass": 14,
+          "Crop": 44,
+          "Built": 7,
+          "Bare": 2,
+          "Water": 1
+        }
+      },
+      "Water": {
+        "n_true_dominant": 100,
+        "recall": 0.74,
+        "predicted_as": {
+          "Tree": 14,
+          "Grass": 2,
+          "Crop": 9,
+          "Bare": 1,
+          "Water": 74
+        }
+      }
+    },
+    "classes": [
+      "Tree",
+      "Shrub",
+      "Grass",
+      "Crop",
+      "Built",
+      "Bare",
+      "Snow",
+      "Water",
+      "Wetland",
+      "Mangrove",
+      "Moss"
+    ],
+    "split": "test = chip columns >= 31 of 46 (eastern third), columns 29-30 dropped as buffer; clear chips cloud<0.1 all dates",
+    "head": "MLP 512-128-11 on frozen trunk, soft cross-entropy; EuroSAT outputs unchanged",
+    "caveat": "ESA WorldCover 2021 is ~77% accurate globally; targets are 10 m labels aggregated to chips, same date for all scenes of an AOI"
   }
 }

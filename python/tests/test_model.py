@@ -26,12 +26,12 @@ def test_forward_and_onnx_roundtrip(tmp_path):
     ort = pytest.importorskip("onnxruntime")
     m = M.make_model(trunk=(M.small_cnn(), "small")).eval()
     x = torch.randn(3, 5, 64, 64)
-    lg, cl, emb = m(x)
-    assert lg.shape == (3, 10) and cl.shape == (3, 1) and emb.shape == (3, 64)
+    lg, cl, emb, wc = m(x)
+    assert lg.shape == (3, 10) and cl.shape == (3, 1) and emb.shape == (3, 64) and wc.shape == (3, 11)
     assert torch.allclose(emb.norm(dim=1), torch.ones(3), atol=1e-4) and ((cl >= 0) & (cl <= 1)).all()
     M.export_onnx(m, tmp_path / "t.onnx")
     o = M.ort_session(tmp_path / "t.onnx").run(None, {"x": x.numpy()})
-    assert [a.shape for a in o] == [(3, 10), (3, 1), (3, 64)]
+    assert [a.shape for a in o] == [(3, 10), (3, 1), (3, 64), (3, 11)]
     assert np.allclose(o[0], lg.detach().numpy(), atol=1e-3)
 
 
