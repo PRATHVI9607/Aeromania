@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Cartesian2, Cartesian3, Color, ConstantPositionProperty, EasingFunction, HorizontalOrigin, JulianDate, LabelStyle, Material, PointPrimitiveCollection, PolylineCollection,
+  BillboardCollection, Cartesian2, Cartesian3, Color, HeadingPitchRange, LabelCollection, Matrix4, NearFarScalar, ConstantPositionProperty, EasingFunction, HorizontalOrigin, JulianDate, LabelStyle, Material, PointPrimitiveCollection, PolylineCollection,
   Rectangle, VerticalOrigin, Viewer, ScreenSpaceEventType,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
@@ -10,6 +10,7 @@ import { ViewHead } from "../ui";
 import { reduced } from "../anim";
 import { useJson } from "../useJson";
 import { makeEarth } from "../cz";
+import { createSatellite, DISH_ICON } from "./satModel";
 
 
 const SPEEDS = [1, 10, 60, 300, 1200]; // sim seconds per wall second
@@ -17,6 +18,10 @@ const TRAIL_MIN = 100, SEGS = 8, LEAD_MIN = 5; // display only: about one orbit 
 const SW_DEG = 1.3; // half swath in degrees, display only (about 145 km)
 const amber = Color.fromCssColorString("#f2a93b"), teal = Color.fromCssColorString("#6fd3c0");
 const PRESET_NAMES: Record<string, string> = { blr: "Bengaluru", sone: "Sone", hasdeo: "Hasdeo", pavagada: "Pavagada" };
+const ORBIT_KM = 786, EL_MIN = 10; // 10 degree minimum elevation
+const RE = 6371;
+/** ground range (m) of the contact cap: central angle = acos(Re/(Re+h) cos el) - el */
+export const capRangeM = (h = ORBIT_KM, el = EL_MIN) => { const e = (el * Math.PI) / 180; return (Math.acos((RE / (RE + h)) * Math.cos(e)) - e) * RE * 1000; };
 const NPK = 10; // packet dots per live link
 const P = (lon: number, lat: number, h = 0) => Cartesian3.fromDegrees(lon, lat, h);
 
@@ -43,7 +48,7 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   const [play, setPlay] = useState(true);
   const [speed, setSpeed] = useState(2);
   const [follow, setFollow] = useState(true);
-  const tRef = useRef(t0), followRef = useRef(true), lis = useRef<HTMLUListElement>(null);
+  const closeRef = useRef(false), tRef = useRef(t0), followRef = useRef(true), lis = useRef<HTMLUListElement>(null);
   const wj = useJson<any>("windows.json"), siting = useJson<any>("siting.json");
   const epochRef = useRef<JulianDate | null>(null);
   useEffect(() => { if (wj?.epoch_utc) epochRef.current = JulianDate.fromIso8601(wj.epoch_utc); }, [wj]);
@@ -77,7 +82,15 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
     const halo = pts.add({ position: P(0, 0, 786000), pixelSize: 30, color: amber.withAlpha(0.16) });
     const packets = Array.from({ length: 3 * NPK }, () => pts.add({ position: P(0, 0), pixelSize: 3.5, color: teal, show: false }));
     const foot = v.entities.add({ position: P(0, 0), ellipse: { semiMajorAxis: SW_DEG * 111000, semiMinorAxis: SW_DEG * 111000, material: amber.withAlpha(0.14), outline: true, outlineColor: amber.withAlpha(0.5), height: 0 } });
-    const sat = pts.add({ position: P(0, 0, 786000), pixelSize: 11, color: Color.WHITE, outlineColor: amber, outlineWidth: 3 });
+    const sat3 = createSatellite(v.scene), sat = { position: P(0, 0, 786000) } as { position: Cartesian3 };
+    const dishes = v.scene.primitives.add(new BillboardCollection({ scene: v.scene })), labels = v.scene.primitives.add(new LabelCollection({ scene: v.scene }));
+    const caps = new Map<string, any>(), R = capRangeM(), cyan = Color.fromCssColorString("#22D3EE");
+    for (const s of data.stations) {
+      dishes.add({ position: P(s.lon, s.lat, 20000), image: DISH_ICON, verticalOrigin: VerticalOrigin.BOTTOM, scaleByDistance: new NearFarScalar(2e6, 1, 5e7, 0.6) });
+      labels.add({ position: P(s.lon, s.lat, 20000), text: s.name.split(" (")[0], font: "500 12px Inter, sans-serif", fillColor: Color.fromCssColorString("#E6EDF3"), outlineColor: Color.fromCssColorString("#0A0E14"), outlineWidth: 3, style: LabelStyle.FILL_AND_OUTLINE,
+        horizontalOrigin: HorizontalOrigin.LEFT, verticalOrigin: VerticalOrigin.TOP, pixelOffset: new Cartesian2(10, 2), scaleByDistance: new NearFarScalar(2e6, 1, 5e7, 0.7) });
+      caps.set(s.id, v.entities.add({ position: P(s.lon, s.lat), ellipse: { semiMajorAxis: R, semiMinorAxis: R, material: cyan.withAlpha(0.07), outline: true, outlineColor: cyan.withAlpha(0.4), height: 0 } }));
+    }
     const lines = v.scene.primitives.add(new PolylineCollection());
     const mat = (c: Color) => Material.fromType("Color", { color: c });
     const trail = Array.from({ length: SEGS }, (_, j) => lines.add({ positions: [P(0, 0), P(1, 1)], width: 2.2, material: mat(amber.withAlpha(0.8 * Math.pow(1 - j / SEGS, 1.2) + 0.15)), show: false }));
@@ -94,9 +107,9 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
       if (n !== 0) return; rd.ok = true; (window as any).__herald = { ...(window as any).__herald, globeReady: true };
       if (!rd.flown && !reduced()) { rd.flown = true; v.camera.flyTo({ destination: P(lon0, lat0 * 0.8, 1.6e7), duration: 3, easingFunction: EasingFunction.CUBIC_IN_OUT, complete: () => { rd.intro = true; } }); }
     });
-    scene.current = { rd, sat, halo, foot, packets, stPts, trail, swath, nadir, arcs };
+    scene.current = { sat3, caps, capOn: new Map<string, boolean>(), rd, sat, halo, foot, packets, stPts, trail, swath, nadir, arcs };
     viewer.current = v; (window as any).__herald = { globeReady: false, layers: {} };
-    const off = () => { followRef.current = false; setFollow(false); };
+    const off = () => { followRef.current = false; setFollow(false); if (closeRef.current) { closeRef.current = false; v.camera.lookAtTransform(Matrix4.IDENTITY); } };
     const el = v.canvas; el.addEventListener("pointerdown", off);
     return () => { el.removeEventListener("pointerdown", off); v.useDefaultRenderLoop = false; v.camera.cancelFlight(); v.destroy(); viewer.current = null; scene.current = {}; };
   }, [data.track, data.stations, aois, t0]);
@@ -118,6 +131,8 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
       const tt = tRef.current;
       const [lat, lon] = interp(data.track, tt);
       const sp = P(lon, lat, 786000); S.sat.position = sp; S.halo.position = sp;
+      { const [la3, lo3] = interp(data.track, tt + 0.2), dist = Cartesian3.distance(v.camera.positionWC, sp), cam = v.camera.frustum as any;
+        S.sat3.update(sp, P(lo3, la3, 786000), (dist * 2 * Math.tan((cam.fovy ?? 1) / 2)) / v.canvas.clientHeight, dist < 6e6); }
       if (epochRef.current) v.clock.currentTime = JulianDate.addSeconds(epochRef.current, tt * 60, new JulianDate());
       if (now - tr > 90 || !play) {
         tr = now;
@@ -140,6 +155,7 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
       for (const [id, p] of S.stPts as Map<string, any>) {
         const live = on.has(id);
         p.pixelSize = live && !reduced() ? 9 + 2 * ph : live ? 10 : 8;
+        if (S.capOn.get(id) !== live) { S.capOn.set(id, live); const e = S.caps.get(id).ellipse; e.material = Color.fromCssColorString("#22D3EE").withAlpha(live ? 0.26 : 0.07); e.outlineColor = Color.fromCssColorString("#22D3EE").withAlpha(live ? 0.9 : 0.4); }
         p.outlineWidth = live ? 2 + 7 * (reduced() ? 0.5 : ph) : 0; p.outlineColor = teal.withAlpha(live ? 0.55 - 0.4 * ph : 0);
       }
       S.arcs.forEach((a: any, i: number) => {
@@ -152,7 +168,8 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
           if (st) pk.position = Cartesian3.lerp(sp, P(st.lon, st.lat, 0), (((now / 1000) * rate + k / NPK) % 1 + 1) % 1, new Cartesian3());
         }
       });
-      if (followRef.current && S.rd.intro) {
+      if (closeRef.current) { const [la4, lo4] = interp(data.track, tt + 0.2); v.camera.lookAt(sp, new HeadingPitchRange(Math.atan2((lo4 - lon) * Math.cos((lat * Math.PI) / 180), la4 - lat) + 2.4, -0.45, 9e5)); }
+      else if (followRef.current && S.rd.intro) {
         const dl = ((lon - cl + 540) % 360) - 180;
         cl = (cl + dl * Math.min(1, dt * 3) + 540) % 360 - 180; cb += (Math.max(-55, Math.min(55, lat * 0.8)) - cb) * Math.min(1, dt * 3);
         v.camera.setView({ destination: P(cl, cb, 1.6e7) });
@@ -167,13 +184,15 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   const fly = (name: string) => {
     const v = viewer.current; if (!v) return; setFollow(false); followRef.current = false;
     const d = reduced() ? 0 : 1.8, easingFunction = EasingFunction.CUBIC_IN_OUT;
+    if (closeRef.current) { closeRef.current = false; v.camera.lookAtTransform(Matrix4.IDENTITY); }
+    if (name === "Satellite") { v.camera.cancelFlight(); closeRef.current = true; return; }
     if (name === "Globe") { const [la, lo] = interp(data.track, tRef.current); return v.camera.flyTo({ destination: P(lo, la * 0.8, 3.2e7), duration: d, easingFunction }); }
     if (name === "India") return v.camera.flyTo({ destination: Rectangle.fromDegrees(64, 4, 100, 38), duration: d, easingFunction });
     const b = name === "pavagada" ? (siting?.bbox as number[] | undefined) : aois.get(name);
     if (!b) return;
     const pad = 0.12, [w, so, e, n] = name === "pavagada" ? b : b; v.camera.flyTo({ destination: Rectangle.fromDegrees(w - pad, so - pad, e + pad, n + pad), duration: d, easingFunction });
   };
-  const presets = ["Globe", "India", ...[...aois.keys(), ...(siting?.bbox ? ["pavagada"] : [])]];
+  const presets = ["Globe", "India", "Satellite", ...[...aois.keys(), ...(siting?.bbox ? ["pavagada"] : [])]];
   const active = wins.find((w) => t >= w.start_min && t < w.end_min);
   const next = wins.filter((w) => w.start_min > t).sort((a, b) => a.start_min - b.start_min)[0];
   const stName = useMemo(() => new Map(data.stations.map((s) => [s.id, s.name])), [data.stations]);
