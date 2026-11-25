@@ -71,6 +71,19 @@ def synthetic(phases, seed=7):
     return out
 
 
+SOURCE = {}   # "aoi/date" -> "captures" | "tiles(t1 only)" | "none"
+
+
+def change_for(chg, d):
+    """Per-tile change records {i: rec} for capture d (each vs t0). Prefer chg["captures"][d]; else chg["tiles"] for t1 only
+    (other dates get no change, i.e. zero value)."""
+    if d in chg.get("captures", {}):
+        return {t["i"]: t for t in chg["captures"][d]}, "captures"
+    if d == "t1":
+        return {t["i"]: t for t in chg["tiles"]}, "tiles(t1 only)"
+    return {}, "none"
+
+
 def real(phases):
     """Tiles from vault outputs, or None if any input is missing."""
     try:
@@ -80,14 +93,17 @@ def real(phases):
             k = a["id"]
             meta = json.loads((VAULT / "meta" / f"{k}.json").read_text(encoding="utf-8"))["tiles"]
             ch = json.loads((REPORTS / f"change_{k}.json").read_text(encoding="utf-8"))
-            ch = {t["i"]: t for t in (ch["tiles"] if isinstance(ch, dict) else ch)}
+            chg = ch
             dates = sorted(("c1", "c2", "t1"), key=lambda d: scenes[k]["dates"][d]["datetime"])
             t0 = np.load(SCORES / f"{k}_t0.npz")["probs"]
             for j, d in enumerate(dates):
                 sc = np.load(SCORES / f"{k}_{d}.npz")
                 chips = np.load(VAULT / "chips" / f"{k}_{d}.npy", mmap_mode="r")
+                ch, used = change_for(chg, d)
+                SOURCE[f"{k}/{d}"] = used
                 for m in meta:
-                    i, p, c = m["i"], sc["probs"][m["i"]], ch[m["i"]]
+                    i, p = m["i"], sc["probs"][m["i"]]
+                    c = ch.get(i, {"sev": 0, "ha": 0, "kind": "none"})
                     gate = c["sev"] > 0 and c.get("valid", True)
                     pA = (p[3] + p[4] + p[7]) * gate if a["pack"] == "A" else 0.0
                     pC = 0.0
@@ -184,12 +200,20 @@ def main(argv=None):
     robust = {"note": "H1 sends full chips only: no packet-fraction assumption involved.",
               "H1_vs_B1": h["5"]["ratio_vs_fifo"]["H1"], "H1_vs_B2": h["5"]["ratio_vs_b2"]["H1"],
               "H2_packet_fraction_sensitivity_rho5": sens}
+    nz = [t for t in tiles if t["pA"] + t["pC"] > 0 and t["sev"] > 0]
+    by = {d: [t for t in tiles if t["date"] == d] for d in ("c1", "c2", "t1")}
+    frac = {d: _r(sum(1 for t in v if t["pA"] + t["pC"] > 0 and t["sev"] > 0) / max(1, len(v)), 3) for d, v in by.items()}
+    cl = {d: _r(float(np.mean([t["cloud"] for t in v])) if v else 0, 3) for d, v in by.items()}
+    note = (f"The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 "
+            f"per capture: {frac}; mean cloud per capture: {cl}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; "
+            f"value-aware policies send the valuable ones first. Change source per capture: {sorted(set(SOURCE.values()))}. "
+            f"If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.")
     phys = orbit.physics(wins)
     checks = {"period_ok": 100.4 <= phys["period_tle_min"] <= 100.8, "inclination_ok": abs(phys["inclination_deg"] - 98.62) < 0.01,
               "max_pass_ok": 9.5 <= phys["max_pass_min"] <= 11.5, "min_el_ok": all(w["max_el"] >= orbit.MIN_EL for w in wins),
               "windows_nonempty": len(wins) > 0}
     assert all(checks.values()), (checks, phys)
-    rep = {"synthetic": syn, "physics": phys, "checks": checks, "headline_rho5": h["5"], "by_rho": h, "robustness": robust, "load_avg": os.getloadavg() if hasattr(os, "getloadavg") else None,
+    rep = {"synthetic": syn, "physics": phys, "checks": checks, "headline_rho5": h["5"], "by_rho": h, "robustness": robust, "headline_note": note, "change_source": dict(SOURCE), "frac_tiles_with_value": frac, "mean_cloud": cl, "load_avg": os.getloadavg() if hasattr(os, "getloadavg") else None,
            "g5_ms_per_1000_tiles_H2": round(min(t5) * 1000, 2),
            "capture_overpasses_10d_cycle": caps, "capture_phase_min_utc": phases,
            "n_tiles": len(tiles), "n_windows": len(wins), "n_windows_used": len(uw),
