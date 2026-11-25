@@ -163,6 +163,8 @@ def main(argv=None):
         caps[x["id"]] = ov
         phases[x["id"]] = ov[0]["t_min"] % 1440 if ov else 330.0   # fallback 05:30 UTC
     tiles, syn = build(phases)
+    if not tiles:
+        raise SystemExit("sim: no tiles built (check vault/meta, scores and change reports)")
     t_first = min(t["t_cap_min"] for t in tiles)
     uw = split_windows([w for w in wins if w["end_min"] > t_first], sorted({t["t_cap_min"] for t in tiles}))
     prep = sched.prepare(tiles, queries, params)

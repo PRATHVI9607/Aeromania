@@ -61,7 +61,7 @@ function Shell({ data }: { data: Data }) {
   useEffect(() => { document.title = `${cur.title} | HERALD`; }, [cur]);
   const [queries, setQueries] = useState<Query[]>(data.queries);
   const [rho, setRho] = useState(5);
-  const { out, ms, runs } = useSched(data.tiles, data.wins, data.params, queries, rho);
+  const { out, ms, runs, err: schedErr } = useSched(data.tiles, data.wins, data.params, queries, rho);
   const onKey = (e: React.KeyboardEvent) => {
     const d = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : e.key === "Home" ? -99 : e.key === "End" ? 99 : 0;
     if (!d) return;
@@ -96,6 +96,7 @@ function Shell({ data }: { data: Data }) {
           </nav>
           <span className="tagline" />
           <div className="flags">
+            {schedErr && <span className="badge warn" role="alert">{schedErr}</span>}
             {data.synthetic && <span className="badge warn">synthetic orbit data</span>}
             {data.sample.length > 0 && <span className="badge warn" title={data.sample.join(", ")}>sample data: {data.sample.join(", ")}</span>}
             {date && <span className="badge" title="Date of the latest Sentinel-2 scene in the Bengaluru pair">Data as of {date}</span>}

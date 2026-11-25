@@ -72,10 +72,11 @@ function Timeline({ card, site }: { card: any; site: any }) {
 
 /* ---------------------------------------------------------------- 2. radar */
 function Radar({ card, site }: { card: any; site: any }) {
-  const f = site.files, m = site.s1_mean_vh_db as Record<string, number> | undefined;
+  const f = site?.files ?? {}, m = site?.s1_mean_vh_db as Record<string, number> | undefined;
   const lab: [string, string, string][] = [["s1vh_t0", "t0", card.dates.t0], ["s1vh_t1", "t1", card.dates.t1], ["s1vh_monsoon", "monsoon", card.dates.monsoon_s1]];
   if (!f.s1vh_t0) return <p className="deep-dim">No Sentinel-1 crops for this case.</p>;
-  const pts = m ? [["t0", m.t0], ["t1", m.t1], ["monsoon", m.monsoon]] as [string, number][] : [];
+  const pts = (m ? [["t0", m.t0], ["t1", m.t1], ["monsoon", m.monsoon]] as [string, number][] : []).filter((q) => Number.isFinite(q[1])); // partial radar data must not produce NaN axes
+  if (!pts.length) return <p className="deep-dim">No Sentinel-1 backscatter values for this case.</p>;
   const lo = Math.min(...pts.map((p) => p[1])) - 1, hi = Math.max(...pts.map((p) => p[1])) + 1;
   const W = 260, H = 170, X = (i: number) => 44 + i * 90, Y = (v: number) => 14 + ((hi - v) / (hi - lo)) * (H - 50);
   return (
@@ -160,7 +161,7 @@ function Certificate({ ev, sel, site }: { ev: Ev; sel: number; site: any }) {
     let dead = false; setV(null);
     (async () => {
       const [a, b] = await Promise.all([sha256Hex(canon(ev.nodes[sel], true, "hash")), sha256Hex(canon(ev.nodes[sel], false, "hash"))]);
-      const prev = sel === 0 ? ev.meta.genesis : ev.cards[sel - 1].hash;
+      const prev = sel === 0 ? ev.meta?.genesis : ev.cards[sel - 1]?.hash;
       const imgs = [];
       for (const [k, o] of Object.entries<any>(card.images ?? {})) {
         let ok: boolean | null = null;
@@ -244,7 +245,8 @@ export default function TrackC({ data }: { data: Data }) {
   void data;
   if (ev === undefined || sites === null) return <div className="deep"><p className="deep-dim">Loading evidence...</p></div>;
   if (ev === null) return <div className="deep"><div className="deep-err" role="alert">evidence.json is missing from /data.</div></div>;
-  const card = ev.cards[sel], site = sites[`ev_${card.card_id}`];
+  if (!Array.isArray(ev.cards) || !ev.cards.length) return <div className="deep"><div className="deep-err" role="alert">evidence.json has no cards.</div></div>;
+  const card = ev.cards[Math.min(sel, ev.cards.length - 1)], site = sites?.[`ev_${card.card_id}`];
   const sec = (n: string, t: string, id: string, lede: string, body: React.ReactNode) => (
     <section className="deep-sec" aria-labelledby={id}><header><span className="deep-n">{n}</span><h3 id={id}>{t}</h3></header><p className="deep-lede">{lede}</p>{body}</section>
   );

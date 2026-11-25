@@ -42,6 +42,7 @@ export function capacities(windows: Window[], p: Params, rho: number, B: number[
   let s = 0; for (const b of B) s += b[2];
   const total = s / rho;
   let dur = 0; for (const w of windows) dur += w.end_min - w.start_min;
+  if (dur <= 0) return [windows.map(() => 0), total]; // mirrors sched.py: no window time, nothing can be sent
   return [windows.map((w) => (total * (w.end_min - w.start_min)) / dur), total];
 }
 

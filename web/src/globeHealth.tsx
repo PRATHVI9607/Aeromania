@@ -1,4 +1,4 @@
-import type { Viewer } from "cesium";
+import { buildModuleUrl, type Viewer } from "cesium";
 import { naturalLayer } from "./cz";
 
 export interface Diag { ua: string; gl: string; error: string; imagery: string; tiles: string; safe: boolean }
@@ -25,6 +25,13 @@ export function guard(v: Viewer, o: { shown: () => boolean; safe: boolean; onRea
     if (fell || v.isDestroyed()) return; fell = true; imagery = `local texture failed (${why}); using bundled Natural Earth II`;
     console.error("[HERALD globe] imagery fallback:", why); v.imageryLayers.remove(day, false); v.imageryLayers.add(naturalLayer(), 0); v.scene.requestRender();
   };
+  // preflight: if the Cesium asset tree is not served (wrong base path, partial deploy), go to 2D at once instead of a black globe
+  const ac = new AbortController(), pt = setTimeout(() => ac.abort(), 3000);
+  fetch(buildModuleUrl("Assets/approximateTerrainHeights.json"), { signal: ac.signal, cache: "force-cache" })
+    .then((r) => { if (!r.ok || (r.headers.get("content-type") ?? "").includes("html")) fail(`Cesium assets not served (HTTP ${r.status} for Assets/approximateTerrainHeights.json)`); })
+    .catch((e) => { if (!done) fail(`Cesium assets unreachable: ${String(e?.message ?? e)}`); })
+    .finally(() => clearTimeout(pt));
+  day.readyEvent.addEventListener(() => { if (!v.isDestroyed()) v.scene.requestRender(); });
   day.errorEvent.addEventListener((e: any) => fallback(String(e?.message ?? e)));
   day.readyEvent.addEventListener(() => { if (!fell) imagery = "local texture ready"; });
   v.scene.renderError.addEventListener((_s: unknown, e: unknown) => fail(`render error: ${String((e as Error)?.message ?? e)}`));
@@ -33,10 +40,10 @@ export function guard(v: Viewer, o: { shown: () => boolean; safe: boolean; onRea
     if (done || v.isDestroyed()) return clearInterval(tick);
     if (!o.shown()) { waited = 0; return; }
     waited += 1;
-    if (waited === 10 && !day.ready && !fell) fallback("not ready in 10 s");
-    if (waited >= 15) { clearInterval(tick); fail("globe not ready in 15 s"); }
+    if (waited === 6 && !day.ready && !fell) fallback("not ready in 6 s");
+    if (waited >= 12) { clearInterval(tick); fail("globe not ready in 12 s"); }
   }, 1000);
-  return () => { done = true; clearInterval(tick); };
+  return () => { done = true; clearInterval(tick); clearTimeout(pt); ac.abort(); };
 }
 
 export function GlobeDiag({ d, onRetry }: { d: Diag; onRetry?: () => void }) {

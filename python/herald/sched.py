@@ -25,6 +25,8 @@ def prepare(tiles, queries, params):
 def capacities(windows, tiles, params, rho, B):
     total = sum(b[2] for b in B) / rho
     dur = sum(w["end_min"] - w["start_min"] for w in windows)
+    if dur <= 0:   # no (or zero-length) windows: nothing can be sent
+        return [0.0 for _ in windows], total
     return [total * (w["end_min"] - w["start_min"]) / dur for w in windows], total
 
 

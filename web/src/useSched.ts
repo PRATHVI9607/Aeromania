@@ -7,6 +7,7 @@ export function useSched(tiles: Tile[], wins: Window[], params: Params, queries:
   const [out, setOut] = useState<SchedOut | null>(null);
   const [ms, setMs] = useState<number | null>(null);
   const [runs, setRuns] = useState(0);
+  const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     const wk = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
     wk.onmessage = (e) => {
@@ -14,6 +15,7 @@ export function useSched(tiles: Tile[], wins: Window[], params: Params, queries:
       if (t !== undefined) { setMs(performance.now() - t); setRuns((n) => n + 1); sent.current.delete(e.data.seq); }
       if (e.data.seq === seq.current) setOut(e.data.out);
     };
+    wk.onerror = (e) => { e.preventDefault(); setErr(`scheduler worker failed: ${e.message || "unknown error"}`); console.error("[HERALD sched]", e.message); };
     wk.postMessage({ type: "init", tiles, wins, params });
     w.current = wk;
     return () => wk.terminate();
@@ -23,5 +25,5 @@ export function useSched(tiles: Tile[], wins: Window[], params: Params, queries:
     sent.current.set(s, performance.now());
     w.current?.postMessage({ type: "run", seq: s, queries, rho });
   }, [queries, rho, tiles, wins, params]);
-  return { out, ms, runs };
+  return { out, ms, runs, err };
 }

@@ -29,9 +29,12 @@ export function makeEarth(el: HTMLElement, safe = false): Viewer {
   if (safe) { v.scene.postProcessStages.fxaa.enabled = false; return v; }
   const day = v.imageryLayers.get(0); day.nightAlpha = 0;
   const night = whole("/earth/earth_night_4096.jpg"); v.imageryLayers.add(night); night.dayAlpha = 0; night.nightAlpha = 1; night.brightness = 1.7;
+  // requestRenderMode: draw again once each texture arrives, otherwise the lights/day layer can stay invisible until the camera moves
+  for (const l of [day, night]) l.readyEvent.addEventListener(() => { if (!v.isDestroyed()) v.scene.requestRender(); });
   const g = v.scene.globe; g.enableLighting = true; g.showGroundAtmosphere = true; g.dynamicAtmosphereLighting = true; g.dynamicAtmosphereLightingFromSun = false;
   const sky = new SkyAtmosphere(); sky.brightnessShift = -0.1; v.scene.skyAtmosphere = sky;
   const stars = v.scene.primitives.add(new PointPrimitiveCollection());
   for (let i = 0; i < 900; i++) { const u = Math.random() * 2 - 1, a = Math.random() * 6.2832, r = Math.sqrt(1 - u * u); stars.add({ position: new Cartesian3(r * Math.cos(a) * 3e8, r * Math.sin(a) * 3e8, u * 3e8), pixelSize: 1 + Math.random() * 1.2, color: Color.WHITE.withAlpha(0.25 + Math.random() * 0.6) }); }
+  v.scene.requestRender();
   return v;
 }

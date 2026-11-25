@@ -23,7 +23,7 @@ const CAT: Record<string, { label: string; color: string; note: string }> = {
   agri_ambiguous: { label: "Cleared, ambiguous", color: "#8A97A8", note: "cleared land without a road grid: may be harvested or fallow field" },
   lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#22D3EE", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
 };
-const cat = (c: string) => (NEW.has(c) ? "new_construction" : c);
+const cat = (c: string) => (NEW.has(c) ? "new_construction" : c in CAT ? c : "agri_ambiguous"); // unknown categories fall back instead of crashing
 const pct = (x: number | null | undefined) => (x == null ? "n/a" : `${(x * 100).toFixed(0)}%`);
 const EDGES = [0.25, 0.5, 1, 2, 5, 10, 25, Infinity];
 
@@ -88,7 +88,7 @@ export function Insights({ data }: ViewProps) {
     id: sel.id, aoi: "blr", lat: sel.lat, lon: sel.lon, title: `${sel.cname}, ${fha(sel.ha, 1)}${sel.ward ? `, ${sel.ward}` : ""}`,
     facts: [
       { k: "Category", v: <>{sel.cname}{NEW.has(sel.category) && <small> (sub-type hint: {sel.category === "new_layout" ? "layout" : "building"})</small>}</>,
-        why: <>{R.sites_blr.category_def[sel.category]}. {CAT[cat(sel.category)].note}.</> },
+        why: <>{R.sites_blr.category_def?.[sel.category] ?? sel.category}. {CAT[cat(sel.category)].note}.</> },
       { k: "Area", v: <span className="mono">{fha(sel.ha, 2)}</span>, why: <>Changed pixels x 0.01 ha (a 10 m pixel is 100 m2). Sites below {R.sites_blr.min_site_ha} ha are not listed.</> },
       { k: "Ward", v: sel.ward ?? "Outside BBMP", why: <>Point-in-polygon against the BBMP ward boundaries from OSM. Peri-urban land outside the corporation has no ward.</> },
       { k: "Confidence", v: <span className="mono">{pct(sel.confidence)}</span>, why: <>{R.sites_blr.confidence_def}. It is the category's reviewer-audit precision, the same for every site in that category; it is not a per-site probability.</> },

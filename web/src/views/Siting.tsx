@@ -18,6 +18,7 @@ export function Siting({ data }: ViewProps) {
   const [hover, setHover] = useState<any>(null), [tbl, setTbl] = useState(false), [pick, setPick] = useState<string | null>(null);
   if (s === undefined) return <Skeleton />;
   if (s === null) return <section className="panel"><h3>Siting <small>not generated yet</small></h3><p className="muted">web/public/data/siting.json is missing. Run the siting step (python -m herald siting).</p></section>;
+  if (!Array.isArray(s.cells) || !s.cells.length || !Array.isArray(s.bbox) || s.bbox.length !== 4) return <section className="panel"><h3>Siting <small>data incomplete</small></h3><p className="muted">siting.json has no cells or bbox. Re-run python -m herald siting.</p></section>;
   const [w, so, e, n] = s.bbox as number[];
   const flip = s.cells[0].lat < s.cells[s.cells.length - 1].lat; // image row 0 must be north
   const pos = (lat: number, lon: number) => [((lon - w) / (e - w)) * SZ, ((n - lat) / (n - so)) * SZ];

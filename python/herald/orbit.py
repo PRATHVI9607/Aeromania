@@ -124,7 +124,7 @@ def physics(wins):
     lat, _, alt = subpoints(tm)
     up = np.where((lat[:-1] < 0) & (lat[1:] >= 0))[0]            # ascending node crossings
     nodal = float(np.mean(np.diff(tm[up]))) if len(up) > 1 else float("nan")
-    mx = float(max(w["dur_min"] for w in wins))
+    mx = float(max((w["dur_min"] for w in wins), default=0.0))
     return {"period_kepler_min": round(2 * math.pi * math.sqrt(a**3 / MU) / 60, 2),
             "period_tle_min": round(1440 / mm, 2), "period_nodal_measured_min": round(nodal, 2),
             "prd_period_min": 100.43, "note": "PRD 100.43 is not what a 786 km circular orbit gives; computed value reported.",
