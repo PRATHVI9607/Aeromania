@@ -415,8 +415,76 @@ def cmd_export(a):
     print(json.dumps(r["eurosat"], indent=2))
 
 
+# ---------- onboard embedding change score ----------
+def echg_of(e, ref):
+    """1 - cosine(e, ref) per row; embeddings are already L2-normalized, renormalize anyway (fp16 ref)."""
+    e, ref = e.astype(np.float32), ref.astype(np.float32)
+    n = np.linalg.norm(e, axis=1) * np.linalg.norm(ref, axis=1)
+    return (1 - (e * ref).sum(1) / np.maximum(n, 1e-9)).astype(np.float32)
+
+
+def cmd_change(a):
+    """Reference = t0 embedding (fp16, 128 B/tile). echg saved into vault/scores/{aoi}_{date}.npz; eval on blr t0->t1."""
+    from scipy.stats import spearmanr
+    from sklearn.metrics import roc_auc_score
+    from herald import change as ch
+    done = {}
+    for ref_f in sorted(paths.SCORES.glob("*_t0.npz")):
+        aoi = ref_f.stem[:-3]
+        ref = np.load(ref_f)["emb"]
+        for d in ("c1", "t1", "c2"):
+            f = paths.SCORES / f"{aoi}_{d}.npz"
+            if f.exists():
+                z = dict(np.load(f))
+                z["echg"] = echg_of(z["emb"], ref)
+                np.savez(f, **z)
+                done[f"{aoi}_{d}"] = float(z["echg"].mean())
+    print("echg written:", done)
+    cj = paths.REPORTS / "change_blr.json"
+    if "blr_t1" not in done or not cj.exists():
+        print("blr eval skipped: need blr scores + reports/change_blr.json", file=sys.stderr)
+        return 1
+    tiles = json.loads(cj.read_text(encoding="utf-8"))["tiles"]
+    ha = np.array([t["ha"] for t in tiles], np.float32)
+    ok = np.array([t["valid"] for t in tiles])
+    e = np.load(paths.SCORES / "blr_t1.npz")["echg"]
+    m = ok & ((ha >= 1) | (ha == 0))
+    res = {"auc_vs_rules": float(roc_auc_score(ha[m] >= 1, e[m])), "spearman": float(spearmanr(e[ok], ha[ok])[0]),
+           "n_pos_ha_ge_1": int((ok & (ha >= 1)).sum()), "n_neg_ha_0": int((ok & (ha == 0)).sum()),
+           "caveat": "reference is the rule-based detector (weak label), not ground truth; blr t0->t1 is a clean pair, cloud not masked",
+           "ref_bytes_per_tile": 128, "ref_kb_per_aoi": 128 * 2116 / 1024}
+    # injected patches: real built/bare pixels (as in change.injected_test) painted into 200 unchanged valid t1 chips
+    rng = np.random.default_rng(11)
+    x0 = np.load(paths.CHIPS / "blr_t0.npy")
+    x1 = np.load(paths.CHIPS / "blr_t1.npy")
+    r1 = x1.transpose(1, 0, 2, 3).reshape(5, -1).astype(np.float32) / 1e4
+    ix = ch.indices(r1)
+    pool = x1.transpose(1, 0, 2, 3).reshape(5, -1)[:, (ix["ndbi"] > 0.05) & (ix["ndvi"] < 0.15) & (ix["mndwi"] < 0)]
+    pool = pool[:, rng.choice(pool.shape[1], min(pool.shape[1], 200000), replace=False)]
+    cand = rng.choice(np.flatnonzero(ok & (ha == 0)), 200, replace=False)
+    sess, ref = ort_session(INT8), np.load(paths.SCORES / "blr_t0.npz")["emb"][cand]
+    clean = echg_of(ort_run(sess, prep(x1[cand]))[2], ref)
+    inj = {}
+    for h in ch.SIZES_HA:
+        side = max(2, int(round(np.sqrt(h * 100))))
+        xp = x1[cand].copy()
+        for k in range(len(cand)):
+            y, x = (int(v) for v in rng.integers(0, ch.C - side + 1, 2))
+            xp[k, :, y:y + side, x:x + side] = pool[:, rng.integers(0, pool.shape[1], side * side)].reshape(5, side, side)
+        pe = echg_of(ort_run(sess, prep(xp))[2], ref)
+        inj[str(h)] = float(roc_auc_score(np.r_[np.zeros(len(cand)), np.ones(len(cand))], np.r_[clean, pe]))
+    res["injected_auc_by_ha"] = inj
+    res["injected_note"] = "200 unchanged valid blr t1 chips; patched vs same chips unpatched; real built/bare spectra, no spatial texture"
+    res["audit_auc"] = "not run: reports/audit_blr.json absent" if not (paths.REPORTS / "audit_blr.json").exists() else "TODO"
+    update_report({"embedding_change": res})
+    print(json.dumps(res, indent=2))
+    return 0
+
+
 # ---------- score ----------
 def cmd_score(a):
+    if a.change:
+        return cmd_change(a)
     files = [p for p in paths.CHIPS.glob("*.npy") if not p.stem.endswith("_scl")] if paths.CHIPS.exists() else []
     if not files:
         print("vault/chips missing: nothing to score", file=sys.stderr)
@@ -441,6 +509,7 @@ def main(argv):
     ap.add_argument("--bs", type=int, default=128)
     ap.add_argument("--scratch", action="store_true")
     ap.add_argument("--cloud", action="store_true")
+    ap.add_argument("--change", action="store_true")
     a = ap.parse_args(argv[1:])
     return {"train": cmd_train, "calibrate": cmd_calibrate, "export": cmd_export, "score": cmd_score}[argv[0]](a)
 
