@@ -1,0 +1,146 @@
+{
+ "_note": "Every value is an ASSUMPTION unless its note says it is data. src = where the number comes from; 'unverified' means a rule of thumb not checked against the primary document.",
+ "region": {
+  "center_lat": 14.1,
+  "center_lon": 77.28,
+  "size_km": 60,
+  "cell_km": 1,
+  "utm_epsg": 32643,
+  "margin_km_grid": 20,
+  "note": "60x60 km box around Pavagada, Tumakuru, Karnataka; Pavagada Solar Park (~2,050 MW, ~13,000 acres) is the validation anchor."
+ },
+ "solar": {
+  "weights": {
+   "v": {
+    "60": 1.0,
+    "30": 1.0,
+    "20": 0.7,
+    "40": 0.4
+   },
+   "src": "assumption: usable share of land-cover class (60 bare, 30 grass, 20 shrub, 40 cropland); cropland is low because buying farmland is slow and costly"
+  },
+  "max_slope_deg": {
+   "v": 5,
+   "src": "assumption: ground-mount PV rule of thumb, flat to gentle terrain"
+  },
+  "ha_per_mw": {
+   "v": 1.8,
+   "lo": 1.6,
+   "hi": 2.0,
+   "src": "assumption: brief range 1.6-2.0 ha/MW for Indian utility PV. Cross-check: Pavagada 13,000 acres / 2,050 MW = 2.57 ha/MW gross incl. roads and substations (https://en.wikipedia.org/wiki/Pavagada_Solar_Park, 2024)"
+  },
+  "pr": {
+   "v": 0.77,
+   "src": "assumption: performance ratio, brief; typical 0.75-0.80"
+  },
+  "cuf_formula": "CUF = GHI[kWh/m2/day] * 365 * PR / 8760 per kWp at 1 kW/m2 STC (DC basis, no inverter clipping or degradation)",
+  "tariff_rs_kwh": {
+   "v": 2.6,
+   "src": "assumption: SECI standalone ISTS solar tranches ~Rs 2.57-2.60/kWh (https://www.constructionworld.in/energy-infrastructure/power-and-renewable-energy/cerc-approves-tariff-for-secis-1.2-gw-solar-projects/70290 , 2025). Solar+storage auctions are higher (Rs 2.86, https://www.pv-magazine.com/2025/10/16/indias-solar-plus-storage-tender-sets-record-low-inr-2-86-tariff/ , Oct 2025) and are not used"
+  },
+  "capex_cr_per_mw": {
+   "v": 3.0,
+   "src": "assumption: ~Rs 3 crore per MW(DC) all-in utility PV (CUF below is DC basis), unverified; margin is thin so ranking is sensitive to this"
+  },
+  "om_lakh_per_mw_yr": {
+   "v": 4.0,
+   "src": "assumption: ~Rs 4 lakh/MW/yr O&M, unverified"
+  },
+  "grid_cr_per_km": {
+   "v": 0.8,
+   "src": "assumption: ~Rs 0.8 crore/km for a 66-132 kV evacuation line, unverified; charged once per cell on distance to nearest substation"
+  },
+  "crf": {
+   "v": 0.102,
+   "src": "assumption: capital recovery factor, 9% discount over 25 years = 0.102"
+  },
+  "min_project_mw": {
+   "v": 20,
+   "src": "assumption: cells below 20 MW usable are not ranked (too small for a utility project alone)"
+  }
+ },
+ "wind": {
+  "weights": {
+   "v": {
+    "60": 1.0,
+    "30": 1.0,
+    "20": 1.0,
+    "40": 1.0
+   },
+   "src": "assumption: wind coexists with farming/rangeland, so full weight; built, water, wetland, mangrove, >50% tree excluded"
+  },
+  "min_ws50": {
+   "v": 5.5,
+   "src": "assumption: brief threshold 5.5-6 m/s at 50 m; cells below are not ranked"
+  },
+  "max_slope_deg": {
+   "v": 15,
+   "src": "assumption: brief"
+  },
+  "mw_per_km2": {
+   "v": 6.0,
+   "src": "assumption: brief range 5-8 MW/km2 of developable land. NREL (Denholm et al. 2009, https://www.nrel.gov/docs/fy09osti/45834.pdf) reports ~3 MW/km2 total-area for US farms; the Indian figure is the brief's, unverified"
+  },
+  "hub_alpha": {
+   "v": 0.143,
+   "src": "assumption: power-law shear exponent 1/7, WS50M scaled to 100 m hub: x (100/50)^alpha"
+  },
+  "power_curve": {
+   "cut_in": 3,
+   "rated": 12,
+   "cut_out": 25,
+   "src": "assumption: generic 3 MW class turbine, cubic ramp cut-in to rated; wind speed Rayleigh distributed with mean = hub speed"
+  },
+  "loss_factor": {
+   "v": 0.85,
+   "src": "assumption: wake + availability + electrical losses"
+  },
+  "tariff_rs_kwh": {
+   "v": 3.2,
+   "src": "assumption: SECI/state wind tranches ~Rs 3.0-3.4/kWh, unverified"
+  },
+  "capex_cr_per_mw": {
+   "v": 6.0,
+   "src": "assumption: ~Rs 6 crore/MW, unverified"
+  },
+  "om_lakh_per_mw_yr": {
+   "v": 8.0,
+   "src": "assumption: unverified"
+  },
+  "grid_cr_per_km": {
+   "v": 0.8,
+   "src": "assumption: as solar"
+  },
+  "crf": {
+   "v": 0.102,
+   "src": "assumption: as solar"
+  },
+  "min_project_mw": {
+   "v": 3,
+   "src": "assumption: one turbine-class cluster; a 1 km cell holds at most ~6-8 MW, so neighbours would be aggregated in practice"
+  }
+ },
+ "exclusion": {
+  "tree_frac": {
+   "v": 0.5,
+   "src": "assumption: brief; cell excluded if tree cover (WorldCover 10) > 50%"
+  },
+  "unusable_frac": {
+   "v": 0.5,
+   "src": "assumption: cell excluded if water+wetland+built+mangrove > 50%, or protected area > 50%"
+  }
+ },
+ "validation": {
+  "park_cell_min_cover": {
+   "v": 0.25,
+   "src": "assumption: a cell counts as Pavagada if >=25% of it lies in an OSM solar footprint"
+  }
+ },
+ "sources": {
+  "irradiance_wind": "NASA POWER climatology API, ALLSKY_SFC_SW_DWN and WS50M annual (2001-2025), https://power.larc.nasa.gov/ , coarse: native ~0.5-1 deg grid",
+  "slope": "Copernicus DEM GLO-30 (2021) COGs, https://copernicus-dem-30m.s3.amazonaws.com/ , resampled to 25 m",
+  "landcover": "ESA WorldCover 2021 v200, https://esa-worldcover.s3.eu-central-1.amazonaws.com/ , 10 m",
+  "grid_osm": "OpenStreetMap via Overpass API (power=line, power=substation, solar, protected areas), fetched 2026, ODbL"
+ },
+ "score_definition": "score = net annual value per MW (Rs/MW/yr) = tariff*MWh/MW - O&M - capex*CRF - grid line cost*CRF/MW, among non-excluded cells >= min_project_mw. Per-MW (not per-cell) so a larger cell does not win merely by being larger and the ranking does not flip sign with tariff."
+}
