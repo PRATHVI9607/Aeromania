@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ViewProps } from "./props";
-import type { PolicyId, RunOut } from "../types";
+import type { PolicyId, RunOut, Tile } from "../types";
 import { bytes, inr, pctf } from "../fmt";
 import { Rupee } from "../Assume";
-import { Skeleton, ViewHead } from "../ui";
+import { Skeleton } from "../ui";
+import { Info } from "../kit";
+import "./fifo.css";
 import { reduced, useTween } from "../anim";
 
 const POL: { id: PolicyId; name: string; color: string }[] = [
-  { id: "B1", name: "FIFO", color: "#7b8794" }, { id: "B2", name: "Cloud filter + FIFO", color: "#9aa5b1" },
-  { id: "B3", name: "Value greedy", color: "#52606d" }, { id: "H1", name: "HERALD, full chips by value/byte", color: "#e8892b" },
-  { id: "H2", name: "HERALD progressive (fastest first insight)", color: "#f2c06b" },
+  { id: "B1", name: "FIFO", color: "#8A97A8" }, { id: "B2", name: "Cloud filter + FIFO", color: "#B4BFCC" },
+  { id: "B3", name: "Value greedy", color: "#5B6B80" }, { id: "H1", name: "HERALD, full chips by value/byte", color: "#22D3EE" },
+  { id: "H2", name: "HERALD progressive (fastest first insight)", color: "#67E8F9" },
 ];
 const TH = 300, RACE_S = 10; // timeline canvas height px; race duration seconds
 const RHO = [1, 2, 5, 10];
@@ -35,13 +37,13 @@ function Timeline({ r, data, title, p, tone, value, ub, prog }: { prog: boolean;
     const g = c.getContext("2d")!; g.scale(dpr, dpr);
     const cap = r.timeline.cap, maxCap = Math.max(...cap, 1);
     for (let y = 0; y < nw; y++) {
-      g.fillStyle = "#171d25"; g.fillRect(0, y * RH, (cap[y] / maxCap) * W, Math.max(RH - 0.5, 0.8));
+      g.fillStyle = "#152030"; g.fillRect(0, y * RH, (cap[y] / maxCap) * W, Math.max(RH - 0.5, 0.8));
       let x = 0;
       for (const [i, L] of byWin[y]) {
         const t = data.tiles[i];
         const b = L === 0 ? data.params.level_bytes[0] : L === 1 ? data.params.level_bytes[1] - data.params.level_bytes[0] : (prog ? Math.max(t.full_bytes, data.params.level_bytes[1] + 1) - data.params.level_bytes[1] : Math.max(t.full_bytes, data.params.level_bytes[1] + 1));
         const wd = (b / maxCap) * W;
-        g.fillStyle = t.cloud > 0.5 ? "#5b6670" : `hsl(36 ${35 + 20 * L}% ${30 + 30 * Math.min(1, t.sev * 2)}%)`;
+        g.fillStyle = t.cloud > 0.5 ? "#5B6B80" : `hsl(187 ${55 + 15 * L}% ${28 + 30 * Math.min(1, t.sev * 2)}%)`;
         g.fillRect(x, y * RH, Math.max(wd - 0.4, 0.6), Math.max(RH - 0.5, 0.8));
         x += wd;
       }
@@ -91,6 +93,28 @@ function Curves({ cum, ub, data, p, hid }: { cum: number[][]; ub: number; data: 
   );
 }
 
+
+const T = (a: Tile) => a.cloud > 0.5 ? "cloud" : a.kind === "none" ? "empty" : "value";
+const KC: Record<string, string> = { cloud: "#5B6B80", empty: "#22304A", value: "#F5A524" };
+/** satellite queue -> antenna -> ground, tiles stream along the link; FIFO sends in arrival order, HERALD only what is worth the bytes */
+function Flow({ kinds, title, tone }: { kinds: string[]; title: string; tone: "F" | "H" }) {
+  return (
+    <figure className={`flow ${tone}`} aria-label={title}>
+      <figcaption>{title}</figcaption>
+      <svg viewBox="0 0 320 84" width="100%" role="img">
+        <rect x="6" y="26" width="34" height="32" rx="4" className="fs" /><rect x="0" y="36" width="6" height="12" className="fp" /><rect x="40" y="36" width="6" height="12" className="fp" />
+        <path d="M150 64 L168 36 A22 22 0 0 0 150 64 Z" className="fd" /><path d="M158 52 V70 M148 70 H168" className="fd2" />
+        <rect x="262" y="40" width="52" height="30" rx="4" className="fg" /><text x="288" y="59" textAnchor="middle" className="ft">ground</text>
+        <line x1="46" x2="262" y1="42" y2="42" className="fl" />
+        {kinds.map((k, i) => <rect key={i} x="48" y="38" width="8" height="8" rx="1.5" fill={KC[k]} className="pk" style={{ animationDelay: `${(i * 3.6) / kinds.length}s` }} />)}
+      </svg>
+    </figure>
+  );
+}
+function Why({ k, v, sub, tone }: { k: string; v: string; sub: string; tone?: string }) {
+  return <div className="why"><span className="klab">{k}</span><b className={`kval ${tone ?? ""}`}>{v}</b><span className="ksub">{sub}</span></div>;
+}
+
 export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { setRho: (n: number) => void }) {
   const nw = data.wins.length;
   const [p, setP] = useState(reduced() ? nw : 0), [playing, setPlaying] = useState(!reduced());
@@ -115,6 +139,12 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   // one flat array so a rho change morphs every curve and counter together
   const flat = useMemo(() => out ? [...POL.flatMap((q) => out.results[q.id].timeline.cum_value), out.results.B1.metrics.ub] : [], [out]);
   const tw = useTween(flat, 600);
+  const mix = useMemo(() => { const c = { value: 0, cloud: 0, empty: 0 }; for (const t of data.tiles) c[T(t) as "value"]++; return c; }, [data.tiles]);
+  const nt = data.tiles.length, mixPct = { value: +(100 * mix.value / nt).toFixed(1), cloud: +(100 * mix.cloud / nt).toFixed(1), empty: +(100 * mix.empty / nt).toFixed(1) };
+  // 60 squares in the real proportions, spread with a stride so the queue looks arrival-ordered, not sorted
+  const mixSeq = useMemo(() => { const nv = Math.max(1, Math.round((60 * mix.value) / nt)), nc = Math.round((60 * mix.cloud) / nt); return Array.from({ length: 60 }, (_, i) => { const v = (i * 7) % 60; return v < nv ? "value" : v < nv + nc ? "cloud" : "empty"; }); }, [mix, nt]);
+  const fifoSeq = useMemo(() => mixSeq.slice(0, 12), [mixSeq]), herSeq = useMemo(() => Array.from({ length: 6 }, () => "value"), []);
+  const wasteB = useMemo(() => { let w = 0; for (const [i] of live?.results.B1.sel ?? []) { const t = data.tiles[i]; if (T(t) !== "value") w += Math.max(t.full_bytes, data.params.level_bytes[1] + 1); } return w; }, [live, data]);
   if (!live || !out || !nw || tw.length !== flat.length) return <Skeleton label="scheduling" rows={6} />;
   const cum = POL.map((_, k) => tw.slice(k * nw, (k + 1) * nw)), ubT = tw[tw.length - 1];
   const f = out.results.B1.metrics, h = out.results[hid].metrics;
@@ -128,10 +158,17 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   const vH = at(cum[POL.findIndex((q) => q.id === hid)], p), vF = at(cum[0], p);
   return (
     <div className="grid2">
-      <div className="span2">
-        <ViewHead kicker="Track B" title="Same antenna, same minutes, far more value"
-          sub={<>Share of the best possible value (upper bound) delivered at rho 1 / 2 / 5 / 10: HERALD {RHO.map((r) => pu(r, "H1")).join(" / ")} (progressive {RHO.map((r) => pu(r, "H2")).join(" / ")}) vs FIFO {RHO.map((r) => pu(r, "B1")).join(" / ")} vs cloud filter {RHO.map((r) => pu(r, "B2")).join(" / ")}. First insight after capture with HERALD progressive (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></>} />
-      </div>
+      <section className="span2 strip">
+        <h2 className="vt">Same antenna, same minutes, far more value
+          <Info title="FIFO vs HERALD"><b>What</b> FIFO sends tiles in arrival order. HERALD ranks every tile by value per byte and sends the best first. <b>Why</b> contact time is the scarce resource: spending it on cloud or unchanged tiles delays the answers that matter.</Info></h2>
+        <div className="flows">
+          <figure className="flow q"><figcaption>1 On board: the queue</figcaption>
+            <div className="mix" aria-label="tile mix">{mixSeq.map((k, i) => <i key={i} style={{ background: KC[k] }} />)}</div>
+            <div className="mixl"><span><i style={{ background: KC.value }} />value {mixPct.value}%</span><span><i style={{ background: KC.cloud }} />cloud {mixPct.cloud}%</span><span><i style={{ background: KC.empty }} />no change {mixPct.empty}%</span></div></figure>
+          <Flow kinds={fifoSeq} title="2 FIFO: arrival order" tone="F" />
+          <Flow kinds={herSeq} title="3 HERALD: value per byte first" tone="H" />
+        </div>
+      </section>
       <section className="span2 bar">
         <button className="primary playbtn" onClick={play} aria-label="play the downlink race">{playing ? "Pause" : p >= nw ? (nw ? "Play race" : "") : "Resume"}</button>
         <label className="grow">Race
@@ -159,14 +196,20 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
         <div className="legend">{POL.map((q) => <span key={q.id}><i style={{ background: q.color }} />{q.id} {q.name} <b className="mono">{((out.results[q.id].metrics.pct_ub ?? 0) * 100).toFixed(0)}%</b></span>)}
           <span><i className="dash" />upper bound</span></div>
       </section>
+      <section className="span2 whys" aria-label="Why it matters">
+        <Why k="Tiles that carry value" v={`${mixPct.value}%`} sub={`${mix.value.toLocaleString("en-IN")} of ${nt.toLocaleString("en-IN")}; the rest is cloud (${mixPct.cloud}%) or unchanged (${mixPct.empty}%)`} tone="acc" />
+        <Why k="FIFO bytes spent on cloud or no change" v={`${f.bytes_sent > 0 ? ((100 * wasteB) / f.bytes_sent).toFixed(0) : "0"}%`} sub={`${bytes(wasteB)} of ${bytes(f.bytes_sent)} sent at rho ${rho}`} tone="bad" />
+        <Why k="First insight after capture" v={`${out.results.H2.metrics.ttfi_min?.toFixed(0) ?? "n/a"} min`} sub={`HERALD progressive; FIFO needs ${f.ttfi_min?.toFixed(0) ?? "n/a"} min`} tone="ok" />
+      </section>
       {rob && <section className="panel span2">
-        <h3>Robustness <small>the win is not an artifact of the assumptions</small></h3>
-        <dl className="dl">
-          <dt>H1 (full chips only, no packet assumption)</dt><dd className="mono">{rob.H1_vs_B1.toFixed(1)}x FIFO, {rob.H1_vs_B2.toFixed(1)}x cloud-filter FIFO at rho 5</dd>
-          <dt>H2 packet-value fraction</dt><dd className="mono">{Object.entries(rob.H2_packet_fraction_sensitivity_rho5).map(([k, v]: any) => `${k}: ${v.H2_vs_B1.toFixed(1)}x`).join(", ")} vs FIFO</dd>
-        </dl>
-        <p className="muted">{rob.note}</p>
-        {sim.headline_note && <p className="muted">{sim.headline_note}</p>}
+        <details className="how"><summary>How it works and robustness</summary>
+          <dl className="dl">
+            <dt>H1, full chips only</dt><dd className="mono">{rob.H1_vs_B1.toFixed(1)}x FIFO, {rob.H1_vs_B2.toFixed(1)}x cloud-filter FIFO at rho 5</dd>
+            <dt>H2 packet-value fraction</dt><dd className="mono">{Object.entries(rob.H2_packet_fraction_sensitivity_rho5).map(([k, v]: any) => `${k}: ${v.H2_vs_B1.toFixed(1)}x`).join(", ")} vs FIFO</dd>
+            <dt>Source</dt><dd><span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></dd>
+          </dl>
+          <p className="muted">{rob.note}</p>{sim.headline_note && <p className="muted">{sim.headline_note}</p>}
+        </details>
       </section>}
     </div>
   );
