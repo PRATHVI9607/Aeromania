@@ -8,6 +8,17 @@ Aeromania '26 Mach-A-Thon · "Orbit to Economy: AI in Space" · 12 hours · solo
 
 ---
 
+## Headlines (v5 — use these words in the pitch and the UI)
+
+- **Product:** *HERALD — the satellite that sends home answers, not pictures.*
+- **Main goal:** turn every scarce minute of ground-station contact into the most rupees of decision value: the onboard AI picks what matters, the ground acts on it the same hour.
+- **Track A (objective 1):** *Bengaluru's construction ledger — every new layout and building, caught the month it starts, checked against no-build zones.* Decision: where enforcement, survey and planning teams go this week.
+- **Track A (objective 2):** *Where the next gigawatt should go* — solar and wind sites around Pavagada ranked by irradiance, slope, land use and grid distance, validated against the real 2 GW park.
+- **Track B:** *Same antenna, same minutes, far more value* — the win grows as bandwidth gets scarce (1.5× → 8.6× → 28× FIFO at ρ = 1 → 2 → 5); HERALD delivers FIFO's entire 5-day value in its first ~2 contact minutes; first insight in 25 min vs 82 min.
+- **Track C:** *Sand and forest crimes, timestamped from orbit* — tamper-evident evidence leads for mines and forest departments, monsoon-proof with radar; land cover only, never people.
+
+---
+
 ## 0. The ONE-project rule (non-negotiable)
 
 There is exactly one pipeline, one repo, one dashboard, one demo:
@@ -81,19 +92,28 @@ Rule: every ₹ on screen has an "assumption" tooltip. Never present unmeasured 
 
 ## 3. Goals and measurable targets (with gates)
 
-| ID | Metric | Target | Gate (must pass to keep claim) |
-|---|---|---|---|
-| G1 | EuroSAT top-1 (test split) | ≥ 97% | Measured on held-out split, report in `reports/model.json` |
-| G2 | Cloud-fraction MAE vs SCL | ≤ 0.05 | Real SCL, held-out AOI |
-| G3 | Calibration ECE | < 0.03 | After temperature scaling |
-| G4 | Model latency (int8 ONNX, CPU, batch 64) | < 1 ms/chip amortized | Benchmarked on this laptop |
-| G5 | Scheduler | < 10 ms per 1,000 tiles | Python and TS both |
-| G6 | Live query add + reorder | < 100 ms | Measured in browser worker |
-| G7 | Dashboard | 60 fps, < 1.5 s load | Chrome perf trace |
-| G8 | HERALD vs FIFO value captured | ≥ 2× at ρ=5 | Simulation report |
-| G9 | Contact minutes saved | minutes for HERALD to match FIFO's final value vs FIFO's minutes; also minutes-to-90% | Simulation report |
-| G10 | Change detection vs OSM construction | report precision/recall honestly | Weak labels, caveated |
-| G11 | Injected-change test | recall ≥ 0.9 at ≥ 1 ha | Synthetic, deterministic |
+Targets v5 (raised where v3 targets were beaten; misses stay visible). "Measured" = latest real run; ⏳ = pending.
+
+| ID | Metric | v3 target | **v5 target** | Measured | Status |
+|---|---|---|---|---|---|
+| G1 | EuroSAT top-1, int8 (held-out test) | ≥ 97% | **≥ 98.0%** | 98.02% (fp32 98.11%) | pass |
+| G1b | int8 accuracy drop vs fp32 | ≤ 0.5 pt | **≤ 0.3 pt** | 0.11 pt | pass |
+| G2 | Cloud-fraction MAE vs SCL, leave-one-AOI-out | ≤ 0.05 | ≤ 0.05 (all 3 folds) | 0.087 (hasdeo, cirrus-poor training) | ⏳ retrain with cirrus scenes |
+| G3 | Calibration ECE | < 0.03 | **< 0.01** | 0.0065 | pass |
+| G4 | int8 CPU latency, batch 64 | < 1 ms/chip | < 1 ms/chip idle; stretch < 0.5 | 1.10 ms (machine loaded) | ⏳ idle re-bench |
+| G5 | Scheduler | < 10 ms / 1k tiles | **< 5 ms / 1k** | 2.69 ms (loaded) | pass |
+| G6 | Live query reorder in browser | < 100 ms | **< 60 ms** | 35–50 ms (19k tiles) | pass |
+| G7 | Dashboard load / fps | < 1.5 s, 60 fps | < 1.5 s, 60 fps | ~2 s on software render | ⏳ GPU measure |
+| G8 | HERALD vs FIFO value | ≥ 2× at ρ=5 | **≥ 2× at ρ=2 and ≥ 10× at ρ=5** | 8.6× / 27.7× | pass |
+| G9 | Contact minutes for HERALD to match FIFO's final value | report | **≤ 5 min** | ≈ 2 min (1,758 min saved at ρ=5) | pass |
+| G10 | Change vs OSM construction (weak labels) | report | report | P 0.26 / R 0.32 (east half) | reported |
+| G11 | Injected-change recall | ≥ 0.9 at ≥ 1 ha | **≥ 0.9 at ≥ 0.5 ha** | 1.0 @0.5 ha, 0.95 @1 ha | pass |
+| G12 | Construction-lead precision (reviewer visual audit, not field) | — | **≥ 0.70; ≥ 0.85 excl. unsure** | 0.69 / 0.89 | borderline |
+| G13 | Time to first insight after capture (ρ=5) | — | **≤ 30 min** | 25.4 min (FIFO 81.7) | pass |
+| G14 | Siting validation: Pavagada park cells' solar percentile | — | **top 10%** | ⏳ | pending |
+| G15 | Track C lead precision (reviewer visual audit) | — | **≥ 0.60** | ⏳ | pending |
+| G16 | Evidence chain: verify passes, single-byte tamper detected | — | **100%** | ⏳ | pending |
+| G17 | India land-cover head vs WorldCover, spatial hold-out | — | **≥ 70% top-1** (WorldCover itself ≈ 77%) | ⏳ | pending |
 
 Latency framing: software latency (capture→decision→schedule) is near-zero and measured; delivery latency is orbit-controlled (contact windows) and **minimized by scheduling**, not eliminated. Say this out loud; judges respect it.
 
