@@ -121,9 +121,19 @@ def small_cnn():
                          nn.Flatten(), nn.Linear(256, 512), nn.ReLU())
 
 
-def cloud_head():
+def timm_trunk(arch, pretrained=True):
+    """Lite onboard trunk: timm model with 5 input channels (ImageNet conv adapted), pooled features."""
+    import timm
+    try:
+        return timm.create_model(arch, pretrained=pretrained, num_classes=0, in_chans=5)
+    except Exception as e:  # noqa: BLE001
+        print(f"{arch} pretrained load failed ({e}); random init", file=sys.stderr)
+        return timm.create_model(arch, pretrained=False, num_classes=0, in_chans=5)
+
+
+def cloud_head(nf=512):
     from torch import nn
-    return nn.Sequential(nn.Linear(512, 64), nn.ReLU(), nn.Linear(64, 1))
+    return nn.Sequential(nn.Linear(nf, 64), nn.ReLU(), nn.Linear(64, 1))
 
 
 def make_model(pretrained=True, trunk=None):
@@ -134,10 +144,11 @@ def make_model(pretrained=True, trunk=None):
         def __init__(self, trunk, name):
             super().__init__()
             self.trunk, self.backbone = trunk, name
-            self.cls = nn.Linear(512, 10)
-            self.cloud = cloud_head()
-            self.wc = nn.Sequential(nn.Linear(512, 128), nn.ReLU(), nn.Linear(128, 11))
-            self.proj = nn.Linear(512, 64)
+            nf = getattr(trunk, "num_features", 512)
+            self.cls = nn.Linear(nf, 10)
+            self.cloud = cloud_head(nf)
+            self.wc = nn.Sequential(nn.Linear(nf, 128), nn.ReLU(), nn.Linear(128, 11))
+            self.proj = nn.Linear(nf, 64)
             # per-pixel spectral cloud combiner (6 -> 4 -> 1, 33 params) + learned blend with the chip head
             self.pix = nn.Sequential(nn.Conv2d(6, 4, 1), nn.ReLU(), nn.Conv2d(4, 1, 1))
             self.pix_on = False
@@ -168,17 +179,20 @@ def make_model(pretrained=True, trunk=None):
     return Herald(*(trunk if trunk else build_trunk(pretrained)))
 
 
-def load_model(device="cpu"):
+def load_model(device="cpu", path=None):
     import torch
-    ck = torch.load(PT, map_location="cpu", weights_only=False)
+    ck = torch.load(path or PT, map_location="cpu", weights_only=False)
     m = make_model(trunk=(_trunk_like(ck), ck["backbone"]))
+    m.arch = ck.get("arch", "teacher")
     m.load_state_dict(ck["state"], strict=False)  # old checkpoints lack the wc head
-    m.pix_on = bool(torch.sigmoid(m.blend) > 0.02 and "pix.0.weight" in ck["state"])
+    m.pix_on = bool(ck.get("pix_on", False))  # spectral pixel path is an unshipped experiment: opt-in via the checkpoint only
     return m.to(device).eval()
 
 
 def _trunk_like(ck):
     """Rebuild trunk structure without downloading weights."""
+    if ck.get("arch", "teacher") not in ("teacher", "small"):
+        return timm_trunk(ck["arch"], pretrained=False)
     if ck["backbone"].startswith("small"):
         return small_cnn()
     import timm
@@ -240,7 +254,13 @@ def cmd_train(a):
     std = (tr[0] / 10000).std((0, 2, 3))
     NORM.write_text(json.dumps({"bands": paths.BANDS, "mean": mean.tolist(), "std": std.tolist(),
                                 "scale": "refl = DN/10000", "n_train": len(tr[1])}, indent=2), encoding="utf-8")
-    model = make_model(not a.scratch).to(dev)
+    teacher = None
+    if a.student:
+        model = make_model(trunk=(timm_trunk(a.student), f"timm {a.student} ImageNet (5ch), distilled from SSL4EO ResNet-18 teacher")).to(dev)
+        teacher = load_model(dev, paths.MODELS / "herald_teacher.pt")
+    else:
+        model = make_model(not a.scratch).to(dev)
+    model.arch = a.student or "teacher"
     print("backbone:", model.backbone, "device:", dev)
     xt = torch.from_numpy(prep(tr[0]))
     yt = torch.from_numpy(tr[1])
@@ -275,7 +295,14 @@ def cmd_train(a):
                 xb = xb.flip(2)
             xb = torch.rot90(xb, int(torch.randint(0, 4, (1,))), (2, 3))
             with torch.autocast(dev, enabled=dev == "cuda"):
-                loss = crit(model(xb)[0], yb)
+                lg = model(xb)[0]
+                loss = crit(lg, yb)
+                if teacher is not None:  # distillation: CE + KL on temperature-softened teacher logits
+                    with torch.no_grad():
+                        tl = teacher(xb)[0].float()
+                    kl = nn.functional.kl_div(nn.functional.log_softmax(lg.float() / a.temp, 1), nn.functional.softmax(tl / a.temp, 1),
+                                              reduction="batchmean") * a.temp ** 2
+                    loss = 0.3 * loss + 0.7 * kl
             opt.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
             scaler.step(opt)
@@ -286,7 +313,7 @@ def cmd_train(a):
         print(f"ep {ep + 1}/{total} {'frozen' if frozen else 'full'} loss {loss.item():.3f} val {acc:.4f} t {time.time() - t0:.0f}s", flush=True)
         if acc > best and not frozen:
             best = acc
-            torch.save({"state": model.state_dict(), "backbone": model.backbone, "val": acc}, PT)
+            torch.save({"state": model.state_dict(), "backbone": model.backbone, "arch": model.arch, "val": acc}, PT)
     update_report({"backbone": model.backbone, "eurosat": {"val_top1_best": best, "train_s": round(time.time() - t0)}})
     print("best val", best)
 
@@ -327,7 +354,7 @@ def fit_cloud(model, ftr, ytr, fte, yte, epochs=300):
     """Train ONLY model.cloud (re-initialised) on frozen features; returns held-out MAE."""
     import torch
     dev = next(model.parameters()).device
-    model.cloud = cloud_head().to(dev)
+    model.cloud = cloud_head(model.cloud[0].in_features).to(dev)
     opt = torch.optim.AdamW(model.cloud.parameters(), lr=3e-3, weight_decay=1e-3)
     for _ in range(epochs):
         for idx in torch.randperm(len(ytr)).split(1024):
@@ -396,20 +423,65 @@ def pix_means(model, key, dev, bs=128):
     return torch.cat(out)
 
 
+B10_THR = (0.006, 0.008, 0.010, 0.012, 0.015, 0.02)  # candidate cirrus thresholds (TOA reflectance); S2 standard ~0.012
+B10_JSON = paths.MODELS / "cloud_b10.json"
+
+
+def b10_feats(key):
+    """Per-chip B10 features [N, len(B10_THR)+1]: fraction of pixels > each threshold, and the 90th percentile."""
+    f = paths.CHIPS / f"{key[0]}_{key[1]}_b10.npy"
+    if not f.exists():
+        return None
+    b = np.load(f, mmap_mode="r")
+    out = [np.stack([(np.asarray(b[i:i + 256]) > t).mean((1, 2)) for t in B10_THR] + [np.percentile(np.asarray(b[i:i + 256], np.float32), 90, axis=(1, 2))], 1)
+           for i in range(0, len(b), 256)]
+    return np.concatenate(out).astype(np.float32)
+
+
+def fit_b10(h, F, y):
+    """Choose threshold + fit pred = clip(w*head + a*frac_thr + b*10*p90 + c, 0, 1) by L1 on training scenes; also the max(head, frac) variant.
+    -> {"thr_idx", "lin": [w, a, b, c], "max_thr_idx"}"""
+    import torch
+    h, F, y = (torch.as_tensor(v, dtype=torch.float32) for v in (h, F, y))
+    best = None
+    for j in range(len(B10_THR)):
+        X = torch.stack([h, F[:, j], F[:, -1] * 10, torch.ones_like(h)], 1)
+        w = torch.tensor([1.0, 0.0, 0.0, 0.0], requires_grad=True)
+        opt = torch.optim.Adam([w], lr=3e-2)
+        for _ in range(400):
+            loss = ((X @ w).clamp(0, 1) - y).abs().mean()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+        if best is None or loss.item() < best[0]:
+            best = (loss.item(), j, w.detach().tolist())
+    mx = int(np.argmin([float((torch.maximum(h, F[:, j]) - y).abs().mean()) for j in range(len(B10_THR))]))
+    return {"thr_idx": best[1], "thr": B10_THR[best[1]], "lin": best[2], "max_thr_idx": mx, "max_thr": B10_THR[mx]}
+
+
+def apply_b10(c, h, F):
+    X = np.stack([h, F[:, c["thr_idx"]], F[:, -1] * 10, np.ones_like(h)], 1)
+    return np.clip(X @ np.array(c["lin"], np.float32), 0, 1), np.maximum(h, F[:, c["max_thr_idx"]])
+
+
 def cloud_stage(model, dev, a):
-    """2x2 leave-one-AOI-out: variant A (original dates) / B (+x1,x2 of training AOIs), tested on (i) original dates, (ii) x1+x2,
-    for head-only, pixel-only and learned blend. Final = best mean combined MAE; saved head/pix/blend from the hasdeo fold."""
+    """2x2 leave-one-AOI-out: variant A (original dates) / B (+x1,x2 of training AOIs), tested on (i) original dates, (ii) x1+x2.
+    Modes: chip head only; head + B10 cirrus term (learned linear blend, or max). Final = best mean combined MAE; head and B10
+    combiner saved from the hasdeo fold. With --pix the older per-pixel spectral experiment is also evaluated."""
     import torch
     sf = scene_feats(model, dev)
     aois = sorted({k[0] for k in sf})
     if aois != ["blr", "hasdeo", "sone"]:
         print("cloud stage PENDING: vault chips for blr,sone,hasdeo not all present", file=sys.stderr)
         return 1
+    bf = {k: b10_feats(k) for k in sf}
+    has_b10 = all(v is not None for v in bf.values())
+    if not has_b10:
+        print("B10 chips missing for some scenes: B10 modes skipped", file=sys.stderr)
     for q in model.parameters():
         q.requires_grad = False
-    for m in (model.cloud, model.pix):
-        for q in m.parameters():
-            q.requires_grad = True
+    for q in model.cloud.parameters():
+        q.requires_grad = True
     isx = lambda k: k[1].startswith("x")  # noqa: E731
     cat = lambda keys: (torch.cat([sf[k][0] for k in keys]), torch.cat([sf[k][1] for k in keys]))  # noqa: E731
     head = lambda f: torch.sigmoid(model.cloud(f.to(dev))).squeeze(1).detach().cpu()  # noqa: E731
@@ -419,48 +491,47 @@ def cloud_stage(model, dev, a):
         te["combined"] = te["original_dates"] + te["x1_x2_cirrus"]
         for var in out:
             tr = [k for k in sf if k[0] != ho and (var == "B_with_x" or not isx(k))]
-            fit_pix(model, tr, dev)
-            pm = {k: pix_means(model, k, dev) for k in sf if k[0] == ho or k in tr}
-            # honest head predictions on training scenes: inner leave-one-training-AOI-out
-            tr_aois = sorted({k[0] for k in tr})
-            hp = {}
-            for ia in tr_aois:
-                itr = [k for k in tr if k[0] != ia]
-                fit_cloud(model, *cat(itr), *cat([k for k in tr if k[0] == ia][:1]))
+            hp = {}  # honest head predictions on training scenes: inner leave-one-training-AOI-out
+            for ia in sorted({k[0] for k in tr}):
+                fit_cloud(model, *cat([k for k in tr if k[0] != ia]), *cat([k for k in tr if k[0] == ia][:1]))
                 for k in tr:
                     if k[0] == ia:
-                        hp[k] = head(sf[k][0])
-            ytr = torch.cat([sf[k][1] for k in tr])
-            hv, pv = torch.cat([hp[k] for k in tr]), torch.cat([pm[k] for k in tr])
-            grid = np.linspace(0, 1, 21)
-            w = float(grid[int(np.argmin([float((x * pv + (1 - x) * hv - ytr).abs().mean()) for x in grid]))])
+                        hp[k] = head(sf[k][0]).numpy()
             fit_cloud(model, *cat(tr), *cat(te["original_dates"][:1]))  # final head on all training scenes
-            r = {"w_pixel": w}
+            comb = fit_b10(np.concatenate([hp[k] for k in tr]), np.concatenate([bf[k] for k in tr]), torch.cat([sf[k][1] for k in tr]).numpy()) if has_b10 else None
+            r = {"b10_combiner": comb}
             for name, ks in te.items():
-                y = torch.cat([sf[k][1] for k in ks])
-                h, p = torch.cat([head(sf[k][0]) for k in ks]), torch.cat([pm[k] for k in ks])
-                r[name] = {"blend": float((w * p + (1 - w) * h - y).abs().mean()), "head_only": float((h - y).abs().mean()),
-                           "pixel_only": float((p - y).abs().mean())}
+                y = torch.cat([sf[k][1] for k in ks]).numpy()
+                h = np.concatenate([head(sf[k][0]).numpy() for k in ks])
+                r[name] = {"head_only": float(np.abs(h - y).mean())}
+                if has_b10:
+                    lin, mx = apply_b10(comb, h, np.concatenate([bf[k] for k in ks]))
+                    r[name].update({"head_b10_linear": float(np.abs(lin - y).mean()), "head_b10_max": float(np.abs(mx - y).mean())})
             r["mean_baseline_combined"] = float((cat(te["combined"])[1] - cat(tr)[1].mean()).abs().mean())
             out[var][ho] = r
-            states[var, ho] = ({k: v.clone() for k, v in model.cloud.state_dict().items()}, {k: v.clone() for k, v in model.pix.state_dict().items()}, w)
-            print("cloud", var, ho, json.dumps({k: (round(v, 3) if not isinstance(v, dict) else {a_: round(b_, 3) for a_, b_ in v.items()}) for k, v in r.items()}), flush=True)
-    score_ = {v: float(np.mean([out[v][h]["combined"]["blend"] for h in aois])) for v in out}
-    best = min(score_, key=score_.get)
-    hs, ps, w = states[best, "hasdeo"]
+            states[var, ho] = ({k: v.clone() for k, v in model.cloud.state_dict().items()}, comb)
+            print("cloud", var, ho, json.dumps({k: (v if k == "b10_combiner" else (round(v, 3) if not isinstance(v, dict) else {a_: round(b_, 3) for a_, b_ in v.items()})) for k, v in r.items()}), flush=True)
+    modes = ["head_only"] + (["head_b10_linear", "head_b10_max"] if has_b10 else [])
+    score_ = {(v, m): float(np.mean([out[v][h]["combined"][m] for h in aois])) for v in out for m in modes}
+    best_v, best_m = min(score_, key=score_.get)
+    hs, comb = states[best_v, "hasdeo"]
     model.cloud.load_state_dict(hs)
-    model.pix.load_state_dict(ps)
-    model.blend.data = torch.tensor([float(np.log(max(w, 1e-4) / max(1 - w, 1e-4)))], device=dev)
     ck = torch.load(PT, map_location="cpu", weights_only=False)
     ck["state"] = {k: v.cpu() for k, v in model.state_dict().items()}
     torch.save(ck, PT)
-    h = out[best]["hasdeo"]
-    update_report({"cloud": {"mae": h["combined"]["blend"], "mae_original_dates": h["original_dates"]["blend"],
-                             "mae_x1_x2_cirrus": h["x1_x2_cirrus"]["blend"], "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"],
-                             "kept_variant": best, "blend_w_pixel": w, "mean_fold_combined_mae": score_, "loao": out,
-                             "head": "w*mean(per-pixel spectral MLP, 33 params, in-graph) + (1-w)*chip head on trunk",
-                             "scenes_used": sorted(f"{k[0]}_{k[1]}" for k in sf), "labels": "SCL classes 3,8,9,10 fraction"}})
-    print("cloud kept", best, json.dumps(h))
+    if comb and best_m != "head_only":
+        B10_JSON.write_text(json.dumps({"mode": best_m, **comb, "note": "onboard input = 5 bands for land/change + L1C B10 for cirrus; "
+                                        "cloud = lin: clip(w*head + a*frac(B10>thr) + b*10*p90(B10) + c) or max(head, frac(B10>max_thr))"}, indent=2), encoding="utf-8")
+    elif B10_JSON.exists():
+        B10_JSON.unlink()
+    h = out[best_v]["hasdeo"]
+    update_report({"cloud": {"mae": h["combined"][best_m], "mae_original_dates": h["original_dates"][best_m],
+                             "mae_x1_x2_cirrus": h["x1_x2_cirrus"][best_m], "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"],
+                             "kept_variant": best_v, "kept_mode": best_m, "mean_fold_combined_mae": {f"{v}/{m}": x for (v, m), x in score_.items()},
+                             "loao": out, "b10_used": has_b10 and best_m != "head_only",
+                             "mean_baseline_mae": h["mean_baseline_combined"], "labels": "SCL classes 3,8,9,10 fraction",
+                             "scenes_used": sorted(f"{k[0]}_{k[1]}" for k in sf)}})
+    print("cloud kept", best_v, best_m, json.dumps({k: v for k, v in h.items() if k != "b10_combiner"}))
     return 0
 
 
@@ -548,7 +619,7 @@ def export_onnx(model, path):
     Path(str(path) + ".data").unlink(missing_ok=True)
 
 
-def quantize(fp32, int8, calib, qdq=False):
+def quantize(fp32, int8, calib, qdq=False, keep_fp32=(0, 0)):
     from onnxruntime.quantization import (CalibrationDataReader, QuantFormat, QuantType, quantize_static,
                                           quant_pre_process)
     pre = Path(str(fp32) + ".pre")
@@ -560,7 +631,11 @@ def quantize(fp32, int8, calib, qdq=False):
 
     class R(Calib, CalibrationDataReader):
         pass
-    quantize_static(str(src), str(int8), R(calib), quant_format=QuantFormat.QDQ if qdq else QuantFormat.QOperator, per_channel=True,
+    import onnx
+    convs = [n.name for n in onnx.load(str(src)).graph.node if n.op_type == "Conv"]
+    # first/last convs of depthwise nets are quantization-sensitive: keep them fp32 (measured: int8 top-1 95.1 -> 98.4%)
+    skip = convs[:keep_fp32[0]] + (convs[-keep_fp32[1]:] if keep_fp32[1] else [])
+    quantize_static(str(src), str(int8), R(calib), nodes_to_exclude=skip, quant_format=QuantFormat.QDQ if qdq else QuantFormat.QOperator, per_channel=True,
                     activation_type=QuantType.QUInt8, weight_type=QuantType.QInt8,
                     extra_options={"ActivationSymmetric": False})  # QOperator not QDQ: ~2x faster on ORT CPU, same accuracy
     pre.unlink(missing_ok=True)
@@ -582,18 +657,22 @@ def ort_run(sess, x, bs=64):
     return [np.concatenate(o) for o in zip(*outs, strict=True)]
 
 
+def chip_files():
+    return [p for p in paths.CHIPS.glob("*.npy") if not p.stem.endswith(("_scl", "_b10"))] if paths.CHIPS.exists() else []
+
+
 def cmd_export(a):
     model = load_model("cpu")
     export_onnx(model, FP32)
     tr = get_eurosat("train")
     rng = np.random.default_rng(0)
     cal = [tr[0][rng.choice(len(tr[1]), 384, replace=False)]]
-    for f in [p for p in paths.CHIPS.glob("*.npy") if not p.stem.endswith("_scl")] if paths.CHIPS.exists() else []:
+    for f in chip_files() if paths.CHIPS.exists() else []:
         arr = np.load(f, mmap_mode="r")
         cal.append(np.asarray(arr[rng.choice(len(arr), min(16, len(arr)), replace=False)]))
     cal = prep(np.concatenate(cal))[rng.permutation(sum(len(c) for c in cal))]
     print("calibration chips:", len(cal))
-    quantize(FP32, INT8, cal)
+    quantize(FP32, INT8, cal, keep_fp32=(5, 3) if getattr(model, "arch", "teacher") != "teacher" else (0, 0))
     te = get_eurosat("test")
     xt = prep(te[0])
     acc = {k: float((ort_run(ort_session(p), xt)[0].argmax(1) == te[1]).mean()) for k, p in (("fp32", FP32), ("int8", INT8))}
@@ -672,17 +751,23 @@ def cmd_change(a):
 def cmd_score(a):
     if a.change:
         return cmd_change(a)
-    files = [p for p in paths.CHIPS.glob("*.npy") if not p.stem.endswith("_scl")] if paths.CHIPS.exists() else []
+    files = chip_files() if paths.CHIPS.exists() else []
     if not files:
         print("vault/chips missing: nothing to score", file=sys.stderr)
         return 0
     T = json.loads(REPORT.read_text(encoding="utf-8"))["eurosat"]["temperature"]
     sess = ort_session(INT8)
     paths.ensure(paths.SCORES)
+    comb = json.loads(B10_JSON.read_text(encoding="utf-8")) if B10_JSON.exists() else None
     for f in sorted(files):
         lg, cl, emb, wc = ort_run(sess, prep(np.load(f)))
+        cl, extra = cl[:, 0].astype(np.float32), {}
+        bf = b10_feats(tuple(f.stem.split("_"))) if comb else None  # onboard L1C B10 cirrus term, outside the 5-band graph
+        if bf is not None:
+            extra["cloud_head"] = cl
+            cl = apply_b10(comb, cl, bf)[0 if comb["mode"] == "head_b10_linear" else 1].astype(np.float32)
         np.savez(paths.SCORES / f"{f.stem}.npz", probs=softmax(lg / T).astype(np.float32),
-                 cloud=cl[:, 0].astype(np.float32), emb=emb.astype(np.float16), wc=wc.astype(np.float32))
+                 cloud=cl, emb=emb.astype(np.float16), wc=wc.astype(np.float32), **extra)
         print("scored", f.stem, flush=True)
     return 0
 
@@ -696,9 +781,14 @@ def main(argv):
     ap.add_argument("--bs", type=int, default=128)
     ap.add_argument("--scratch", action="store_true")
     ap.add_argument("--cloud", action="store_true")
+    ap.add_argument("--student", help="timm arch for the distilled onboard-lite trunk (train only)")
+    ap.add_argument("--temp", type=float, default=4.0)
+    ap.add_argument("--ckpt", default="herald.pt", help="checkpoint file in models/ (teacher: herald_teacher.pt, lite: herald_lite.pt)")
     ap.add_argument("--wc", action="store_true")
     ap.add_argument("--change", action="store_true")
     a = ap.parse_args(argv[1:])
+    global PT
+    PT = paths.MODELS / a.ckpt
     return {"train": cmd_train, "calibrate": cmd_calibrate, "export": cmd_export, "score": cmd_score}[argv[0]](a)
 
 
