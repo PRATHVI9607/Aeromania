@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Cartesian3, Color, ColorGeometryInstanceAttribute, GeometryInstance, ImageryLayer, Math as CMath, PerInstanceColorAppearance, Primitive, Rectangle,
-  RectangleGeometry, ScreenSpaceEventType, SingleTileImageryProvider, BoundingSphere, HeadingPitchRange, EasingFunction, Viewer } from "cesium";
+import { Cartesian3, Color, ColorGeometryInstanceAttribute, GeometryInstance, Material, MaterialAppearance, Math as CMath, PerInstanceColorAppearance, Primitive, Rectangle,
+  RectangleGeometry, ScreenSpaceEventType, BoundingSphere, HeadingPitchRange, EasingFunction, Viewer } from "cesium";
 import { makeViewer } from "../cz";
 import { reduced } from "../anim";
 
@@ -15,7 +15,10 @@ export default function Ledger3D({ items, rect, imgUrl, selRank, onPick }: { ite
   useEffect(() => {
     let dead = false;
     const rectangle = Rectangle.fromDegrees(w, s, e, n);
-    const v = makeViewer(box.current!, ImageryLayer.fromProviderAsync(SingleTileImageryProvider.fromUrl(imgUrl, { rectangle })));
+    const v = makeViewer(box.current!, false);
+    // mosaic draped as a textured rectangle primitive (a single-tile imagery layer smears its edge pixels at oblique angles)
+    v.scene.primitives.add(new Primitive({ asynchronous: false, appearance: new MaterialAppearance({ material: Material.fromType("Image", { image: imgUrl }), materialSupport: MaterialAppearance.MaterialSupport.TEXTURED, translucent: false, closed: false }),
+      geometryInstances: new GeometryInstance({ geometry: new RectangleGeometry({ rectangle, height: 4, vertexFormat: MaterialAppearance.MaterialSupport.TEXTURED.vertexFormat }) }) }));
     vr.current = v;
     const inst = items.map((o) => {
       const side = Math.max(110, Math.sqrt(o.ha * 1e4)), dl = side / 111000 / 2, dn = side / (111000 * Math.cos((o.lat * Math.PI) / 180)) / 2;

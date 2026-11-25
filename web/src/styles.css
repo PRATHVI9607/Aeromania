@@ -162,3 +162,5 @@ h3 small{font:400 12px var(--mono);color:var(--mut)}
 .msbig{font-size:44px;white-space:nowrap}
 .qlist li{grid-template-columns:84px minmax(0,1fr) auto}
 .sitewrap{height:240px}
+button.on:hover:not(:disabled),button.primary:hover:not(:disabled){background:var(--acc);border-color:var(--acc);color:#15110a}
+.leads button.on:hover:not(:disabled){background:#2a2112;color:var(--acc);border-color:transparent}.ec.on:hover:not(:disabled){background:#2a2112;color:var(--tx);border-color:transparent}
