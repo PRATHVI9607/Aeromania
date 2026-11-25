@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./fifo.css";
 import type { Data } from "../data";
 import { useJson } from "../useJson";
 import { canon, cardsFromText, sha256Hex, verifyChainText } from "../canon";
@@ -28,7 +29,7 @@ async function evidenceGate(): Promise<G> {
 }
 
 export function Gates({ data, ms, runs }: { data: Data; ms: number | null; runs: number }) {
-  const [ev, setEv] = useState<G | null>(null);
+  const [ev, setEv] = useState<G | null>(null), [sel, setSel] = useState<string | null>(null), [list, setList] = useState(false);
   const siteWeb = useJson<any>("siting.json");
   useEffect(() => { evidenceGate().then(setEv); }, []);
   const R = data.reports, m = R.model, sim = R.sim, chg = R.change_blr_summary, lead = R.audit_blr_lead, sit = siteWeb ?? R.siting, tc = R.audit_trackc;
@@ -72,13 +73,19 @@ export function Gates({ data, ms, runs }: { data: Data; ms: number | null; runs:
   const wc = m?.wc;
   g.push(num(wc?.top1_agreement) ? { id: "G17", metric: "India land-cover head vs WorldCover, spatial hold-out", target: ">= 70% top-1", status: wc.top1_agreement >= 0.7 ? "pass" : "fail", detail: `${f(wc.top1_agreement * 100, 1)}% (n_test=${wc.n_test}; majority baseline ${num(wc.baseline_top1_majority) ? f(wc.baseline_top1_majority * 100, 1) : "n/a"}%)` } : P("G17", "India land-cover head vs WorldCover, spatial hold-out", ">= 70% top-1"));
 
+  const cur = g.find((x) => x.id === sel) ?? g.find((x) => x.status === "fail") ?? g[0];
   return (
     <section className="panel span2x">
-      <h3>Gates <small>{g.filter((x) => x.status === "pass").length} pass, {g.filter((x) => x.status === "fail").length} fail, {g.filter((x) => x.status === "partial").length} partial, {g.filter((x) => x.status === "pending").length} pending</small></h3>
-      {g.map((x) => (
+      <h3>Gates <small>{g.filter((x) => x.status === "pass").length} pass, {g.filter((x) => x.status === "fail").length} fail, {g.filter((x) => x.status === "partial").length} partial, {g.filter((x) => x.status === "pending").length} pending</small>
+        <button onClick={() => setList(!list)} aria-pressed={list}>{list ? "Show grid" : "Show list"}</button></h3>
+      {!list && <>
+        <div className="ggrid" role="group" aria-label="Gate status">
+          {g.map((x) => <button key={x.id} className={`gt ${x.status} ${cur.id === x.id ? "on" : ""}`} onMouseEnter={() => setSel(x.id)} onFocus={() => setSel(x.id)} onClick={() => setSel(x.id)}><b className="mono">{x.id}</b><span>{x.status}</span></button>)}
+        </div>
+        <div className="gdet"><span className={`st ${cur.status}`}>{cur.status}</span><b>{cur.metric}</b><small className="muted">target {cur.target}</small><span className="mono">{cur.detail}</span></div></>}
+      {list && g.map((x) => (
         <div className="gate" key={x.id}><b className="mono">{x.id}</b><span className={`st ${x.status}`}>{x.status}</span>
           <span>{x.metric} <small className="muted">target {x.target}</small><br /><span className="mono">{x.detail}</span></span></div>))}
-      <p className="muted">Values are read from the report JSONs at load time; a missing field shows pending. Misses stay visible.</p>
     </section>
   );
 }

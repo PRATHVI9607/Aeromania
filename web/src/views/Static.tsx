@@ -23,13 +23,12 @@ const wardRs = sv ? (wardAll ?? sv.wards_ranked).reduce((a: number, w: any) => a
     <div>
       <div className="kicker">Who pays</div>
       <h2 className="headline">Four payers, every rupee an assumption</h2>
-      <p className="muted">Hover or focus any amount for its parameter name and source note. Nothing here is a measured saving; products are shown with their inputs.</p>
       <div className="cards3">
         <Card title="City revenue and planning" payer="Pack A, property-tax survey triage">
           <dt>Rupees per ha of new built-up</dt><dd className="mono"><Rupee v={p.rupees_per_ha.A} name="rupees_per_ha.A" meta={m.rupees_per_ha} value={p.rupees_per_ha} /></dd>
           {sv && <><dt>New built-up detected</dt><dd className="mono">{sv.aoi_summary.new_built_ha} ha over {sv.aoi_summary.years.toFixed(1)} yr</dd>
             <dt>Expected recoverable value, {wardAll ? "all" : `top ${sv.wards_ranked.length}`} wards</dt><dd className="mono"><Rupee v={wardRs} name="survey_blr.wards_ranked[].rupees_expected" meta={{ assumption: true, source: `${sv.rupees_source} ${sv.rupees_note}` }} /></dd>
-            <dt>Confidence</dt><dd><small>{sv.confidence_def}</small></dd></>}
+</>}
         </Card>
         <Card title="Siting developer" payer="Pack A2, renewable siting around Pavagada">
           {topS ? <>
@@ -41,12 +40,10 @@ const wardRs = sv ? (wardAll ?? sv.wards_ranked).reduce((a: number, w: any) => a
         <Card title="Mines and forest departments" payer="Pack C, evidence for enforcement">
           <dt>Rupees per ha (placeholder)</dt><dd className="mono"><Rupee v={p.rupees_per_ha.C} name="rupees_per_ha.C" meta={m.rupees_per_ha} value={p.rupees_per_ha} /></dd>
           {cs.map(([a, ha]) => ha != null && <><dt key={a}>{a}: changed area</dt><dd className="mono">{ha} ha, <Rupee v={ha * p.rupees_per_ha.C} name="rupees_per_ha.C x total_changed_ha" meta={m.rupees_per_ha} value={p.rupees_per_ha} /></dd></>)}
-          <dt>Note</dt><dd><small>Rate is a placeholder in config/value.json; changed area is every detected change, not verified violations.</small></dd>
         </Card>
         <Card title="Satellite operator" payer="Platform, contact minutes saved">
           <dt>Rupees per contact minute</dt><dd className="mono"><Rupee v={rpm} name="rupees_per_contact_min" meta={m.rupees_per_contact_min} value={rpm} /></dd>
           {sim && [1, 2, 5, 10].map((r) => { const s = sim.by_rho[r]?.minutes_saved_vs_fifo?.H2; return s != null && <><dt key={r}>rho {r}: minutes saved vs FIFO</dt><dd className="mono">{s.toFixed(0)} min = <Rupee v={s * rpm} name="rupees_per_contact_min x minutes_saved" meta={m.rupees_per_contact_min} value={rpm} /></dd></>; })}
-          <dt>Note</dt><dd><small>Minutes saved = FIFO minutes used minus minutes for HERALD to match FIFO's final value (sim.json). No vendor price is claimed.</small></dd>
         </Card>
       </div>
     </div>
@@ -59,7 +56,7 @@ export function Hardware({ data }: { data: Data }) {
   return (
     <div>
       <h2 className="headline">Onboard model, measured on a laptop CPU</h2>
-      <p className="muted">Simulation only: no flight hardware, Raspberry Pi or ESP32 was used. These are host-CPU measurements of the int8 model; flight latency is not claimed.</p>
+      <span className="chip warn">Simulation only: host-CPU measurements, no flight hardware</span>
       {!L ? <section className="panel"><h3>Latency <small>not generated</small></h3><p className="muted">reports/model.json missing.</p></section> :
         <div className="grid2">
           <section className="panel"><h3>Latency <small>{L.cpu}</small></h3>
@@ -69,9 +66,8 @@ export function Hardware({ data }: { data: Data }) {
               <dt>int8, batch 1</dt><dd className="mono">{L.ms_per_chip_int8_cpu_b1.toFixed(2)} ms/chip</dd>
               <dt>fp32, batch 64</dt><dd className="mono">{L.ms_per_chip_fp32_cpu_b64.toFixed(2)} ms/chip</dd>
               <dt>GPU (torch), batch 64</dt><dd className="mono">{L.ms_per_chip_torch_gpu_b64.toFixed(2)} ms/chip ({L.gpu})</dd>
-              <dt>Method</dt><dd><small>{L.method}; 1-minute load average {L.load_avg_1m?.toFixed(1)} at measurement, so the machine was not idle.</small></dd>
+              <dt>Load average</dt><dd className="mono">{L.load_avg_1m?.toFixed(1)}</dd>
             </dl>
-            <p className="muted">Target is under 1 ms/chip on an idle machine. {b64 < 1 ? "The measured value meets it." : "The measured value misses it; a re-bench on an idle box is pending."}</p>
           </section>
           <section className="panel"><h3>Model</h3>
             <dl className="dl">
@@ -103,14 +99,10 @@ const LIMITS = [
 export function About({ data, ms, runs }: { data: Data; ms: number | null; runs: number }) {
   return (
     <div className="grid2">
-      <div className="span2"><ViewHead kicker="Honest limits" title="What this prototype is, and what it is not" sub="Gates report real numbers, including the ones that miss." /></div>
+      <div className="span2"><ViewHead kicker="System" title="Gates and limits" sub={<span className="chip">Gates report real numbers, including misses</span>} /></div>
       <Gates data={data} ms={ms} runs={runs} />
-      <section className="panel"><h3>Honest limitations</h3><ul className="limits">{LIMITS.map((l) => <li key={l}>{l}</li>)}</ul></section>
-      <section className="panel"><h3>Protective use</h3>
-        <p className="muted">HERALD detects land-cover change only (bare sand, water-mask change, vegetation loss) at 10 m. It cannot see people or vehicles and is not used to track individuals. No weapons, targeting or surveillance of persons.</p>
-        <p className="muted">Outputs are evidence leads for authorized departments and require ground verification. Evidence cards are hash-chained for tamper evidence, not legal admissibility.</p>
-        <p className="muted">Globe: CesiumJS with local Solar System Scope Earth textures (CC BY 4.0, from NASA data). No Cesium ion, no network tiles.</p>
-      </section>
+      <section className="panel"><details className="how"><summary>Honest limitations ({LIMITS.length})</summary><ul className="limits">{LIMITS.map((l) => <li key={l}>{l}</li>)}</ul></details></section>
+      <section className="panel"><details className="how"><summary>Protective use</summary><ul className="limits"><li>Land-cover change only, at 10 m. No people, vehicles or tracking of individuals.</li><li>Outputs are leads for authorized departments; ground verification required.</li><li>Evidence cards are hash-chained for tamper evidence, not legal admissibility.</li></ul></details></section>
     </div>
   );
 }

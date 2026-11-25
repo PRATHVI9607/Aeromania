@@ -5,6 +5,7 @@ import { Rupee } from "../Assume";
 import { Shortlist } from "./Shortlist";
 import { explain } from "../explain";
 import type { ViewProps } from "./props";
+import { Scatter } from "../charts";
 
 const SZ = 600;
 /** number or "n/a"; never renders undefined */
@@ -14,7 +15,7 @@ const f0 = (x: number) => Math.round(x).toLocaleString("en-IN");
 export function Siting({ data }: ViewProps) {
   const s = useJson<any>("siting.json");
   const [kind, setKind] = useState<"solar" | "wind">("solar");
-  const [hover, setHover] = useState<any>(null);
+  const [hover, setHover] = useState<any>(null), [tbl, setTbl] = useState(false), [pick, setPick] = useState<string | null>(null);
   if (s === undefined) return <Skeleton />;
   if (s === null) return <section className="panel"><h3>Siting <small>not generated yet</small></h3><p className="muted">web/public/data/siting.json is missing. Run the siting step (python -m herald siting).</p></section>;
   const [w, so, e, n] = s.bbox as number[];
@@ -34,9 +35,15 @@ export function Siting({ data }: ViewProps) {
   };
   return (
     <div className="ins">
-      <ViewHead explain={explain("siting", data)} kicker="Track A, renewable developer" title="Siting shortlist: where the next solar or wind project should go" sub="Solar and wind sites ranked by irradiance, slope, land use and grid distance, validated against the real Pavagada park. 60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source)." />
+      <ViewHead explain={explain("siting", data)} kicker="Track A" title="Renewable siting" sub={<span className="chip">Pavagada, Karnataka, 60 km box; screening ranks, rupee values are assumptions</span>} />
       <div className="grid2">
-        <Shortlist s={s} rep={data.reports.siting} kind={kind} setKind={setKind} />
+        {tbl ? <div className="span2x"><button onClick={() => setTbl(false)} style={{ marginBottom: 8 }}>Show chart</button><Shortlist s={s} rep={data.reports.siting} kind={kind} setKind={setKind} /></div> : (
+          <section className="panel span2x">
+            <h3>Top sites <small>cost per unit vs size; hover a point</small>
+              <span className="btns">{(["solar", "wind"] as const).map((k) => <button key={k} className={kind === k ? "on" : ""} aria-pressed={kind === k} onClick={() => setKind(k)}>{k}</button>)}<button onClick={() => setTbl(true)}>Show table</button></span></h3>
+            <Scatter xLabel="Block size, MW" yLabel="LCOE, Rs per kWh" fx={(v) => v.toFixed(0)} fy={(v) => v.toFixed(2)} active={pick} onPick={(k) => setPick(pick === k ? null : k)}
+              pts={top.map((t: any) => ({ key: String(t.rank), x: t.mw, y: t.lcoe_rs_kwh, label: `${kind} site #${t.rank}`, note: `${Math.round(t.mwh_yr).toLocaleString("en-IN")} MWh/yr, grid ${t.grid_km_substation} km, net ${Math.round(t.net_value_rs_yr / 1e5) / 10} Cr/yr (assumption)` }))} />
+          </section>)}
         <section className="panel">
           <h3>Heatmap
             <span className="controls">
@@ -52,16 +59,14 @@ export function Siting({ data }: ViewProps) {
           {hover && <p className="mono muted">cell {nf(hover.lat, 3)}, {nf(hover.lon, 3)}: solar rank {hover.solar_score || "-"}, wind rank {hover.wind_score || "-"}, T2M {nf(hover.t2m, 1)} C, WS50 {nf(hover.ws50, 1)} m/s, road {nf(hover.road_km, 1)} km{hover.cluster_mw != null ? `, cluster ${nf(hover.cluster_mw, 0)} MW` : ""}{hover.lcoe_rs_kwh != null ? `, LCOE ${nf(hover.lcoe_rs_kwh, 2)}` : ""}</p>}
         </section>
         <section className="panel">
-          <h3>Validation <small>sanity checks, not proof</small></h3>
+          <h3>Validation</h3>
           {pv && <dl className="dl">
             <dt>Pavagada solar park cells</dt><dd className="mono">{pv.cells} cells; mean percentile {pv.as_is.mean_pct ?? "n/a"} as is, {pv.built_treated_as_available.mean_pct ?? "n/a"} with built land treated as available; {pv.as_is.share_top_decile != null ? `${(pv.as_is.share_top_decile * 100).toFixed(0)}% in top decile` : ""}</dd>
             <dt>OSM polygon area</dt><dd className="mono">{pv.footprint_polygon_ha} ha vs ~{pv.reference_ha} ha reference</dd>
             {v.other_osm_solar && <><dt>Other OSM solar</dt><dd className="mono">{v.other_osm_solar.as_is.n_cells} cells, mean percentile {v.other_osm_solar.as_is.mean_pct ?? "n/a"}</dd></>}
             {v.sensitivity?.top20_overlap_with_base && <><dt>Top-20 overlap with base</dt><dd className="mono">{Object.entries(v.sensitivity.top20_overlap_with_base).map(([k, x]) => `${k}: ${x}/20`).join(", ")}</dd></>}
           </dl>}
-          {pv && <p className="muted">{pv.note}</p>}
-          <h3 style={{ marginTop: 12 }}>Caveats</h3>
-          <ul className="limits">{(s.caveats ?? []).map((c: string) => <li key={c}>{c}</li>)}</ul>
+          <details className="how"><summary>Caveats</summary><ul className="limits">{(s.caveats ?? []).map((c: string) => <li key={c}>{c}</li>)}</ul></details>
         </section>
         
       </div>

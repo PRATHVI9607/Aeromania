@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { ViewProps } from "./props";
 import { prepare } from "../sched";
 import { bytes, hm, ha as fha, inr } from "../fmt";
-import { Explainer } from "../kit";
+
 import { explain } from "../explain";
 
 const LV = ["256 B packet", "thumbnail", "full chip"];
@@ -38,7 +38,6 @@ export function TileWalk({ data, out, queries, rho }: ViewProps) {
   const tbl = (rows: [number, number, number][]) => <div className="tblwrap"><table className="tbl"><thead><tr><th>#</th><th>Tile</th><th>AOI</th><th className="r">Cloud</th><th className="r">Changed</th><th className="r">Bytes</th><th className="r">Value</th></tr></thead><tbody>{rows.map(row)}</tbody></table></div>;
   return (
     <div>
-      <Explainer e={explain("fifo", data)} defaultOpen={false} />
       <div className="grid2" style={{ marginTop: 16 }}>
         <section className="panel span2"><h3>Follow one tile <small>highest-value Bengaluru tile in the plan; values are assumptions</small></h3>
           <ol className="walk">{stepRows.map(([a, b, c]) => <li key={a}><b>{a}</b><span className="mono acc">{b}</span><span>{c}</span></li>)}</ol></section>

@@ -10,6 +10,8 @@ import { SiteDrawer, type SiteRef } from "../SiteDetail";
 import { useJson } from "../useJson";
 import { createPortal } from "react-dom";
 import { WorkPanel } from "../WorkPanel";
+import { PanZoom } from "../PanZoom";
+import { BarChart } from "../charts";
 import { applyPatch, countStatus, download, LEAD_KEY, LEAD_STATUS, statusOf, toCSV, toGeoJSON, toKML, useLocal, type WorkStore } from "../work";
 
 const Ledger3D = lazy(() => import("./Ledger3D"));
@@ -17,9 +19,9 @@ const Ledger3D = lazy(() => import("./Ledger3D"));
 const N = 46, MS = 640;
 const NEW = new Set(["new_layout", "building_construction"]);
 const CAT: Record<string, { label: string; color: string; note: string }> = {
-  new_construction: { label: "New construction", color: "#f2a93b", note: "new layout or building; sub-type split is unreliable at 10 m" },
-  agri_ambiguous: { label: "Cleared, ambiguous", color: "#6fd3c0", note: "cleared land without a road grid: may be harvested or fallow field" },
-  lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#6aa5e8", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
+  new_construction: { label: "New construction", color: "#F5A524", note: "new layout or building; sub-type split is unreliable at 10 m" },
+  agri_ambiguous: { label: "Cleared, ambiguous", color: "#8A97A8", note: "cleared land without a road grid: may be harvested or fallow field" },
+  lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#22D3EE", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
 };
 const cat = (c: string) => (NEW.has(c) ? "new_construction" : c);
 const pct = (x: number | null | undefined) => (x == null ? "n/a" : `${(x * 100).toFixed(0)}%`);
@@ -42,7 +44,7 @@ export function Insights({ data }: ViewProps) {
   const [bin, setBin] = useState<number | null>(null), [limit, setLimit] = useState(25);
   const [work, setWork] = useLocal<WorkStore>(LEAD_KEY, {});
   const [stF, setStF] = useState(""), [picked, setPicked] = useState<Set<string>>(new Set()), [printing, setPrinting] = useState(false);
-  const [d3, setD3] = useState(false);
+  const [d3, setD3] = useState(false), [wTab, setWTab] = useState(false);
   useEffect(() => { const id = setTimeout(() => { new Image().src = "/data/img/blr_t1.jpg"; }, 400); return () => clearTimeout(id); }, []);
   const geo = useMemo(() => aoiGeo(data.tiles, "blr"), [data.tiles]);
   const rect = useMemo((): [number, number, number, number] | null => {
@@ -102,8 +104,7 @@ export function Insights({ data }: ViewProps) {
   };
   return (
     <div>
-      <ViewHead explain={explain("ledger", data)} kicker="Track A, construction ledger" title="Construction ledger: new layouts and buildings, checked against no-build zones"
-        sub={<>Pair {survey.dates[0].slice(0, 10)} to {survey.dates[1].slice(0, 10)}, Sentinel-2 at 10 m. Click any marker or row for the native-resolution before and after.</>} />
+      <ViewHead explain={explain("ledger", data)} kicker="Track A" title="Construction ledger" sub={<span className="chip">{survey.dates[0].slice(0, 10)} to {survey.dates[1].slice(0, 10)}, Sentinel-2 10 m</span>} />
       <div className="kgrid k4">
         <Kpi label="New-construction leads" value={nc} tone="acc" sub={`audit precision ${lead ? lead.precision_excl_unsure.toFixed(2) : "n/a"} excl. unsure`} info={<>New-layout plus building sites of at least {R.sites_blr.min_site_ha} ha. Precision from the reviewer audit of {lead?.n} leads ({lead?.real} real, {lead?.wrong} wrong, {lead?.unsure} unsure); {lead?.precision?.toFixed(2)} if unsure counts as wrong.</>} />
         <Kpi label="Area changed" value={fha(ncHa, 0)} sub="new construction, two years" info={<>Sum of site areas for the two construction categories. Each 10 m pixel is 0.01 ha.</>} />
@@ -137,29 +138,27 @@ export function Insights({ data }: ViewProps) {
         <section className="panel">
           <h3>Map <small>{d3 ? "click a column" : "click a marker"}</small><button className={d3 ? "on" : ""} aria-pressed={d3} onClick={() => setD3(!d3)} disabled={!rect}>3D ledger</button></h3>
           {d3 && rect ? <div className="mosaic"><Guard label="3D ledger"><Suspense fallback={<Skeleton rows={4} label="loading 3D" />}><Ledger3D items={items3} rect={rect} imgUrl="/data/img/blr_t1.jpg" selRank={sel?.rank ?? null} onPick={(r) => { const x = list.find((y) => y.rank === r); if (x) setSel(x); }} /></Suspense></Guard></div> : (
-            <div className="mosaic">
-              <img src="/data/img/blr_t1.jpg" alt="Bengaluru north mosaic at t1" width={MS} height={MS} decoding="async" />
+            <PanZoom>{(k) => (<>
+              <img src="/data/img/blr_t1.jpg" alt="Bengaluru north mosaic at t1" width={MS} height={MS} decoding="async" draggable={false} />
               {geo && <svg viewBox={`0 0 ${MS} ${MS}`}>
                 {list.slice(0, 600).map((s) => { const [fx, fy] = geo(s.lat, s.lon); const on = sel === s;
                   return <g key={s.rank} className="mk" tabIndex={0} role="button" aria-label={`${s.cname}, ${s.ha} ha`} onClick={() => setSel(s)} onKeyDown={(e) => e.key === "Enter" && setSel(s)}>
-                    <circle cx={fx * MS} cy={fy * MS} r={on ? 7 : 3 + Math.min(4, Math.sqrt(s.ha) / 2)} fill={CAT[cat(s.category)].color} fillOpacity={0.6} stroke={on ? "#fff" : s.buffer_flag ? "#e5694f" : "#000"} strokeWidth={on ? 2 : 1} /></g>; })}
-              </svg>}
-            </div>)}
-          <p className="muted small">Red outline: inside a lake buffer. The map shows the {Math.min(list.length, 600)} largest matches. Marker position comes from tile-centre extremes, so expect tens of metres of error.</p>
+                    <circle cx={fx * MS} cy={fy * MS} r={(on ? 7 : 3 + Math.min(4, Math.sqrt(s.ha) / 2)) / Math.sqrt(k)} fill={CAT[cat(s.category)].color} fillOpacity={0.7} stroke={on ? "#fff" : s.buffer_flag ? "#F87171" : "#0A0E14"} strokeWidth={(on ? 2 : 1) / k} /></g>; })}
+              </svg>}</>)}</PanZoom>)}
         </section>
         <div className="rightcol">
           <section className="panel">
             <h3>Lead size <small>click a bar to filter</small><Info title="Lead size histogram">Count of leads per area bin (ha) after the filters above. Most leads are small; a few large layouts hold most of the area. Clicking a bar filters the table to that bin.</Info></h3>
             <Histogram values={all.filter((s) => show[cat(s.category)]).map((s) => s.ha)} edges={EDGES} unit="ha" hi={bin} onBin={(i) => setBin(bin === i ? null : i)} />
-            <p className="muted small">Bins in hectares, lower edge shown. {bin != null && <button className="lnk" onClick={() => setBin(null)}>clear bin filter</button>}</p>
+            {bin != null && <button className="lnk" onClick={() => setBin(null)}>clear bin filter</button>}
           </section>
           <section className="panel">
-            <h3>Area by ward <small>filtered leads, top 8</small><Info title="Area by ward">Sum of lead area per BBMP ward for the leads that match the filters. This is the ranking a revenue officer would work from.</Info></h3>
-            {byWard.length ? <HBars rows={byWard} fmt={(v) => fha(v, 0)} /> : <Empty title="No leads match" />}
+            <h3>Area by ward <small>click a bar to filter the queue</small><Info title="Area by ward">Sum of lead area per BBMP ward for the leads that match the filters. This is the ranking a revenue officer would work from.</Info></h3>
+            {byWard.length ? <BarChart unit=" ha" series={[{ name: "ha", color: "#F5A524" }]} rows={byWard.map((w) => ({ key: w.label, label: w.label, vals: [w.v] }))} active={ward} onPick={(k) => setWard(ward === k ? "" : k)} /> : <Empty title="No leads match" />}
           </section>
           <section className="panel">
             <h3>Area by category <small>filtered leads</small></h3>
-            {byCat.length ? <HBars rows={byCat} fmt={(v) => fha(v, 0)} color="var(--ok)" /> : <Empty title="No leads match" />}
+            {byCat.length ? <BarChart unit=" ha" series={[{ name: "ha", color: "#8A97A8" }]} rows={byCat.map((c) => ({ key: c.label, label: c.label, vals: [c.v] }))} /> : <Empty title="No leads match" />}
           </section>
         </div>
       </div>
@@ -185,7 +184,7 @@ export function Insights({ data }: ViewProps) {
 
       <div className="grid2" style={{ marginTop: 16 }}>
         <section className="panel">
-          <h3>Honesty panel <small>reviewer audit, not field-verified</small></h3>
+          <details className="how"><summary>Honesty panel <small className="dim">reviewer audit, not field-verified</small></summary>
           <dl className="dl">
             {lead && <><dt>Lead precision</dt><dd className="mono">{lead.precision.toFixed(2)} <small>({lead.real} real, {lead.wrong} wrong, {lead.unsure} unsure of {lead.n}); {lead.precision_excl_unsure.toFixed(2)} excl. unsure</small></dd></>}
             {chg && <><dt>Injected-patch recall</dt><dd className="mono">{Object.entries(chg.validation.injected.recall_by_size).map(([k, v]) => `${k} ha: ${pct(v as number)}`).join(", ")}</dd>
@@ -195,17 +194,18 @@ export function Insights({ data }: ViewProps) {
           </dl>
           {chg && <p className="muted small">{chg.validation.caveat}</p>}
           <p className="muted small">{R.sites_blr.rainfall_caveat}</p>
+        </details>
         </section>
         <section className="panel">
-          <h3>Wards <small>top by new built-up area</small></h3>
-          <div className="tblwrap"><table className="tbl">
+          <h3>Wards <small>top by new built-up area</small><button className={wTab ? "on" : ""} aria-pressed={wTab} onClick={() => setWTab(!wTab)}>{wTab ? "Show chart" : "Show table"}</button></h3>
+          {!wTab && <BarChart unit=" ha" series={[{ name: "New built ha", color: "#F5A524" }, { name: "Cleared ha", color: "#8A97A8" }]} rows={wardRows.map((w: any) => ({ key: w.ward_id, label: w.ward, vals: [w.new_built_ha, w.cleared_ha], note: `growth ${w.growth_pct.toFixed(1)}%, confidence ${pct(w.confidence)}` }))} active={ward} onPick={(k) => { const w = wardRows.find((x: any) => x.ward_id === k); if (w) setWard(ward === w.ward ? "" : w.ward); }} />}
+          {wTab && <div className="tblwrap"><table className="tbl">
             <thead><tr><th>Ward</th><th className="r">New built ha</th><th className="r">Cleared ha</th><th className="r">Growth</th><th className="r">Conf.</th><th className="r">Expected</th></tr></thead>
             <tbody>{wardRows.map((w: any) => (
               <tr key={w.ward_id}><td>{w.ward}</td><td className="mono r">{w.new_built_ha.toFixed(1)}</td><td className="mono r">{w.cleared_ha.toFixed(1)}</td>
                 <td className="mono r">{w.growth_pct.toFixed(1)}%</td><td className="mono r">{pct(w.confidence)}</td>
                 <td className="mono r nw"><Rupee v={w.rupees_expected} name="rupees_per_ha.A" meta={rm} value={survey.rupees_per_ha_A} /></td></tr>))}</tbody>
-          </table></div>
-          <p className="muted small">Expected = new built ha x {inr(survey.rupees_per_ha_A)}/ha x confidence (assumption). {survey.aoi_summary.growth_caveat}</p>
+          </table></div>}
         </section>
       </div>
       {printing && createPortal(<div className="printsheet"><h2 className="ps-h">Inspection sheet: {sorted.length > 40 ? "first 40 of " + sorted.length : sorted.length} leads, printed {new Date().toLocaleDateString()}</h2>

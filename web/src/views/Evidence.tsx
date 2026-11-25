@@ -109,8 +109,8 @@ export function Evidence(vp: ViewProps) {
 
   return (
     <div>
-      <ViewHead explain={explain("evidence", vp.data)} kicker="Track C, forest and mines department" title="Case inbox: forest lost to mining, timestamped from orbit"
-        sub={<>Open-cast mine expansion into dense forest at Hasdeo Arand, 2023 to 2025, as hash-chained evidence cards. Sand mining at 10 m is <b>experimental</b> and weak (low precision); it needs sub-metre imagery or SAR time series. Land cover only, never people. The chain shows tamper evidence, not legal admissibility.</>} />
+      <ViewHead explain={explain("evidence", vp.data)} kicker="Track C" title="Evidence cases"
+        sub={<><span className="chip">Hasdeo Arand, 2023 to 2025, hash-chained</span> <span className="chip warn">Sand mining at 10 m: experimental</span> <span className="chip">Land cover only, never people</span></>} />
       <div className="stcards" role="group" aria-label="Cases by status">{CASE_STATUS.map((o) => <div key={o.id} className="stcard"><b>{stc[o.id]}</b><span>{o.label}</span></div>)}</div>
       <div className="evgrid">
         <section className="panel">
@@ -154,7 +154,7 @@ export function Evidence(vp: ViewProps) {
                 <i className="tick">{show ? (w.ok ? "\u2713" : "\u00d7") : ""}</i><span>{w.label}</span><span className="mono dim">{show ? w.note : ""}</span></li>); })}
           </ul>
           <div className="hashes mono"><span className="dim">prev</span><span>{c.prev_hash}</span><span className="dim">hash</span><span>{c.hash}</span></div>
-          {caveat && <p className="muted small">{Array.isArray(caveat) ? caveat.join(" ") : caveat}</p>}
+          {caveat && <details className="how"><summary>Caveat</summary><p className="muted small">{Array.isArray(caveat) ? caveat.join(" ") : caveat}</p></details>}
         </section>
       </div>
       {ref && <SiteDrawer key={ref.id} site={ref} data={vp.data} onClose={() => setOpen(false)} />}

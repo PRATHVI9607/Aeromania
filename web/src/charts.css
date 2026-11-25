@@ -1,0 +1,11 @@
+/* charts */
+.bc{position:relative;display:flex;flex-direction:column;gap:4px}
+.bcleg{display:flex;gap:12px;font-size:11px;color:var(--mut);margin-bottom:4px}.bcleg i,.bctip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.bcrow{display:grid;grid-template-columns:96px minmax(0,1fr) 56px;gap:8px;align-items:center;font-size:12px;padding:3px 4px;border-radius:6px;border:1px solid transparent}
+.bcrow.pick{cursor:pointer}.bcrow:hover,.bcrow.on{background:var(--panel2)}.bcrow.on{border-color:var(--line2)}
+.bcb{display:flex;flex-direction:column;gap:2px}.bcb i{display:block;height:6px;border-radius:2px}.bcv{text-align:right;color:var(--mut);font-size:11px}
+.bctip{position:absolute;z-index:5;pointer-events:none;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:2px;min-width:140px;transform:translate(8px,-100%)}
+.bc .bctip{transform:none}.bctip b{font-weight:600}.bctip em{font-style:normal;float:right;margin-left:12px}.bctip small{color:var(--mut);font-size:11px}
+.sc{position:relative}
+.sc .chart{max-height:300px;width:100%}
+.xpl{display:flex;flex-direction:column;gap:2px;max-height:60vh;overflow:auto}.xpl .xl{display:block;color:var(--mut);margin:2px 0}.xpl b{margin-top:6px}

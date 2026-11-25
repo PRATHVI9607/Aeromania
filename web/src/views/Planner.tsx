@@ -58,7 +58,6 @@ export function Planner(p: ViewProps & { setQueries: (q: Query[]) => void; ms: n
             <div className="tblwrap" style={{ maxHeight: 360 }}><table className="tbl"><thead><tr><th>#</th><th>Tile</th><th>AOI, kind</th><th>Level</th><th className="r">Bytes</th><th className="r">Value</th><th className="r">Cloud</th></tr></thead>
               <tbody>{items.slice(0, 200).map((x, k) => { const t = data.tiles[x.ti]; return (
                 <tr key={`${x.ti}:${x.L}`} className={moved(x) ? "mv" : ""}><td className="mono">{k + 1}</td><td className="mono">{t.id}</td><td>{t.aoi} <span className="dim">{t.kind}, {fha(t.ha, 1)}</span></td><td>{LV[x.L]}</td><td className="mono r">{bytes(x.bytes)}</td><td className="mono r">{inr(x.value)}</td><td className="mono r">{(t.cloud * 100).toFixed(0)}%</td></tr>); })}</tbody></table></div>
-            <p className="muted small">Edit a query or priority below and this list re-plans in the worker; rows whose pass changed are highlighted.</p>
           </section>
         </div>)}
       <h3 className="grp">Customer queries <Info title="Customer queries">A query is one customer's interest: which AOI, the minimum severity of change, and a priority multiplier. A tile's value sums over every query it matches.</Info></h3>
@@ -67,8 +66,8 @@ export function Planner(p: ViewProps & { setQueries: (q: Query[]) => void; ms: n
   );
   return (
     <div>
-      <ViewHead kicker="Track B, satellite operator" title="Downlink planner: what goes down in each pass, and why"
-        sub={<>Pick a pass, see the ordered items with value, bytes and level. Change a customer query and the plan updates in milliseconds ({p.ms != null ? `${p.ms.toFixed(1)} ms last run` : "computing"}).</>} />
+      <ViewHead kicker="Track B" title="Downlink plan per pass"
+        sub={<span className="chip">{p.ms != null ? `${p.ms.toFixed(1)} ms last run` : "computing"}</span>} />
       <Tabs tabs={[
         { id: "plan", label: "Plan", node: () => tool },
         { id: "how", label: "How it works", node: () => <TileWalk {...p} /> },

@@ -16,3 +16,8 @@
 details.how summary{cursor:pointer;font-size:13px}details.how .dl{margin-top:12px}
 @media (prefers-reduced-motion:reduce){.flow .pk{animation:none;opacity:1}}
 @media(max-width:1000px){.flows,.whys{grid-template-columns:1fr}}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-bottom:16px}
+.gt{display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--mut)}
+.gt span{font-size:11px;color:var(--mut)}.gt.pass{border-left-color:var(--c)}.gt.fail{border-left-color:var(--bad)}.gt.partial,.gt.pending{border-left-color:var(--a)}.gt.on{border-color:var(--line2);border-left-width:4px;background:var(--bg)}
+.gt.pass b{color:var(--c)}.gt.fail b{color:var(--bad)}.gt.partial b,.gt.pending b{color:var(--a)}
+.gdet{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:12px 16px;border:1px solid var(--line);border-radius:8px;min-height:92px;background:var(--bg)}

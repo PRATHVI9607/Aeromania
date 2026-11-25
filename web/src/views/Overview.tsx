@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ViewProps } from "./props";
-import { Kpi, Explainer, type Explain } from "../kit";
+import { Kpi, Info, type Explain } from "../kit";
 import { cardsFromText, verifyChainText } from "../canon";
 import { ha as fha, inr, hm } from "../fmt";
 import { CASE_KEY, CASE_STATUS, countStatus, LEAD_KEY, LEAD_STATUS, readLocal, SHORT_KEY } from "../work";
@@ -50,17 +50,13 @@ export function Overview({ data, out, go }: ViewProps & { go: (id: string) => vo
   return (
     <div className="ov">
       <header className="vh">
-        <div className="kicker">Overview</div>
-        <h2 className="headline">A satellite that sends home answers, not pictures</h2>
-        <p className="sub">Real Sentinel-2 imagery of Bengaluru, Pavagada, Hasdeo Arand and the Sone river, replayed through an onboard classifier, a value scheduler and a tamper-evident evidence chain.</p>
-        <Explainer e={ex} defaultOpen={false} />
+        <div className="kicker">Story</div>
+        <h2 className="headline">Answers, not pictures<Info title="About this view"><span className="xpl"><b>What</b>{ex.what}<b>Why</b>{ex.why}</span></Info></h2>
       </header>
-
-      <p className="lede">HERALD is a satellite that decides onboard what is worth sending. It reads each 10 m tile, scores it in rupees for the customers who asked, and spends the few minutes of ground contact on the highest-value answers first. The same change detection gives city teams a construction work queue, developers a siting shortlist, and forest departments hash-chained evidence cases.</p>
       <div className="kgrid k4">
-        <Kpi label="Example, Track A" value="One lead" onClick={() => go("ledger")} sub="Open a lead: 10 m before and after, the rule that fired, ward, and the decision it supports." />
-        <Kpi label="Example, Track B" value="One tile" onClick={() => go("queries")} sub="Downlink planner, How it works: follow a tile from capture to ground, HERALD against FIFO." />
-        <Kpi label="Example, Track C" value="One case" onClick={() => go("evidence")} sub="Open a card: detection, radar corroboration, hash, chain proof, evidence pack." />
+        <Kpi label="Example, Track A" value="One lead" onClick={() => go("ledger")} sub="Construction ledger" />
+        <Kpi label="Example, Track B" value="One tile" onClick={() => go("queries")} sub="Downlink planner" />
+        <Kpi label="Example, Track C" value="One case" onClick={() => go("evidence")} sub="Evidence" />
       </div>
 
       <h3 className="grp">Your work today <small>saved in this browser</small></h3>
@@ -117,7 +113,6 @@ export function Overview({ data, out, go }: ViewProps & { go: (id: string) => vo
           </div>
         </section>
       </div>
-      <p className="muted small">Gates, caveats and the missed targets are listed under System, Gates and limits.</p>
     </div>
   );
 }

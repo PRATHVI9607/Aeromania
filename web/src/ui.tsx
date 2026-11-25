@@ -1,11 +1,10 @@
-import { Explainer, type Explain } from "./kit";
+import { Info, type Explain } from "./kit";
 export function ViewHead({ kicker, title, sub, explain }: { kicker: string; title: string; sub?: React.ReactNode; explain?: Explain }) {
   return (
     <header className="vh">
       <div className="kicker">{kicker}</div>
-      <h2 className="headline">{title}</h2>
-      {sub && <p className="sub">{sub}</p>}
-      {explain && <Explainer e={explain} />}
+      <h2 className="headline">{title}{explain && <Info title="About this view"><span className="xpl"><b>What</b>{explain.what}<b>Why</b>{explain.why}<b>How</b>{explain.how.map((x, i) => <span key={i} className="xl">{x}</span>)}<b>Caveats</b>{explain.caveats.map((x, i) => <span key={i} className="xl">{x}</span>)}</span></Info>}</h2>
+      {sub && <div className="sub">{sub}</div>}
     </header>
   );
 }

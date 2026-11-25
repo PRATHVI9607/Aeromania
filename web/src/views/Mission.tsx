@@ -52,10 +52,13 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   const scene = useRef<any>({});
   const wins = data.passes, splits = data.wins; // passes = real contact windows; splits = scheduler windows (indices of the H2 timeline)
   // demo opens over India: LEAD_MIN before the first Bengaluru pass (it contains the first capture), else the first pass
-  const t0 = useMemo(() => Math.max(0, ((wins.find((w) => w.station === "bengaluru") ?? wins[0])?.start_min ?? 0) - LEAD_MIN), [wins]);
+  const t0 = useMemo(() => { // clock opens LEAD_MIN before the first Bengaluru capture (fallback: first Bengaluru pass), so capture and downlink play out on the first view
+    const caps = data.tiles.filter((x) => x.aoi === "blr").map((x) => x.t_cap_min);
+    return Math.max(0, (caps.length ? Math.min(...caps) : (wins.find((w) => w.station === "bengaluru") ?? wins[0])?.start_min ?? 0) - LEAD_MIN);
+  }, [wins, data.tiles]);
   const [t, setT] = useState(t0);
   const [play, setPlay] = useState(true);
-  const [speed, setSpeed] = useState(3);
+  const [speed, setSpeed] = useState(2);
   const [layers, setLayers] = useState<Record<string, boolean>>({ leads: true, solar: true, evidence: true, aoi: true, coverage: true });
   const [tab, setTab] = useState<"feed" | "wins">("feed");
   const [tour, setTour] = useState<number | null>(null);

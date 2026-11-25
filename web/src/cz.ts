@@ -24,7 +24,7 @@ export function makeViewer(el: HTMLElement, baseLayer?: ImageryLayer | false): V
 export function makeEarth(el: HTMLElement): Viewer {
   const v = makeViewer(el);
   const day = v.imageryLayers.get(0); day.nightAlpha = 0;
-  const night = whole("/earth/earth_night_4096.jpg"); v.imageryLayers.add(night); night.dayAlpha = 0; night.nightAlpha = 1;
+  const night = whole("/earth/earth_night_4096.jpg"); v.imageryLayers.add(night); night.dayAlpha = 0; night.nightAlpha = 1; night.brightness = 1.7;
   const g = v.scene.globe; g.enableLighting = true; g.showGroundAtmosphere = true; g.dynamicAtmosphereLighting = true; g.dynamicAtmosphereLightingFromSun = false;
   const sky = new SkyAtmosphere(); sky.brightnessShift = -0.1; v.scene.skyAtmosphere = sky;
   const stars = v.scene.primitives.add(new PointPrimitiveCollection());

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./charts.css";
 
 /** Interactive horizontal bars: one or more series per row, hover tooltip, optional click to pick a row. */
 export function BarChart({ rows, series, fmt = (v) => v.toLocaleString("en-IN", { maximumFractionDigits: 1 }), unit = "", onPick, active }: {
@@ -30,7 +31,7 @@ export function Scatter({ pts, xLabel, yLabel, fx = (v) => String(v), fy = (v) =
   const [hv, setHv] = useState<string | null>(null);
   const W = 460, H = 240, p = { l: 52, r: 12, t: 10, b: 36 };
   const xs = pts.map((q) => q.x), ys = pts.map((q) => q.y);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), py = Math.max(0.02 * Math.abs(Math.max(...ys)), 0.03), y0 = Math.min(...ys) - py, y1 = Math.max(...ys) + py;
   const sx = (v: number) => p.l + ((v - x0) / (x1 - x0 || 1)) * (W - p.l - p.r), sy = (v: number) => H - p.b - ((v - y0) / (y1 - y0 || 1)) * (H - p.t - p.b);
   const h = pts.find((q) => q.key === hv);
   return (

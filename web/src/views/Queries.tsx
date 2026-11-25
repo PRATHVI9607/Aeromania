@@ -24,8 +24,7 @@ export function QueriesView({ data, out, queries, setQueries, ms, bare }: ViewPr
   useEffect(() => { queries.forEach((q) => seen.current.add(q.id)); }, [queries]);
   return (
     <div className="grid2">
-      {!bare && <div className="span2"><ViewHead kicker="Track B, live scheduler" title="Change a customer's priority, and the downlink order reshuffles in milliseconds"
-        sub="Add or remove queries, or drag a priority slider. A tile's value sums over every query that matches it, so list order does not matter. The scheduler re-runs in a Web Worker on every edit." /></div>}
+      {!bare && <div className="span2"><ViewHead kicker="Track B" title="Downlink planner" sub={<span className="chip">Edit a priority: the plan reshuffles live</span>} /></div>}
       <section className="panel">
         <h3>Customer queries <small>{queries.length}, tile value sums over matching queries</small></h3>
         <ol className="qlist" ref={qRef}>

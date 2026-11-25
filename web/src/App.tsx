@@ -92,7 +92,7 @@ function Shell({ data }: { data: Data }) {
           <nav className="crumbs" aria-label="Breadcrumb">
             <span>HERALD</span>{cur.group && <><i>/</i><span>{cur.group}</span></>}<i>/</i><b aria-current="page">{cur.title}</b>
           </nav>
-          <p className="tagline">The satellite that sends home answers, not pictures</p>
+          <span className="tagline" />
           <div className="flags">
             {data.synthetic && <span className="badge warn">synthetic orbit data</span>}
             {data.sample.length > 0 && <span className="badge warn" title={data.sample.join(", ")}>sample data: {data.sample.join(", ")}</span>}
