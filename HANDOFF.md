@@ -67,6 +67,8 @@ Dates per AOI (all same MGRS tile + same relative orbit):
 - Static only. Reads `web/public/data/*.json` + `models/` report copies. Every ₹ number has an "assumption" tooltip.
 
 ## Lead decisions (latest first)
+- ORDER (user): finish Track A fully (ledger v2, lakes edge cases, siting, Insights + Siting web views, review) -> then B (sim rerun, FIFO vs HERALD view) -> then C.
+- Track A objective 2 = renewable siting (builder-siting): siting.py, reports/siting.json, web/public/data/siting.json.
 - Embedding change (echg) REJECTED for pitch: AUC 0.56 vs rules, 0.51-0.63 on injected patches. Kept in model.json as an honest negative result. Onboard change = stored t0 index maps at 20 m (~3 KB/tile) + same rules. Backlog stretch: tiny siamese change CNN, only if A/B/C done.
 - CONTRACT ADD: reports/change_{aoi}.json gets `captures: {c1,t1,c2: [tile records]}` (each capture vs t0, same rules + validity gate); `tiles` stays = t1. Sim uses captures when present. Reason: real-data sim showed 37x H2/B1 at rho=5 driven by valueless c1/c2 tiles; not credible.
 - TRACK A HEADLINE v4.1 (supersedes encroachment-only): construction ledger with categories new_layout / building_construction / lake_filling_lead / agri_ambiguous; tank-bed seasonal false positives excluded; stalled/active statuses dropped (dates do not support them); Boeing anchor dropped. Web Insights leads with the ranked lead list + category legend + audit precision.
