@@ -181,7 +181,7 @@ def main(argv=None):
         R = res[str(rho)]
         m = {p: R[p]["metrics"] for p in sched.POLICIES}
         fifo = m["B1"]["value"]
-        tm = {p: _r(mins_to(R[p]["timeline"], fifo)) for p in sched.POLICIES}   # to match FIFO's final value
+        tm = {p: _r(mins_to(R[p]["timeline"], fifo - 0.01)) for p in sched.POLICIES}   # to match FIFO's final value
         h[str(rho)] = {"ratio_vs_fifo": {p: _r(m[p]["value"] / fifo, 3) if fifo else None for p in ("H1", "H2")},
                        "ratio_vs_b2": {p: _r(m[p]["value"] / m["B2"]["value"], 3) if m["B2"]["value"] else None for p in ("H1", "H2")},
                        "minutes_to_90": {p: m[p]["minutes_to_90"] for p in sched.POLICIES},
