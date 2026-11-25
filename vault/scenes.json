@@ -1,0 +1,136 @@
+{
+ "blr": {
+  "epsg": 32643,
+  "origin_xy": [
+   769020.0,
+   1472420.0
+  ],
+  "mgrs": "43PGQ",
+  "rel_orbit": 19,
+  "dates": {
+   "t0": {
+    "item_id": "S2B_43PGQ_20230207_0_L2A",
+    "datetime": "2023-02-07T05:25:17.869000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   },
+   "t1": {
+    "item_id": "S2B_43PGQ_20250206_0_L2A",
+    "datetime": "2025-02-06T05:25:21.203000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   },
+   "c1": {
+    "item_id": "S2B_43PGQ_20250117_0_L2A",
+    "datetime": "2025-01-17T05:25:18.347000+00:00",
+    "aoi_cloud_scl": 0.3007,
+    "boa_offset_applied": false
+   },
+   "c2": {
+    "item_id": "S2A_43PGQ_20260628_0_L2A",
+    "datetime": "2026-06-28T05:25:36.311000+00:00",
+    "aoi_cloud_scl": 0.5566,
+    "boa_offset_applied": false
+   }
+  },
+  "s1": {}
+ },
+ "sone": {
+  "epsg": 32644,
+  "origin_xy": [
+   862040.0,
+   2840640.0
+  ],
+  "mgrs": "44RRP",
+  "rel_orbit": 119,
+  "dates": {
+   "t0": {
+    "item_id": "S2B_44RRP_20230405_0_L2A",
+    "datetime": "2023-04-05T05:11:39.662000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   },
+   "t1": {
+    "item_id": "S2A_44RRP_20250401_1_L2A",
+    "datetime": "2025-04-01T05:11:47.076000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   },
+   "c1": {
+    "item_id": "S2A_44RRP_20260913_1_L2A",
+    "datetime": "2026-09-13T05:11:50.311000+00:00",
+    "aoi_cloud_scl": 0.3023,
+    "boa_offset_applied": false
+   },
+   "c2": {
+    "item_id": "S2C_44RRP_20260822_0_L2A",
+    "datetime": "2026-08-22T05:11:33.544000+00:00",
+    "aoi_cloud_scl": 0.5507,
+    "boa_offset_applied": false
+   }
+  },
+  "s1": {
+   "t0": {
+    "item_id": "S1A_IW_GRDH_1SDV_20230408T122949_20230408T123018_048005_05C511_rtc",
+    "datetime": "2023-04-08T12:30:03.631413+00:00"
+   },
+   "t1": {
+    "item_id": "S1A_IW_GRDH_1SDV_20250328T122947_20250328T123016_058505_073CFF_rtc",
+    "datetime": "2025-03-28T12:30:01.545472+00:00"
+   },
+   "monsoon": {
+    "item_id": "S1A_IW_GRDH_1SDV_20230818T122956_20230818T123025_049930_06018C_rtc",
+    "datetime": "2023-08-18T12:30:10.643003+00:00"
+   }
+  }
+ },
+ "hasdeo": {
+  "epsg": 32644,
+  "origin_xy": [
+   657420.0,
+   2539580.0
+  ],
+  "mgrs": "44QPL",
+  "rel_orbit": 119,
+  "dates": {
+   "t0": {
+    "item_id": "S2A_44QPL_20230209_0_L2A",
+    "datetime": "2023-02-09T05:12:25.335000+00:00",
+    "aoi_cloud_scl": 0.003,
+    "boa_offset_applied": false
+   },
+   "t1": {
+    "item_id": "S2B_44QPL_20250203_0_L2A",
+    "datetime": "2025-02-03T05:12:28.760000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   },
+   "c1": {
+    "item_id": "S2A_44QPL_20230619_0_L2A",
+    "datetime": "2023-06-19T05:12:30.606000+00:00",
+    "aoi_cloud_scl": 0.3021,
+    "boa_offset_applied": false
+   },
+   "c2": {
+    "item_id": "S2B_44QPL_20260519_0_L2A",
+    "datetime": "2026-05-19T05:12:22.730000+00:00",
+    "aoi_cloud_scl": 0.556,
+    "boa_offset_applied": false
+   }
+  },
+  "s1": {
+   "t0": {
+    "item_id": "S1A_IW_GRDH_1SDV_20230210T002117_20230210T002142_047166_05A8BB_rtc",
+    "datetime": "2023-02-10T00:21:29.639156+00:00"
+   },
+   "t1": {
+    "item_id": "S1A_IW_GRDH_1SDV_20250130T002116_20250130T002141_057666_071B53_rtc",
+    "datetime": "2025-01-30T00:21:28.557864+00:00"
+   },
+   "monsoon": {
+    "item_id": "S1A_IW_GRDH_1SDV_20230809T002123_20230809T002148_049791_05FCDB_rtc",
+    "datetime": "2023-08-09T00:21:36.135613+00:00"
+   }
+  }
+ }
+}
