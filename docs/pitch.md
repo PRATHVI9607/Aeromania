@@ -19,7 +19,7 @@ Say every rupee figure as "an assumption, sourced". Numbers marked ⏳ get refre
 **0:55–1:50 · Track B live** (screen: Mission → FIFO vs HERALD → Queries)
 1. Mission: "Real orbit model: 786 km sun-synchronous, 100.6-minute period, max pass 10.6 minutes, 5.5 GB."
 2. FIFO vs HERALD: drag ρ from 1 to 5.
-   > "When bandwidth is plentiful, HERALD is 1.5× FIFO. When five satellites share the station, it's 28×. HERALD delivers everything FIFO delivers in five days within its first two contact minutes. First insight in 25 minutes instead of 82. Full chips only, with no packet assumptions, wins by the same margin."
+   > "HERALD delivers 98–99% of the best possible value at every bandwidth. FIFO falls to 15% when five satellites share the station. HERALD matches FIFO's whole five days in about one contact minute. First insight 43 minutes after capture instead of 35 hours. Full chips only, with no packet assumptions, wins by the same margin."
 3. Queries: add a query live.
    > "A new customer request reorders 19,000 tiles in under 60 milliseconds."
 

@@ -147,10 +147,10 @@ Sentinel-2-like SSO at 786 km, 98.62°, 10:30 LTDN. Period 100.58 min (the textb
 ρ = oversubscription: total contact capacity = archive ÷ ρ. It models many satellites, or many areas, sharing the same stations. We show the whole curve, not one point.
 
 **Q: Isn't 27× cherry-picked?**
-That's why we show the curve: 1.55× at ρ = 1, 8.6× at ρ = 2, 27.7× at ρ = 5, 57.8× at ρ = 10. The gap grows as bandwidth gets scarce. That is the mechanism: only ~26% of tiles carry any value, and the 2026 capture is 53% cloud, so FIFO spends its small budget on what it captured first. HERALD reaches FIFO's 5-day value in ~2 contact minutes. First insight: 25.4 min vs FIFO's 81.7 min at ρ = 5.
+We report share of the best possible value (upper bound) instead of a ratio, because FIFO drops to ~0 at ρ = 10 and ratios explode. HERALD gets 98.8 / 98.8 / 98.5% of the upper bound at ρ = 1 / 2 / 5. FIFO gets 73.3 / 52.7 / 14.5%, and the cloud filter 76.3 / 56.7 / 25.0%. The mechanism: only ~22–24% of tiles carry any value and the later capture is 47% cloud, so FIFO spends its budget on whatever it captured first. HERALD matches FIFO's 5-day value in 1.2 contact minutes. First insight: 42.8 min after capture vs 2,100 min for FIFO at ρ = 5.
 
 **Q: Does the win depend on your "packet = 70% of value" assumption?**
-No. H1 sends full chips only, with no packets, and still gets 27.5× at ρ = 5. Changing the packet fraction from 0.3 to 0.7 moves H2 from 37.66× to 37.70× (earlier run). So the win comes from what is sent, not from the packet trick.
+No. H1 sends full chips only, with no packets, and still gets 6.7× FIFO at ρ = 5. Changing the packet fraction from 0.3 to 0.7 moves H2 only from 6.77× to 6.78×. So the win comes from what is sent, not from the packet trick.
 
 **Q: Is it optimal?**
 No. It's greedy by value/byte, O(n log n), deterministic. We compare against an upper bound (fractional knapsack relaxation), labelled as a bound, not the optimum. Scheduler speed: 2.69 ms per 1,000 tiles.

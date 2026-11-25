@@ -1,5 +1,6 @@
 {
  "blr": "group ('MGRS-43PGQ', 19) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%",
  "sone": "group ('MGRS-44RRP', 119) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%",
- "hasdeo": "group ('MGRS-44QPL', 119) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%"
+ "hasdeo": "group ('MGRS-44QPL', 119) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%",
+ "pvg": "group ('MGRS-43PGR', 19); t0/t1 SCL cloud <= 10%, DOY match"
 }

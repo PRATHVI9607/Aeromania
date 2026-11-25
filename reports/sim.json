@@ -23,244 +23,244 @@
  },
  "headline_rho5": {
   "ratio_vs_fifo": {
-   "H1": 27.482,
-   "H2": 27.687
+   "H1": 6.682,
+   "H2": 6.778
   },
   "ratio_vs_b2": {
-   "H1": 20.295,
-   "H2": 20.446
+   "H1": 3.883,
+   "H2": 3.938
   },
   "minutes_to_90": {
    "B1": null,
-   "B2": null,
-   "B3": 759.4242,
-   "H1": 758.4156,
-   "H2": 723.2841
+   "B2": 1653.6763,
+   "B3": 92.0389,
+   "H1": 92.0697,
+   "H2": 33.5015
   },
   "minutes_to_match_fifo": {
    "B1": 1759.53,
-   "B2": 1517.24,
-   "B3": 3.48,
-   "H1": 3.48,
-   "H2": 1.68
+   "B2": 1478.2,
+   "B3": 3.07,
+   "H1": 3.07,
+   "H2": 1.21
   },
   "fifo_minutes_used": 1759.53,
   "minutes_saved_vs_fifo": {
-   "H1": 1756.05,
-   "H2": 1757.85
+   "H1": 1756.46,
+   "H2": 1758.32
   },
   "ttfi_min": {
-   "B1": 81.721,
-   "B2": 81.721,
-   "B3": 25.439,
-   "H1": 25.439,
-   "H2": 25.439
+   "B1": 2100.065,
+   "B2": 2100.065,
+   "B3": 42.769,
+   "H1": 42.769,
+   "H2": 42.769
   },
   "pct_ub": {
-   "B1": 0.0355,
-   "B2": 0.0481,
-   "B3": 0.9758,
-   "H1": 0.9761,
-   "H2": 0.9833
+   "B1": 0.1453,
+   "B2": 0.2501,
+   "B3": 0.9709,
+   "H1": 0.9709,
+   "H2": 0.9849
   }
  },
  "by_rho": {
   "1": {
    "ratio_vs_fifo": {
-    "H1": 1.558,
-    "H2": 1.546
+    "H1": 1.346,
+    "H2": 1.348
    },
    "ratio_vs_b2": {
-    "H1": 1.335,
-    "H2": 1.325
+    "H1": 1.293,
+    "H2": 1.295
    },
    "minutes_to_90": {
-    "B1": 1280.78,
-    "B2": 1093.6143,
-    "B3": 722.8046,
-    "H1": 722.8046,
-    "H2": 719.6069
+    "B1": 366.0985,
+    "B2": 324.6213,
+    "B3": 18.1872,
+    "H1": 18.1874,
+    "H2": 6.7479
    },
    "minutes_to_match_fifo": {
     "B1": 1759.53,
-    "B2": 1055.74,
-    "B3": 718.58,
-    "H1": 718.58,
-    "H2": 718.31
+    "B2": 470.53,
+    "B3": 8.37,
+    "H1": 8.37,
+    "H2": 5.44
    },
    "fifo_minutes_used": 1759.53,
    "minutes_saved_vs_fifo": {
-    "H1": 1040.95,
-    "H2": 1041.22
+    "H1": 1751.16,
+    "H2": 1754.09
    },
    "ttfi_min": {
-    "B1": 43.609,
-    "B2": 43.609,
-    "B3": 25.439,
-    "H1": 25.439,
-    "H2": 25.439
+    "B1": 394.396,
+    "B2": 394.396,
+    "B3": 42.769,
+    "H1": 42.769,
+    "H2": 42.769
    },
    "pct_ub": {
-    "B1": 0.6376,
-    "B2": 0.744,
-    "B3": 0.9931,
-    "H1": 0.9931,
-    "H2": 0.9858
+    "B1": 0.7333,
+    "B2": 0.7633,
+    "B3": 0.9873,
+    "H1": 0.9873,
+    "H2": 0.9883
    }
   },
   "2": {
    "ratio_vs_fifo": {
-    "H1": 8.604,
-    "H2": 8.568
+    "H1": 1.867,
+    "H2": 1.875
    },
    "ratio_vs_b2": {
-    "H1": 6.666,
-    "H2": 6.638
+    "H1": 1.734,
+    "H2": 1.741
    },
    "minutes_to_90": {
-    "B1": null,
-    "B2": null,
-    "B3": 731.1443,
-    "H1": 731.208,
-    "H2": 722.6105
+    "B1": 735.8595,
+    "B2": 651.7563,
+    "B3": 36.5017,
+    "H1": 36.3395,
+    "H2": 13.3859
    },
    "minutes_to_match_fifo": {
     "B1": 1750.04,
-    "B2": 1119.71,
-    "B3": 12.49,
-    "H1": 12.51,
-    "H2": 5.12
+    "B2": 650.63,
+    "B3": 6.59,
+    "H1": 6.52,
+    "H2": 4.09
    },
    "fifo_minutes_used": 1750.04,
    "minutes_saved_vs_fifo": {
-    "H1": 1737.53,
-    "H2": 1744.92
+    "H1": 1743.52,
+    "H2": 1745.95
    },
    "ttfi_min": {
-    "B1": 43.609,
-    "B2": 43.609,
-    "B3": 25.439,
-    "H1": 25.439,
-    "H2": 25.439
+    "B1": 787.577,
+    "B2": 787.577,
+    "B3": 42.769,
+    "H1": 42.769,
+    "H2": 42.769
    },
    "pct_ub": {
-    "B1": 0.115,
-    "B2": 0.1484,
-    "B3": 0.9895,
-    "H1": 0.9894,
-    "H2": 0.9853
+    "B1": 0.5266,
+    "B2": 0.567,
+    "B3": 0.9833,
+    "H1": 0.9833,
+    "H2": 0.9875
    }
   },
   "5": {
    "ratio_vs_fifo": {
-    "H1": 27.482,
-    "H2": 27.687
+    "H1": 6.682,
+    "H2": 6.778
    },
    "ratio_vs_b2": {
-    "H1": 20.295,
-    "H2": 20.446
+    "H1": 3.883,
+    "H2": 3.938
    },
    "minutes_to_90": {
     "B1": null,
-    "B2": null,
-    "B3": 759.4242,
-    "H1": 758.4156,
-    "H2": 723.2841
+    "B2": 1653.6763,
+    "B3": 92.0389,
+    "H1": 92.0697,
+    "H2": 33.5015
    },
    "minutes_to_match_fifo": {
     "B1": 1759.53,
-    "B2": 1517.24,
-    "B3": 3.48,
-    "H1": 3.48,
-    "H2": 1.68
+    "B2": 1478.2,
+    "B3": 3.07,
+    "H1": 3.07,
+    "H2": 1.21
    },
    "fifo_minutes_used": 1759.53,
    "minutes_saved_vs_fifo": {
-    "H1": 1756.05,
-    "H2": 1757.85
+    "H1": 1756.46,
+    "H2": 1758.32
    },
    "ttfi_min": {
-    "B1": 81.721,
-    "B2": 81.721,
-    "B3": 25.439,
-    "H1": 25.439,
-    "H2": 25.439
+    "B1": 2100.065,
+    "B2": 2100.065,
+    "B3": 42.769,
+    "H1": 42.769,
+    "H2": 42.769
    },
    "pct_ub": {
-    "B1": 0.0355,
-    "B2": 0.0481,
-    "B3": 0.9758,
-    "H1": 0.9761,
-    "H2": 0.9833
+    "B1": 0.1453,
+    "B2": 0.2501,
+    "B3": 0.9709,
+    "H1": 0.9709,
+    "H2": 0.9849
    }
   },
   "10": {
    "ratio_vs_fifo": {
-    "H1": 56.08,
-    "H2": 57.838
+    "H1": 3559.873,
+    "H2": 3675.915
    },
    "ratio_vs_b2": {
-    "H1": 56.08,
-    "H2": 57.838
+    "H1": 3559.873,
+    "H2": 3675.915
    },
    "minutes_to_90": {
     "B1": null,
     "B2": null,
-    "B3": 809.5724,
-    "H1": 808.7167,
-    "H2": 733.0118
+    "B3": 189.2676,
+    "H1": 189.2156,
+    "H2": 67.4044
    },
    "minutes_to_match_fifo": {
-    "B1": 1759.53,
-    "B2": 1759.53,
-    "B3": 2.16,
-    "H1": 2.16,
-    "H2": 0.86
+    "B1": 1297.05,
+    "B2": 1297.05,
+    "B3": 0.01,
+    "H1": 0.01,
+    "H2": 0.0
    },
-   "fifo_minutes_used": 1759.53,
+   "fifo_minutes_used": 1297.05,
    "minutes_saved_vs_fifo": {
-    "H1": 1757.37,
-    "H2": 1758.67
+    "H1": 1297.04,
+    "H2": 1297.05
    },
    "ttfi_min": {
-    "B1": 181.228,
-    "B2": 181.228,
-    "B3": 25.439,
-    "H1": 25.439,
-    "H2": 25.439
+    "B1": 4336.147,
+    "B2": 4336.147,
+    "B3": 42.769,
+    "H1": 42.769,
+    "H2": 42.769
    },
    "pct_ub": {
-    "B1": 0.017,
-    "B2": 0.017,
-    "B3": 0.9504,
-    "H1": 0.9506,
-    "H2": 0.9804
+    "B1": 0.0003,
+    "B2": 0.0003,
+    "B3": 0.9498,
+    "H1": 0.9496,
+    "H2": 0.9806
    }
   }
  },
  "robustness": {
   "note": "H1 sends full chips only: no packet-fraction assumption involved.",
-  "H1_vs_B1": 27.482,
-  "H1_vs_B2": 20.295,
+  "H1_vs_B1": 6.682,
+  "H1_vs_B2": 3.883,
   "H2_packet_fraction_sensitivity_rho5": {
    "0.3": {
-    "H2_value": 29976117.54,
-    "H2_vs_B1": 27.675,
-    "H2_vs_B2": 20.437
+    "H2_value": 147768302.73,
+    "H2_vs_B1": 6.773,
+    "H2_vs_B2": 3.936
    },
    "0.5": {
-    "H2_value": 29980934.05,
-    "H2_vs_B1": 27.679,
-    "H2_vs_B2": 20.44
+    "H2_value": 147806112.5,
+    "H2_vs_B1": 6.775,
+    "H2_vs_B2": 3.937
    },
    "0.7": {
-    "H2_value": 29989028.79,
-    "H2_vs_B1": 27.687,
-    "H2_vs_B2": 20.446
+    "H2_value": 147864306.96,
+    "H2_vs_B1": 6.778,
+    "H2_vs_B2": 3.938
    }
   }
  },
- "headline_note": "The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 per capture: {'c1': 0.337, 'c2': 0.116, 't1': 0.341}; mean cloud per capture: {'c1': 0.29, 'c2': 0.528, 't1': 0.009}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; value-aware policies send the valuable ones first. Change source per capture: ['captures']. If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.",
+ "headline_note": "The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 per capture: {'c1': 0.219, 'c2': 0.049, 't1': 0.239}; mean cloud per capture: {'c1': 0.315, 'c2': 0.468, 't1': 0.023}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; value-aware policies send the valuable ones first. Change source per capture: ['captures']. If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.",
  "change_source": {
   "blr/c1": "captures",
   "blr/t1": "captures",
@@ -273,21 +273,21 @@
   "hasdeo/c2": "captures"
  },
  "frac_tiles_with_value": {
-  "c1": 0.337,
-  "c2": 0.116,
-  "t1": 0.341
+  "c1": 0.219,
+  "c2": 0.049,
+  "t1": 0.239
  },
  "mean_cloud": {
-  "c1": 0.29,
-  "c2": 0.528,
-  "t1": 0.009
+  "c1": 0.315,
+  "c2": 0.468,
+  "t1": 0.023
  },
  "load_avg": [
-  4.64208984375,
-  5.369140625,
-  4.66064453125
+  3.11767578125,
+  2.91064453125,
+  3.0224609375
  ],
- "g5_ms_per_1000_tiles_H2": 2.91,
+ "g5_ms_per_1000_tiles_H2": 4.98,
  "capture_overpasses_10d_cycle": {
   "blr": [
    {
