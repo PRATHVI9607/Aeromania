@@ -163,7 +163,16 @@ AWS Ground Station publishes no per-minute price. Contact-minute cost is an edit
 
 ---
 
-## 7. Track C: sand mining, forest clearing, evidence
+## 7. Track C: mining into forest, sand mining, evidence
+
+**Q: What's your strongest Track C result?**
+Open-cast coal mines at Hasdeo Arand expanding into dense forest between Feb 2023 and Feb 2025. Mine-expansion leads have 0.88 reviewer-audit precision (7 real, 1 unsure, 0 wrong). There are 14 hash-chained evidence cards (10 Hasdeo, 4 Sone). The rupee value uses ₹4.38 lakh per hectare, the lowest forest NPV rate in the Supreme Court's Godavarman order (2008), labelled an assumption.
+
+**Q: And sand mining?**
+Honestly weak at 10 m. Rectangular-pit precision is 0.12, because paddies and ponds in the river corridor look the same. Sentinel-1 shows no monsoon activity on this reach (0 bright returns in the monsoon scene vs 6 in the dry scene). We show it as experimental. Doing it properly needs sub-metre imagery or a dense radar time series.
+
+**Q: Isn't the Hasdeo mine legal?**
+Possibly, in part. The lead is "forest became mine here between these dates". Checking it against the sanctioned lease and forest-clearance boundary (public on the Parivesh portal) is the department's step. The card says it needs verification and makes no legal claim.
 
 **Q: What do you detect?**
 Land-cover change only:

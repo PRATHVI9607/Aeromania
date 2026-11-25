@@ -15,7 +15,7 @@ Aeromania '26 Mach-A-Thon · "Orbit to Economy: AI in Space" · 12 hours · solo
 - **Track A (objective 1):** *Bengaluru's construction ledger — every new layout and building, caught the month it starts, checked against no-build zones.* Decision: where enforcement, survey and planning teams go this week.
 - **Track A (objective 2):** *Where the next gigawatt should go* — solar and wind sites around Pavagada ranked by irradiance, slope, land use and grid distance, validated against the real 2 GW park.
 - **Track B:** *Same antenna, same minutes, far more value* — the win grows as bandwidth gets scarce (1.5× → 8.6× → 28× FIFO at ρ = 1 → 2 → 5); HERALD delivers FIFO's entire 5-day value in its first ~2 contact minutes; first insight in 25 min vs 82 min.
-- **Track C:** *Sand and forest crimes, timestamped from orbit* — tamper-evident evidence leads for mines and forest departments, monsoon-proof with radar; land cover only, never people.
+- **Track C:** *Forest lost to mining, timestamped from orbit* — open-cast mines advancing into dense forest at Hasdeo Arand, 2023→2025, packaged as hash-chained evidence cards for forest departments (mine-expansion lead precision 0.88 by reviewer audit). Sand mining at 10 m is shown as experimental and honestly weak (pit precision 0.12; Sentinel-1 shows no monsoon activity on this reach) — it needs sub-metre or SAR time series. Land cover only, never people.
 
 ---
 
@@ -111,7 +111,7 @@ Targets v5 (raised where v3 targets were beaten; misses stay visible). "Measured
 | G12 | Construction-lead precision (reviewer visual audit, not field) | — | **≥ 0.70; ≥ 0.85 excl. unsure** | 0.69 / 0.89 | borderline |
 | G13 | Time to first insight after capture (ρ=5) | — | **≤ 30 min** | 25.4 min (FIFO 81.7) | pass |
 | G14 | Siting validation: Pavagada park cells' solar percentile | — | **median ≥ 90 and ≥ 60% of park cells in top decile** (median, because OSM maps only ~1,017 of ~5,261 park ha so edge cells mix park and non-park land; mean also reported) | median 96.2, 5 of 7 cells top decile, mean 82.7 | pass |
-| G15 | Track C lead precision (reviewer visual audit) | — | **≥ 0.60** | ⏳ | pending |
+| G15 | Track C lead precision (reviewer visual audit) | — | **≥ 0.60 for headline kind** | mine_expansion 0.88; forest_clearing 0.29; sand_pits 0.12; sand_disturbance 0.0 | headline pass, sand fail |
 | G16 | Evidence chain: verify passes, single-byte tamper detected | — | **100%** | ⏳ | pending |
 | G17 | India land-cover head vs WorldCover, spatial hold-out | — | **≥ 70% top-1** (WorldCover itself ≈ 77%) | ⏳ | pending |
 

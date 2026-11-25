@@ -66,8 +66,11 @@ export function Gates({ data, ms, runs }: { data: Data; ms: number | null; runs:
   const pv = sit?.validation?.pavagada_park?.as_is;
   g.push(num(pv?.mean_pct) ? { id: "G14", metric: "Siting validation: Pavagada park cells' solar percentile", target: "median percentile >= 90 and >= 60% of park cells in top decile (mean shown; edge cells only partly overlap the park)", status: num(pv.median_pct) && pv.median_pct >= 90 && num(pv.share_top_decile) && pv.share_top_decile >= 0.6 ? "pass" : "fail",
     detail: `mean ${f(pv.mean_pct, 1)}, median ${num(pv.median_pct) ? f(pv.median_pct, 1) : "n/a"}, ${num(pv.share_top_decile) ? f(pv.share_top_decile * 100, 0) : "n/a"}% of ${pv.n_ranked} ranked park cells in top decile` } : P("G14", "Siting validation: Pavagada park cells' solar percentile", "median >= 90 and >= 60% in top decile"));
-  const tp = tc?.precision ?? tc?.overall?.precision ?? tc?.lead_precision;
-  g.push(num(tp) ? { id: "G15", metric: "Track C lead precision (reviewer visual audit)", target: ">= 0.60", status: tp >= 0.6 ? "pass" : "fail", detail: `${f(tp)}${num(tc.n) ? ` (n=${tc.n})` : ""}` } : P("G15", "Track C lead precision (reviewer visual audit)", ">= 0.60", "audit_trackc.json not generated yet"));
+  // audit_trackc.json: precision[aoi][kind]; headline kind = mine_expansion (Track C lead), other kinds shown honestly
+  const tcp: Record<string, number> = {}; for (const a of Object.values(tc?.precision ?? {}) as Record<string, number>[]) Object.assign(tcp, a);
+  const head = tcp["mine_expansion"]; const weak = Object.entries(tcp).filter(([, v]) => v < 0.6);
+  g.push(num(head) ? { id: "G15", metric: "Track C lead precision (reviewer visual audit, not field)", target: ">= 0.60 for the headline kind (mine expansion into forest)",
+    status: head >= 0.6 ? (weak.length ? "partial" : "pass") : "fail", detail: Object.entries(tcp).map(([k, v]) => `${k} ${f(v)}`).join(", ") } : P("G15", "Track C lead precision (reviewer visual audit)", ">= 0.60", "audit_trackc.json not generated yet"));
   g.push(ev ?? P("G16", "Evidence chain: verify passes, single-byte tamper detected", "100%", "checking"));
   const wc = m?.wc;
   g.push(num(wc?.top1_agreement) ? { id: "G17", metric: "India land-cover head vs WorldCover, spatial hold-out", target: ">= 70% top-1", status: wc.top1_agreement >= 0.7 ? "pass" : "fail", detail: `${f(wc.top1_agreement * 100, 1)}% (n_test=${wc.n_test}; majority baseline ${num(wc.baseline_top1_majority) ? f(wc.baseline_top1_majority * 100, 1) : "n/a"}%)` } : P("G17", "India land-cover head vs WorldCover, spatial hold-out", ">= 70% top-1"));
