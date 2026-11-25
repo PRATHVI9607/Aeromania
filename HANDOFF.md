@@ -66,6 +66,12 @@ Dates per AOI (all same MGRS tile + same relative orbit):
 ### Web (M7) — PRD §11
 - Static only. Reads `web/public/data/*.json` + `models/` report copies. Every ₹ number has an "assumption" tooltip.
 
+## Lead decisions (latest first)
+- 2026-11-25 Track A re-grounded by research: payer = city revenue dept (BBMP/GBA property-tax survey triage) + planners. `config/value.json` rupees_per_ha.A = 84000 (sourced assumption), query `q_gba` replaces `q_lender`. Change engine adds cleared/built stages, BBMP ward aggregation (`config/ref/bbmp_wards.geojson`), `reports/survey_blr.json`, anchor-site check (Boeing BIETC campus, Devanahalli). PRD v4 §0, §1, §7, §22.
+- Pending for builder-orbit (on real-data rerun): G9 headline = contact minutes for H2/H1 to reach FIFO's final value; verify real-input path reads `reports/change_{aoi}.json`.
+- Pending for builder-web: Insights gets growth summary + ward survey list (from `reports/survey_blr.json`) + payer card; Economics view reads sources from `config/value.json`.
+- G5 timing test fails under load (12.8 ms with training + downloads running, 4.99 ms idle). Recheck when idle before claiming.
+
 ## Notes from builders
 - (lead) PRD says orbit.py "DONE" but it was not in the folder; builder-orbit writes it.
 - (builder-change) herald.change written + 4 unit tests pass + synthetic end-to-end run ok (scipy added to pyproject; run uv lock). No real-data numbers yet: waiting on vault/chips/blr_t0.npy + vault/labels/blr.npz. Run: uv run python -m herald change [--aoi X] [--retune]; blr tunes thresholds on west half, writes config/change_thresholds.json.

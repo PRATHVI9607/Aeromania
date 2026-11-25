@@ -1,8 +1,10 @@
-# HERALD — PRD v3 (Unified: Track A + B + C in ONE system)
+# HERALD — PRD v4 (Unified: Track A + B + C in ONE system)
+
+> v4 (2026-11-25): physics and data volumes updated to measured values, Sentinel-1 added to Pack C, G9 metric made always-defined, Track A decision re-grounded (see §1), AOIs fixed, decisions log in §22.
 
 Aeromania '26 Mach-A-Thon · "Orbit to Economy: AI in Space" · 12 hours · solo build · 5-min pitch to Boeing judges
 
-> One-liner: **HERALD is a satellite that decides what is worth sending home.** An onboard AI scores every image tile, a value-aware scheduler fills each real ground-station contact window with the highest ₹-value per byte, and the ground gets a tiny "insight packet" first, then a thumbnail, then the full chip only if someone pulls it. Two paying insight packs (urban construction verification, river sand-mining evidence) run on the same engine.
+> One-liner: **HERALD is a satellite that decides what is worth sending home.** An onboard AI scores every image tile, a value-aware scheduler fills each real ground-station contact window with the highest ₹-value per byte, and the ground gets a tiny "insight packet" first, then a thumbnail, then the full chip only if someone pulls it. Two paying insight packs run on the same engine: **A — city growth / unassessed-construction survey triage** (Bengaluru), **C — illegal sand-mining and forest-clearing evidence** (Bihar, Chhattisgarh).
 
 ---
 
@@ -22,9 +24,13 @@ Capture (real S2 archive replayed as orbit pass)
 
 | Track | What it is inside HERALD | Where judges see it |
 |---|---|---|
-| **A — Read the Planet** (compulsory) | Real Sentinel-2 L2A data → change detection → Pack A (construction growth/verification) with before/after slider, hectares, severity | Dashboard "Insights" view, live on real tiles |
-| **B — Build the Orbit** | Orbit + contact windows + onboard AI + scheduler + link budget + FIFO vs HERALD + economics + physics sanity + hardware tab | Dashboard "Mission" + "FIFO vs HERALD" + "Hardware" views |
-| **C — Guard the Nation** | Pack C: river sand-mining / deforestation evidence cards for state mining departments. Protective only: land-cover change, never people, vehicles, or targeting | Dashboard "Evidence" view, hash-chained cards |
+| Track | Deck objective we chose | Economic decision it drives | Who decides / pays | Where judges see it |
+|---|---|---|---|---|
+| **A — Read the Planet** (compulsory) | *Infrastructure: monitor construction progress* + *Urbanization: detect growth early* | **Which wards do property-tax survey teams visit first**, and where growth outruns planned infrastructure | City revenue dept (BBMP/GBA), city planners (BDA/BMRDA); secondary: lenders' stalled-project watch | "Insights": growth map, ward survey list, before/after slider, real 2023→2025 data |
+| **B — Build the Orbit** | *Onboard AI so satellites send down insights, not raw images* | **Which bytes to downlink in each 10-minute contact window** | Satellite operator (fewer contact minutes for the same value) | "Mission", "FIFO vs HERALD", "Queries", "Hardware" |
+| **C — Guard the Nation** | *Enforcement: illegal mining, sand mining, deforestation, and generate evidence* (+ sovereign onboard-AI angle) | **Which river reach / forest block an inspection team visits first**, with a tamper-evident evidence lead | State mines & geology dept, forest dept | "Evidence": hash-chained cards with optical + SAR corroboration |
+
+Protective-use rule (Track C): land-cover change only, never people, vehicles, or targeting (§12).
 
 Scoring map: Economic/strategic impact 30% (₹ panel, named payers), Technical depth & AI use 30% (onboard model, calibration, int8, scheduler UB), Feasibility 20% (real data, runs offline, honest limits), Demo & pitch 20% (side-by-side, live query reorder).
 
@@ -36,9 +42,12 @@ Scoring map: Economic/strategic impact 30% (₹ panel, named payers), Technical 
 
 **Who pays and how much (all numbers are labelled assumptions, editable in the UI):**
 
-| Payer | Pack | Illustrative sizing |
+**Why not "lender tranche verification" (v3 idea)?** 10 m pixels cannot count floors or confirm a slab; bank site-inspection charges are only ~₹500–1,000/visit (Indian Bank listing), so replacing visits is a weak case. Kept only as a secondary use: flag *stalled* sites (no change for quarters) for lenders and K-RERA, whose quarterly progress reports could be cross-checked.
+
+| Payer | Pack | Illustrative sizing (assumptions, sources in §21) |
 |---|---|---|
-| Lenders / housing-finance cos., municipal planners | A: verify construction progress before releasing tranches | 5,000 sites × 4 checks/yr × ₹6,000 = ₹12 crore/yr; 60% replacing site visits = ₹7.2 crore |
+| City revenue dept (BBMP/GBA) | A: rank wards for property-tax survey; new built-up not on the roll = unassessed | BBMP collected ₹4,930 cr in FY24-25; ~5 lakh of ~20.5 lakh properties reported unassessed; a finance-panel estimate puts the gap at ₹700–1,000 cr/yr. Per ha of newly detected built-up: ₹14,000/property/yr × 25 properties/ha × 0.24 unassessed ≈ **₹84,000/ha/yr** (`config/value.json`) |
+| City planners (BDA RMP-2041, BMRDA) | A: growth hotspots vs planned roads/water/metro | decision support, no ₹ claimed |
 | State mining / forest departments | C: evidence of illegal sand mining / clearing | 100 ha flagged/yr × ₹5 lakh per verified ha = ₹5 crore/yr |
 | Satellite operator (the constellation owner) | Platform: fewer contact minutes to hit same value | Contact minutes saved × editable $/min (no vendor price claimed; AWS Ground Station publishes no per-minute figure) |
 
@@ -73,7 +82,7 @@ Rule: every ₹ on screen has an "assumption" tooltip. Never present unmeasured 
 | G6 | Live query add + reorder | < 100 ms | Measured in browser worker |
 | G7 | Dashboard | 60 fps, < 1.5 s load | Chrome perf trace |
 | G8 | HERALD vs FIFO value captured | ≥ 2× at ρ=5 | Simulation report |
-| G9 | Capacity-to-90%-value | report contact minutes saved vs FIFO | Simulation report |
+| G9 | Contact minutes saved | minutes for HERALD to match FIFO's final value vs FIFO's minutes; also minutes-to-90% | Simulation report |
 | G10 | Change detection vs OSM construction | report precision/recall honestly | Weak labels, caveated |
 | G11 | Injected-change test | recall ≥ 0.9 at ≥ 1 ha | Synthetic, deterministic |
 
@@ -120,20 +129,22 @@ hw/              Pi scorer + ESP32 gated ground station + bridge (stretch)
 ### 4.3 Data flow and contracts
 
 - `vault/` (gitignored large, committed small): chips as `uint16` arrays `[N,5,64,64]`, `meta.json` (tile id, lat/lon, date, MGRS tile, relative orbit), `labels.npz`, `MANIFEST.json` (sha256 per file).
-- Chip: 64×64×5 bands×2 B = **40,960 B** raw, 40.96 ha at 10 m.
-- Progressive levels: **packet ≈ 200–256 B** (class, cloud, change score, severity, bbox, hash) → **thumbnail ≈ 2.4 KB** (JPEG/quantized RGB) → **full chip 40 KB**. Ratios full:thumb ≈ 17×, full:packet ≈ 205×.
+- Chip: 64×64×5 bands×2 B = **40,960 B** raw, 40.96 ha at 10 m. Downlink size of a full chip = measured `zlib` size of that chip (proxy for CCSDS-122 lossless), so cloudy/flat chips are cheaper, as on a real satellite.
+- Progressive levels: **packet 256 B** (class, cloud, change score, severity, bbox, hash) → **thumbnail 2,400 B** (quantized RGB) → **full chip (zlib-measured, ≤ 40,960 B)**. Value fractions per level (0.70 / 0.85 / 1.00) are a **modeled assumption**, editable in the UI.
 - Outputs to web: `public/data/{track,windows,tiles,results,evidence,economics,model_report}.json`. Dashboard is purely static consumption.
 
 ---
 
 ## 5. Real data plan
 
-- **AOIs (3, 30×30 km each → 2,116 chips per AOI):**
-  1. Bengaluru periphery (urban/construction growth, Pack A).
-  2. A Gangetic or Sone river stretch in Bihar (sand mining, Pack C).
-  3. A forest-edge AOI (Western Ghats or Central India) for deforestation/clearing (Pack C) and diverse land cover.
-- **Dates:** two same-season anniversary dates per AOI (e.g. Jan 2024 vs Jan 2025) to kill seasonal confounding. Same MGRS tile and relative orbit. Cloud-gated: reject scene pair if combined SCL cloud > 30% inside AOI.
-- Total chips: 3 AOIs × 2 dates × 2,116 = **12,696**, ≈ **532 MB** raw (fits laptop; vault packs to a zip).
+- **AOIs (3, 30×30 km each → 46×46 = 2,116 chips per AOI)**, defined in `config/aois.json`:
+  1. `blr` — Bengaluru north, Yelahanka–Devanahalli airport corridor (construction / city growth, Pack A).
+  2. `sone` — Sone river near Koilwar, Bihar (river sand mining, Pack C).
+  3. `hasdeo` — Hasdeo Arand forest edge, Chhattisgarh (forest clearing, Pack C).
+- **Dates (4 per AOI, same MGRS tile and relative orbit):** `t0`/`t1` = clear same-season anniversary pair (2023 vs 2025 preferred; seasonal confounding killed by same months), AOI SCL cloud ≤ 30% each. `c1`/`c2` = real captures with 15–70% AOI cloud: they train the cloud head and give the simulator realistic cloudy captures that FIFO wastes bytes on.
+- **Onboard reference:** `t0` is treated as the onboard reference baseline (uplinked indices for tasked AOIs) and is never downlinked; captures replayed are `c1`, `c2`, `t1` in real date order.
+- Total chips: 3 AOIs × 4 dates × 2,116 = **25,392**, ≈ **1.04 GB** raw (fits laptop; vault packs to a zip).
+- **Sentinel-1 RTC (Pack C corroboration):** Microsoft Planetary Computer `sentinel-1-rtc` (anonymous signed URLs, free), VV/VH dB on the same 10 m grid, dates near `t0`, `t1` plus one monsoon (Jul–Sep) scene. SAR sees through monsoon cloud, which is when the NGT seasonal ban applies and illegal river mining is hardest to see optically. Corroborates, never gates, the optical change call.
 - **Reflectance:** apply L2A scale/offset (÷10000, handle `BOA_ADD_OFFSET` for post-2022-processing-baseline scenes) before indices. Note honestly that onboard systems would use TOA.
 - **Selection script** picks scenes by `eo:cloud_cover`, date, tile; stores STAC item IDs in `vault/scenes.json` so the build is reproducible.
 
@@ -147,19 +158,27 @@ hw/              Pi scorer + ESP32 gated ground station + bridge (stretch)
 - Calibration: temperature scaling on validation; report ECE before/after.
 - Export: ONNX → int8 static quantization (ORT) with calibration set of real chips; verify accuracy drop ≤ 0.5 pt and report.
 - Fallback ladder: SSL4EO → timm MobileNetV3 → scratch small CNN. Decision made at Gate M3 by measured accuracy, not preference.
-- Latency check: batch 64 CPU ORT, report ms/chip; Pi measurement in hardware tab.
+- Latency check: batch 64 CPU ORT, report ms/chip; Pi measurement in hardware tab (simulation-only unless hardware is available).
+- **Known domain gap:** EuroSAT is L1C (TOA), the vault is L2A (BOA). G1 is measured on EuroSAT; on vault chips we report class distributions and spot-checks against WorldCover, not a second accuracy claim.
+- Cloud head: trained on frozen-trunk features with real SCL fractions from `blr` + `sone`, MAE reported on held-out `hasdeo` (G2).
 
 ---
 
 ## 7. Change engine (shared by Pack A and Pack C)
 
 - Per chip pair (t0, t1), cloud-gated (both clear ≥ 85% pixels by SCL).
+- **How construction growth is assessed (Pack A):**
+  1. Pixel rules on the same-season pair: `cleared` = vegetation → bare earthwork (ΔNDVI↓, BSI↑); `built` = new built-up (ΔNDBI↑, NDBI_t1 high, BSI below bare-soil level, not water). Components < min size removed (~0.1 ha).
+  2. Per tile: ha_cleared, ha_built, confidence. Per **BBMP ward** (243 wards, KGIS 2023, `config/ref/bbmp_wards.geojson`; pixels outside = "peri-urban"): built-up at t0 (proxy), new built ha, growth %, ha/yr from real dates.
+  3. Decision output `reports/survey_blr.json`: wards ranked by expected recoverable ₹ = new built ha × ₹/ha × confidence, with hotspot coordinates and top tiles. The same numbers fit in the 256 B onboard packet (ha, stage, ward id), so the survey list reaches the ground in kilobytes minutes after a pass (A↔B link).
+  4. Validation: OSM `landuse=construction` precision/recall (tuned west half, reported east half, weak labels); injected-patch recall by size; **anchor sites** with dated public ground truth (e.g. Boeing BIETC campus, Devanahalli aerospace park, Building 2 opened Aug 2024) checked visually and by the engine, reported as found/missed; growth-rate sanity vs a published Landsat study of the Bengaluru agglomeration (12.6% → 22.8% built-up, 2000–2020).
 - Indices: NDVI, NDBI, MNDWI, BSI. Rules:
   - **Construction (A):** vegetation/bare soil → built-up/bare: ΔNDBI↑, ΔNDVI↓, BSI↑, not water.
   - **Sand mining (C):** river-bar/bank bare-sand and water-mask changes along the channel: ΔBSI↑, MNDWI shape change inside the river buffer.
   - **Clearing (C):** ΔNDVI strongly ↓ inside forest class at t0.
 - `severity = changed_px / 4096`; `ha = severity × 40.96`.
-- Thresholds set once on a validation AOI, frozen, then tested on others (no tuning on test).
+- Thresholds: `blr` tuned on the western half of chip columns against OSM weak labels, frozen in `config/change_thresholds.json`, reported on the eastern half. `sone`/`hasdeo` use literature thresholds, checked by injected-change test and visual QA (no labels exist). Connected components below a minimum size are removed before scoring.
+- Chips with < 85% valid (non-cloud, non-nodata) pixels in either date are **invalid**, never scored as "no change".
 - Validation: (1) OSM construction overlap → precision/recall with stated weak-label caveat, (2) synthetic injected-change test (paint known patches into t1; recall by patch size), (3) visual QA grid saved to `reports/qa/`.
 - Honest scope: indices-and-rules, not a deep change model. Cite as a transparent, auditable baseline.
 
@@ -178,8 +197,8 @@ hw/              Pi scorer + ESP32 gated ground station + bridge (stretch)
 
 - Orbit: Sentinel-2-like SSO, 786 km, 98.62°, 10:30 LTDN, swath 290 km. Real TLEs via CelesTrak optional; synthetic default (offline).
 - Stations: Bengaluru, Svalbard, Kiruna, Fairbanks, Hartebeesthoek, Punta Arenas (`stations.json`).
-- Contact windows via Skyfield, min elevation 10°. Physics sanity: half-angle ≈ 18.76°, period ≈ 100.43 min, **max pass ≈ 10.47 min**, at 100 Mbps × 0.7 efficiency ≈ **5.51 GB per max pass**.
-- Bottleneck realism: our AOI archive is only ~532 MB, so we scale window capacity by oversubscription ρ ∈ {1, 2, 5, 10} (capacity ÷ ρ). ρ=2 → 266 MB, ρ=5 → 106 MB, ρ=10 → 53 MB. State clearly this models a fleet of satellites competing for the same windows.
+- Contact windows via Skyfield, min elevation 10°, 5-day horizon. Physics sanity (computed by `orbit.py`, written to `reports/sim.json`): period **100.58 min** (Kepler; v3 said 100.43, which does not fit 786 km), **max pass 10.56 min**, at 100 Mbps × 0.7 efficiency ≈ **5.54 GB per max pass**.
+- Bottleneck realism: our replayed archive is far smaller than one pass, so total contact capacity is set to `archive_bytes / ρ`, ρ ∈ {1, 2, 5, 10}, split across windows in proportion to duration. State clearly this models many satellites (or many AOIs) competing for the same windows; ρ is the oversubscription factor.
 
 ---
 
@@ -187,7 +206,10 @@ hw/              Pi scorer + ESP32 gated ground station + bridge (stretch)
 
 Policies: **B1** FIFO · **B2** cloud-filter + FIFO (CloudScout-style, drop > 70% cloud) · **B3** value-only greedy · **H1** value/byte greedy · **H2** progressive (packets first for all, then thumbnails, then pulls by marginal value/byte).
 Upper bound: fractional-knapsack relaxation (labelled "upper bound", not optimum).
-Metrics: value captured (₹), % of upper bound, contact minutes to 90% target, time-to-first-insight, bytes wasted on cloud.
+Metrics: value captured (₹, with freshness decay), % of upper bound, time-to-first-insight, bytes spent on cloud > 0.5 tiles, and two contact-minute metrics:
+- **minutes-to-90%**: contact minutes until 90% of total available value is delivered (may be "not reached" for FIFO at high ρ; shown as such, never hidden).
+- **minutes-to-match-FIFO** (always defined, G9 headline): contact minutes HERALD needs to deliver FIFO's *final* value. Minutes saved = FIFO total minutes − this.
+Online rule: in each window only tiles captured before the window starts are eligible. A does-not-fit item is skipped up to `LOOKAHEAD = 8` per window (keeps O(n log n); documented shortcut). Deterministic tie-breaks by tile id so the TS port matches bit-for-bit.
 Implementation: Python reference (sort by ratio, O(n log n)) + TypeScript port; `tests/test_parity.py` runs identical inputs through both via fixture JSON and asserts equal selections. Browser runs scheduler in a Web Worker.
 
 ---
@@ -260,8 +282,8 @@ Time is T+hours from kickoff. **Demo freeze at T+10.5. Rehearsal T+10.5–12.**
 | **M7 Dashboard** | 6:00–8:30 | views 1–4 + TS scheduler + worker + parity test | G6, G7; live reorder demo works | must |
 | **M8 Packs/Evidence** | 8:30–9:30 | Pack C cards, hash chain, verify UI, economics view | evidence verifies; ₹ panel with assumptions | must (C minimal), nice (full) |
 | **M9 Deploy** | 9:30–10:00 | Vercel static deploy, GitHub Pages fallback, offline preview | public URL loads < 1.5 s | must |
-| **M10 Hardware** | parallel stretch, only if M0–M9 on time | Pi scores chips with int8 ONNX; ESP32 gated link; `--simulate` fallback | hardware tab shows measured ms/chip | cut first |
-| **M11 Pitch** | 10:30–12:00 | slides/script, 3 full rehearsals, backup recording | 5:00 timing ±10 s | must |
+| **M10 Hardware** | parallel stretch, only if M0–M9 on time | **Decision: simulation only** (laptop-measured int8 latency + `--simulate` link). Real Pi/ESP32 only if time remains | hardware tab shows measured ms/chip | cut first |
+| **M11 Pitch** | 10:30–12:00 | speaker script + Q&A (team owns slides), 3 rehearsals, backup screen recording | 5:00 timing ±10 s | must |
 
 **Cut order if behind:** M10 hardware live link → full Pack C polish (keep one evidence card) → third AOI (keep 2) → scheduler H2 refinement (keep H1) → TS parity extras. Never cut: real data, onboard model numbers, FIFO vs HERALD, economics, honest limits.
 
@@ -297,7 +319,7 @@ Time is T+hours from kickoff. **Demo freeze at T+10.5. Rehearsal T+10.5–12.**
 
 **0:00–0:30 Hook.** "Satellites capture 100× more than they can send home. HERALD decides what's worth sending." Show FIFO vs HERALD frozen frame.
 **0:30–1:15 Problem + payer.** Who pays: lenders, mining departments, operators. ₹ numbers with "assumption" label.
-**1:15–2:30 Live demo (Track A+B).** Mission globe → contact window → side-by-side race. Move ρ slider. Add a live query; schedule reorders in < 100 ms. Click a tile: packet → thumbnail → pull full chip; before/after slider shows construction in Bengaluru.
+**1:15–2:30 Live demo (Track A+B).** Mission globe → contact window → side-by-side race. Move ρ slider. Add a live query; schedule reorders in < 100 ms. Insights: ward survey list for north Bengaluru (₹ marked as assumption) → click top hotspot: packet → thumbnail → pull full chip; before/after slider shows real 2023→2025 construction (anchor: the Devanahalli aerospace park, where Boeing's BIETC campus is, if the engine flags it).
 **2:30–3:30 AI depth.** Onboard int8 model: accuracy, ECE, ms/chip (measured on this laptop). Calibrated scores drive value. UB line.
 **3:30–4:15 Track C.** Sand-mining evidence card, hash chain verify. "Land cover only, never people."
 **4:15–4:45 Economics + physics.** Contact minutes saved, 5.5 GB per max pass sanity check.
@@ -309,13 +331,13 @@ Time is T+hours from kickoff. **Demo freeze at T+10.5. Rehearsal T+10.5–12.**
 
 ## 19. Honest limitations (shown in the UI)
 
-Simulated replay of archived imagery as if captured · weak labels (WorldCover ~77%, OSM incomplete) · one orbit, one constellation size via ρ · economic parameters are assumptions · L2A used where flight would use TOA · change engine is rule-based · upper bound is a relaxation, not an optimum.
+Simulated replay of archived imagery as if captured (compressed timeline; time-of-day from real overpasses) · `t0` assumed available onboard as a reference baseline · weak labels (WorldCover ~77%, OSM incomplete) · one orbit, constellation load modeled by ρ · economic parameters are assumptions · L2A used where flight would use TOA; classifier trained on L1C EuroSAT (domain gap) · change engine is rule-based; 10 m cannot count floors or see building height · packet/thumb value fractions are modeled, not measured · zlib stands in for CCSDS-122 · scheduler lookahead cap is a shortcut · upper bound is a relaxation, not an optimum.
 
 ---
 
 ## 20. Claude Code instructions
 
-Build in module order M0→M11. After each module: run its tests, update the README checklist, commit. Do not start a module until the previous acceptance passes. Never add network calls to the demo path. Never hard-code a number into the UI that is not read from a generated report.
+Build in module order M0→M11 (independent modules run in parallel by separate builders; contracts live in `HANDOFF.md`). After each module: run its tests, update the README checklist and `HANDOFF.md`, commit. Commits carry **no AI co-author/attribution trailer**; only the lead pushes to `origin` (github.com/PRATHVI9607/Aeromania). Never add network calls to the demo path. Never hard-code a number into the UI that is not read from a generated report.
 
 ### CLAUDE.md (drop in repo root)
 
@@ -331,4 +353,19 @@ Tests: pytest (python/tests), vitest (web). Parity test Py↔TS scheduler must p
 
 ## 21. Sources to cite on the final slide
 
-ESA Sentinel-2 L2A / SCL · Element84 Earth Search STAC · ESA WorldCover (CC-BY 4.0) · SSL4EO-S12 (Wang et al.) via torchgeo · EuroSAT (Helber et al.) · CloudScout / Phi-Sat-1 (Giuffrida et al.) · CEGA/Berkeley sand-mining detection · UNEP 2019 "Sand and sustainability" · OpenStreetMap contributors (ODbL) · CelesTrak · Skyfield.
+ESA Sentinel-2 L2A / SCL · Copernicus Sentinel-1 RTC via Microsoft Planetary Computer · BBMP ward boundaries (KGIS via DataMeet) · BBMP property-tax figures (Deccan Herald FY24-25; NewsFirst on unassessed properties) · Boeing BIETC campus (boeing.co.in, 2024) · Element84 Earth Search STAC · ESA WorldCover (CC-BY 4.0) · SSL4EO-S12 (Wang et al.) via torchgeo · EuroSAT (Helber et al.) · CloudScout / Phi-Sat-1 (Giuffrida et al.) · CEGA/Berkeley sand-mining detection · UNEP 2019 "Sand and sustainability" · OpenStreetMap contributors (ODbL) · CelesTrak · Skyfield.
+
+---
+
+## 22. Decisions log (v4)
+
+| Date | Decision | Why |
+|---|---|---|
+| 2026-11-25 | AOIs `blr`, `sone`, `hasdeo`; 4 dates each (t0/t1 clear pair, c1/c2 cloudy) | real cloudy captures train the cloud head and make FIFO waste visible |
+| 2026-11-25 | Sentinel-1 RTC added to Pack C as corroboration (never a gate) | monsoon cloud hides river mining exactly when the seasonal ban applies |
+| 2026-11-25 | Track A payer = city revenue dept + planners; lender tranche checks demoted | 10 m cannot count floors; site visits are cheap (~₹500–1,000); unassessed-property gap is large and sourced |
+| 2026-11-25 | Ward-level survey list (BBMP 243 wards) is the Track A decision artifact | judges see a concrete action, not just a change map |
+| 2026-11-25 | Full-chip bytes = measured zlib size; G9 headline = minutes for HERALD to match FIFO's final value | always defined and measured, not modeled |
+| 2026-11-25 | Hardware simulation-only; no pitch deck from us (script only) | user decision |
+
+Q&A additions: *Can 10 m see construction?* Yes for footprints ≳ 0.1–0.25 ha and land clearing; no for floors or individual small houses, so the output is a survey-priority list, not a per-building verdict. *Why not Dynamic World / GHSL?* Those are ground-processed annual/near-real-time maps; HERALD decides onboard what to downlink and turns change into a ranked, priced action list.
