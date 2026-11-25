@@ -613,7 +613,7 @@ def site_ledger(aoi, thr, mask, cleared, built, road_all, o1, wr, props, wc, rin
     for k in cats:
         cats[k] = (cat_of[lab] == CATS.index(k) + 1) & mask
     # ranked lead list: lakes first, then buffer-flagged sites, then new_layout, building, agri
-    tier = lambda r: 1 if r["buffer_flag"] else {"new_layout": 2, "building_construction": 3}.get(r["category"], 4)
+    tier = lambda r: 1 if r["buffer_flag"] else {"new_layout": 2, "building_construction": 2}.get(r["category"], 4)
     leads = [{"category": "lake_filling_lead", "tier": 0, "ha": round(l["lost_to_bare_ha"] + l["lost_to_built_ha"], 2),
               "ward": None, "buffer_flag": False, **l} for l in lake_leads if l["lake_filling_lead"]]
     for r in sites:
