@@ -26,8 +26,8 @@ export default function SiteGlobe({ bbox, imgUrl, lat, lon }: { bbox: number[]; 
       layer.current = v.imageryLayers.addImageryProvider(p);
     });
     pt.current.position = Cartesian3.fromDegrees(lon, lat, 0);
-    const pad = Math.max(e - w, n - s) * 0.4;
-    v.camera.flyTo({ destination: Rectangle.fromDegrees(w - pad, s - pad, e + pad, n + pad), duration: reduced() ? 0 : 2.4, easingFunction: EasingFunction.CUBIC_IN_OUT });
+    // regional context (~2,500 km altitude): the bundled Natural Earth base is ~1 km/px, so zooming to the 600 m chip only shows a flat blur
+    v.camera.flyTo({ destination: Cartesian3.fromDegrees((w + e) / 2, (s + n) / 2, 2.5e6), duration: reduced() ? 0 : 2.4, easingFunction: EasingFunction.CUBIC_IN_OUT });
     return () => { gone = true; };
   }, [bbox.join(","), imgUrl]); // eslint-disable-line
   return <div className="sitegl" ref={box} aria-label="Globe showing the evidence site" />;

@@ -146,7 +146,7 @@ export function Insights({ data }: ViewProps) {
             {chg && <><dt>Injected-patch recall</dt><dd className="mono">{Object.entries(chg.validation.injected.recall_by_size).map(([k, v]) => `${k} ha: ${pct(v as number)}`).join(", ")}</dd>
               <dt>OSM construction P / R</dt><dd className="mono">{chg.validation.osm.precision.toFixed(2)} / {chg.validation.osm.recall.toFixed(2)} <small>held-out half; OSM is sparse, precision understated</small></dd></>}
             {lead?.lake_leads && <><dt>Lake leads</dt><dd>{lead.lake_leads.n} flagged, {lead.lake_leads.confirmed_filling} confirmed filling: dry-season drying and desilting works. {lead.lake_leads.finding}</dd></>}
-            {audit && <><dt>Per-category precision</dt><dd className="mono">{Object.entries(audit.per_category).map(([k, v]: any) => `${k} ${v.precision.toFixed(2)}`).join(" / ")}</dd></>}
+            {audit && <><dt>Sub-type split</dt><dd className="mono">{Object.entries(audit.per_category).map(([k, v]: any) => `${k} ${v.precision.toFixed(2)}`).join(" / ")} <span className="dim">(strict: layout vs building at 10 m is unreliable, so leads are scored as one "new construction" class above)</span></dd></>}
           </dl>
           {chg && <p className="muted small">{chg.validation.caveat}</p>}
           <p className="muted small">{R.sites_blr.rainfall_caveat}</p>
