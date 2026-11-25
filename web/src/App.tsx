@@ -31,7 +31,7 @@ const VIEWS: V[] = [
 ];
 const GROUPS = ["", "Track A", "Track B", "Track C", "System"];
 const GROUP_NOTE: Record<string, string> = { "Track A": "Real-data change insights", "Track B": "Onboard AI and scheduler", "Track C": "Protective evidence", System: "" };
-const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === location.hash.replace(/^#\/?/, "")));
+const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === location.hash.replace(/^#\/?/, "").split("?")[0]));
 
 export function App() {
   const [data, setData] = useState<Data | null>(null);

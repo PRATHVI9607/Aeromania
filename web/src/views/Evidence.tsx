@@ -46,6 +46,10 @@ export function Evidence(vp: ViewProps) {
   useEffect(() => { loadText().then((t) => { try { setSt(t ? { ...cardsFromText(t), meta: chainMeta(t) } : null); } catch (e) { console.error(e); setSt(null); } }); }, []);
   // display order: mine_expansion (by ha), forest_clearing, then experimental sand kinds; chain order is untouched
   const order = useMemo(() => (st ? st.cards.map((_, i) => i).sort((a, b) => rank(st.cards[a].kind) - rank(st.cards[b].kind) || (st.cards[b].ha ?? 0) - (st.cards[a].ha ?? 0)) : []), [st]);
+  useEffect(() => { // deep link: #/evidence?open=<card_id>
+    const o = new URLSearchParams(location.hash.split("?")[1] ?? "").get("open"); if (!st || !o) return;
+    const d = order.findIndex((i) => cid(st.cards[i]) === o); if (d >= 0) setSel(d);
+  }, [st, order]);
   if (st === undefined) return <Skeleton rows={6} />;
   if (st === null) return <section className="panel"><h3>Evidence <small>not generated yet</small></h3><p className="muted">web/public/data/evidence.json is missing. It is produced by the Track C evidence step.</p></section>;
   const { cards, nodes, meta } = st;
