@@ -107,7 +107,9 @@ def run(policy, tiles, windows, params, queries, rho, prep=None):
             df = fr[L] - (fr[L - 1] if L and policy == "H2" else 0.0)
             dv = V[i] * df
             real = dv * 0.5 ** ((win["end_min"] - tiles[i]["t_cap_min"]) / 60 / hl)
-            wb += inc; wv += real; cum_raw += dv
+            wb += inc
+            wv += real
+            cum_raw += dv
             if tiles[i]["cloud"] > 0.5:
                 wc += inc
             if V[i] > 0 and ttfi is None:
@@ -123,8 +125,10 @@ def run(policy, tiles, windows, params, queries, rho, prep=None):
         for e in skipped:
             heapq.heappush(heap, e)
         minutes += dur
-        cum_val += wv; cum_bytes += wb; cloud_bytes += wc
-        for k, x in zip(tl, (wb, wv, cum_val, wc, caps[w])):
+        cum_val += wv
+        cum_bytes += wb
+        cloud_bytes += wc
+        for k, x in zip(tl, (wb, wv, cum_val, wc, caps[w]), strict=True):
             tl[k].append(x)
     ub = upper_bound(V, B, params, total)
     return {"sel": sel, "level": level, "timeline": tl, "metrics": {

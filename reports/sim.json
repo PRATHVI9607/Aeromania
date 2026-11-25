@@ -23,244 +23,244 @@
  },
  "headline_rho5": {
   "ratio_vs_fifo": {
-   "H1": 6.682,
-   "H2": 6.778
+   "H1": 80.234,
+   "H2": 79.377
   },
   "ratio_vs_b2": {
-   "H1": 3.883,
-   "H2": 3.938
+   "H1": 16.154,
+   "H2": 15.981
   },
   "minutes_to_90": {
    "B1": null,
-   "B2": 1653.6763,
-   "B3": 92.0389,
-   "H1": 92.0697,
-   "H2": 33.5015
+   "B2": null,
+   "B3": 733.3079,
+   "H1": 733.3079,
+   "H2": 731.876
   },
   "minutes_to_match_fifo": {
-   "B1": 1759.53,
-   "B2": 1478.2,
-   "B3": 3.07,
-   "H1": 3.07,
-   "H2": 1.21
+   "B1": 929.26,
+   "B2": 929.26,
+   "B3": 3.04,
+   "H1": 3.04,
+   "H2": 2.85
   },
-  "fifo_minutes_used": 1759.53,
+  "fifo_minutes_used": 929.26,
   "minutes_saved_vs_fifo": {
-   "H1": 1756.46,
-   "H2": 1758.32
+   "H1": 926.22,
+   "H2": 926.41
   },
   "ttfi_min": {
-   "B1": 2100.065,
-   "B2": 2100.065,
-   "B3": 42.769,
-   "H1": 42.769,
-   "H2": 42.769
+   "B1": 2039.748,
+   "B2": 2039.748,
+   "B3": 1.84,
+   "H1": 1.84,
+   "H2": 1.84
   },
   "pct_ub": {
-   "B1": 0.1453,
-   "B2": 0.2501,
-   "B3": 0.9709,
-   "H1": 0.9709,
-   "H2": 0.9849
+   "B1": 0.0123,
+   "B2": 0.0609,
+   "B3": 0.9835,
+   "H1": 0.9835,
+   "H2": 0.973
   }
  },
  "by_rho": {
   "1": {
    "ratio_vs_fifo": {
-    "H1": 1.346,
-    "H2": 1.348
+    "H1": 1.856,
+    "H2": 1.82
    },
    "ratio_vs_b2": {
-    "H1": 1.293,
-    "H2": 1.295
+    "H1": 1.426,
+    "H2": 1.398
    },
    "minutes_to_90": {
-    "B1": 366.0985,
-    "B2": 324.6213,
-    "B3": 18.1872,
-    "H1": 18.1874,
-    "H2": 6.7479
+    "B1": 1765.9714,
+    "B2": 1301.7185,
+    "B3": 732.0607,
+    "H1": 732.0607,
+    "H2": 731.864
    },
    "minutes_to_match_fifo": {
-    "B1": 1759.53,
-    "B2": 470.53,
-    "B3": 8.37,
-    "H1": 8.37,
-    "H2": 5.44
+    "B1": 1769.73,
+    "B2": 856.23,
+    "B3": 378.42,
+    "H1": 378.42,
+    "H2": 377.98
    },
-   "fifo_minutes_used": 1759.53,
+   "fifo_minutes_used": 1769.73,
    "minutes_saved_vs_fifo": {
-    "H1": 1751.16,
-    "H2": 1754.09
+    "H1": 1391.31,
+    "H2": 1391.75
    },
    "ttfi_min": {
-    "B1": 394.396,
-    "B2": 394.396,
-    "B3": 42.769,
-    "H1": 42.769,
-    "H2": 42.769
+    "B1": 392.623,
+    "B2": 392.623,
+    "B3": 1.84,
+    "H1": 1.84,
+    "H2": 1.84
    },
    "pct_ub": {
-    "B1": 0.7333,
-    "B2": 0.7633,
-    "B3": 0.9873,
-    "H1": 0.9873,
-    "H2": 0.9883
+    "B1": 0.5347,
+    "B2": 0.6962,
+    "B3": 0.9926,
+    "H1": 0.9926,
+    "H2": 0.9734
    }
   },
   "2": {
    "ratio_vs_fifo": {
-    "H1": 1.867,
-    "H2": 1.875
+    "H1": 6.503,
+    "H2": 6.391
    },
    "ratio_vs_b2": {
-    "H1": 1.734,
-    "H2": 1.741
-   },
-   "minutes_to_90": {
-    "B1": 735.8595,
-    "B2": 651.7563,
-    "B3": 36.5017,
-    "H1": 36.3395,
-    "H2": 13.3859
-   },
-   "minutes_to_match_fifo": {
-    "B1": 1750.04,
-    "B2": 650.63,
-    "B3": 6.59,
-    "H1": 6.52,
-    "H2": 4.09
-   },
-   "fifo_minutes_used": 1750.04,
-   "minutes_saved_vs_fifo": {
-    "H1": 1743.52,
-    "H2": 1745.95
-   },
-   "ttfi_min": {
-    "B1": 787.577,
-    "B2": 787.577,
-    "B3": 42.769,
-    "H1": 42.769,
-    "H2": 42.769
-   },
-   "pct_ub": {
-    "B1": 0.5266,
-    "B2": 0.567,
-    "B3": 0.9833,
-    "H1": 0.9833,
-    "H2": 0.9875
-   }
-  },
-  "5": {
-   "ratio_vs_fifo": {
-    "H1": 6.682,
-    "H2": 6.778
-   },
-   "ratio_vs_b2": {
-    "H1": 3.883,
-    "H2": 3.938
-   },
-   "minutes_to_90": {
-    "B1": null,
-    "B2": 1653.6763,
-    "B3": 92.0389,
-    "H1": 92.0697,
-    "H2": 33.5015
-   },
-   "minutes_to_match_fifo": {
-    "B1": 1759.53,
-    "B2": 1478.2,
-    "B3": 3.07,
-    "H1": 3.07,
-    "H2": 1.21
-   },
-   "fifo_minutes_used": 1759.53,
-   "minutes_saved_vs_fifo": {
-    "H1": 1756.46,
-    "H2": 1758.32
-   },
-   "ttfi_min": {
-    "B1": 2100.065,
-    "B2": 2100.065,
-    "B3": 42.769,
-    "H1": 42.769,
-    "H2": 42.769
-   },
-   "pct_ub": {
-    "B1": 0.1453,
-    "B2": 0.2501,
-    "B3": 0.9709,
-    "H1": 0.9709,
-    "H2": 0.9849
-   }
-  },
-  "10": {
-   "ratio_vs_fifo": {
-    "H1": 3559.873,
-    "H2": 3675.915
-   },
-   "ratio_vs_b2": {
-    "H1": 3559.873,
-    "H2": 3675.915
+    "H1": 2.994,
+    "H2": 2.942
    },
    "minutes_to_90": {
     "B1": null,
     "B2": null,
-    "B3": 189.2676,
-    "H1": 189.2156,
-    "H2": 67.4044
+    "B3": 732.2605,
+    "H1": 732.2605,
+    "H2": 731.867
    },
    "minutes_to_match_fifo": {
-    "B1": 1297.05,
-    "B2": 1297.05,
-    "B3": 0.01,
-    "H1": 0.01,
-    "H2": 0.0
+    "B1": 1769.73,
+    "B2": 861.75,
+    "B3": 13.82,
+    "H1": 13.82,
+    "H2": 13.57
    },
-   "fifo_minutes_used": 1297.05,
+   "fifo_minutes_used": 1769.73,
    "minutes_saved_vs_fifo": {
-    "H1": 1297.04,
-    "H2": 1297.05
+    "H1": 1755.91,
+    "H2": 1756.16
+   },
+   "ttfi_min": {
+    "B1": 769.429,
+    "B2": 769.429,
+    "B3": 1.84,
+    "H1": 1.84,
+    "H2": 1.84
+   },
+   "pct_ub": {
+    "B1": 0.1523,
+    "B2": 0.3308,
+    "B3": 0.9904,
+    "H1": 0.9904,
+    "H2": 0.9733
+   }
+  },
+  "5": {
+   "ratio_vs_fifo": {
+    "H1": 80.234,
+    "H2": 79.377
+   },
+   "ratio_vs_b2": {
+    "H1": 16.154,
+    "H2": 15.981
+   },
+   "minutes_to_90": {
+    "B1": null,
+    "B2": null,
+    "B3": 733.3079,
+    "H1": 733.3079,
+    "H2": 731.876
+   },
+   "minutes_to_match_fifo": {
+    "B1": 929.26,
+    "B2": 929.26,
+    "B3": 3.04,
+    "H1": 3.04,
+    "H2": 2.85
+   },
+   "fifo_minutes_used": 929.26,
+   "minutes_saved_vs_fifo": {
+    "H1": 926.22,
+    "H2": 926.41
+   },
+   "ttfi_min": {
+    "B1": 2039.748,
+    "B2": 2039.748,
+    "B3": 1.84,
+    "H1": 1.84,
+    "H2": 1.84
+   },
+   "pct_ub": {
+    "B1": 0.0123,
+    "B2": 0.0609,
+    "B3": 0.9835,
+    "H1": 0.9835,
+    "H2": 0.973
+   }
+  },
+  "10": {
+   "ratio_vs_fifo": {
+    "H1": 166.73,
+    "H2": 167.045
+   },
+   "ratio_vs_b2": {
+    "H1": 166.73,
+    "H2": 167.045
+   },
+   "minutes_to_90": {
+    "B1": null,
+    "B2": null,
+    "B3": 736.7485,
+    "H1": 736.7485,
+    "H2": 731.891
+   },
+   "minutes_to_match_fifo": {
+    "B1": 1317.09,
+    "B2": 1317.09,
+    "B3": 5.04,
+    "H1": 5.04,
+    "H2": 2.62
+   },
+   "fifo_minutes_used": 1317.09,
+   "minutes_saved_vs_fifo": {
+    "H1": 1312.05,
+    "H2": 1314.47
    },
    "ttfi_min": {
     "B1": 4336.147,
     "B2": 4336.147,
-    "B3": 42.769,
-    "H1": 42.769,
-    "H2": 42.769
+    "B3": 8.837,
+    "H1": 8.837,
+    "H2": 1.84
    },
    "pct_ub": {
-    "B1": 0.0003,
-    "B2": 0.0003,
-    "B3": 0.9498,
-    "H1": 0.9496,
-    "H2": 0.9806
+    "B1": 0.0058,
+    "B2": 0.0058,
+    "B3": 0.9705,
+    "H1": 0.9705,
+    "H2": 0.9724
    }
   }
  },
  "robustness": {
   "note": "H1 sends full chips only: no packet-fraction assumption involved.",
-  "H1_vs_B1": 6.682,
-  "H1_vs_B2": 3.883,
+  "H1_vs_B1": 80.234,
+  "H1_vs_B2": 16.154,
   "H2_packet_fraction_sensitivity_rho5": {
    "0.3": {
-    "H2_value": 147768302.73,
-    "H2_vs_B1": 6.773,
-    "H2_vs_B2": 3.936
+    "H2_value": 6604851.91,
+    "H2_vs_B1": 79.346,
+    "H2_vs_B2": 15.975
    },
    "0.5": {
-    "H2_value": 147806112.5,
-    "H2_vs_B1": 6.775,
-    "H2_vs_B2": 3.937
+    "H2_value": 6606036.22,
+    "H2_vs_B1": 79.36,
+    "H2_vs_B2": 15.978
    },
    "0.7": {
-    "H2_value": 147864306.96,
-    "H2_vs_B1": 6.778,
-    "H2_vs_B2": 3.938
+    "H2_value": 6607460.34,
+    "H2_vs_B1": 79.377,
+    "H2_vs_B2": 15.981
    }
   }
  },
- "headline_note": "The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 per capture: {'c1': 0.219, 'c2': 0.049, 't1': 0.239}; mean cloud per capture: {'c1': 0.315, 'c2': 0.468, 't1': 0.023}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; value-aware policies send the valuable ones first. Change source per capture: ['captures']. If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.",
+ "headline_note": "The ratio vs FIFO is driven by how much of the downlink FIFO spends on tiles worth nothing. Fraction of tiles with value>0 per capture: {'c1': 0.102, 'c2': 0.037, 't1': 0.239}; mean cloud per capture: {'c1': 0.408, 'c2': 0.557, 't1': 0.059}. FIFO sends in capture order so it fills windows with zero-value and cloudy tiles; value-aware policies send the valuable ones first. Change source per capture: ['captures']. If c1/c2 carry no change records they count as zero value, which flatters the ratio; check change_source below.",
  "change_source": {
   "blr/c1": "captures",
   "blr/t1": "captures",
@@ -273,21 +273,21 @@
   "hasdeo/c2": "captures"
  },
  "frac_tiles_with_value": {
-  "c1": 0.219,
-  "c2": 0.049,
+  "c1": 0.102,
+  "c2": 0.037,
   "t1": 0.239
  },
  "mean_cloud": {
-  "c1": 0.315,
-  "c2": 0.468,
-  "t1": 0.023
+  "c1": 0.408,
+  "c2": 0.557,
+  "t1": 0.059
  },
  "load_avg": [
-  3.11767578125,
-  2.91064453125,
-  3.0224609375
+  11.37109375,
+  10.47021484375,
+  8.416015625
  ],
- "g5_ms_per_1000_tiles_H2": 4.98,
+ "g5_ms_per_1000_tiles_H2": 12.0,
  "capture_overpasses_10d_cycle": {
   "blr": [
    {
@@ -319,6 +319,6 @@
  },
  "n_tiles": 19044,
  "n_windows": 214,
- "n_windows_used": 207,
+ "n_windows_used": 211,
  "mapping": "see herald/sim.py docstring: compressed replay (day index synthetic, time-of-day from real overpass); pA=P(Ind+Res+Hwy)xgate; pC sand=P(River+SeaLake)xgate, clearing=P(Forest@t0)xgate"
 }

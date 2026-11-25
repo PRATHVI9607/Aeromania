@@ -128,6 +128,22 @@ def build(phases):
     return tiles, syn
 
 
+PROC_LAT_MIN = 1.0   # assumption: onboard inference + packing latency between capture and first downlink byte
+
+
+def split_windows(wins, t_caps):
+    """Split each contact window at (capture time + PROC_LAT_MIN) so tiles captured mid-pass can downlink in the same pass
+    (Sentinel-2 style real-time downlink). Scheduler stays unchanged: capacity is pro-rated by segment duration there."""
+    cuts, out = sorted({t + PROC_LAT_MIN for t in t_caps}), []
+    for w in wins:
+        pts = [w["start_min"], *[c for c in cuts if w["start_min"] < c < w["end_min"]], w["end_min"]]
+        for a, b in zip(pts, pts[1:], strict=False):
+            out.append({**w, "parent": w["id"], "start_min": round(a, 3), "end_min": round(b, 3), "dur_min": round(b - a, 3)})
+    for i, w in enumerate(out):
+        w["id"] = i
+    return out
+
+
 def _r(x, k=2):
     return None if x is None else round(x, k)
 
@@ -148,7 +164,7 @@ def main(argv=None):
         phases[x["id"]] = ov[0]["t_min"] % 1440 if ov else 330.0   # fallback 05:30 UTC
     tiles, syn = build(phases)
     t_first = min(t["t_cap_min"] for t in tiles)
-    uw = [w for w in wins if w["start_min"] >= t_first]
+    uw = split_windows([w for w in wins if w["end_min"] > t_first], sorted({t["t_cap_min"] for t in tiles}))
     prep = sched.prepare(tiles, queries, params)
     res = {}
     for rho in RHOS:
@@ -162,7 +178,9 @@ def main(argv=None):
     sub = tiles[:: max(1, len(tiles) // 1000)][:1000]
     t5 = []
     for _ in range(5):
-        s = time.perf_counter(); sched.run("H2", sub, uw, params, queries, 5); t5.append(time.perf_counter() - s)
+        s = time.perf_counter()
+        sched.run("H2", sub, uw, params, queries, 5)
+        t5.append(time.perf_counter() - s)
     # headline. Minutes to reach a realized-value target, linear inside the window it is crossed.
     dur = [w["end_min"] - w["start_min"] for w in uw]
 
@@ -170,7 +188,7 @@ def main(argv=None):
         if target <= 0:
             return 0.0
         used, prev = 0.0, 0.0
-        for d, c in zip(dur, tl["cum_value"]):
+        for d, c in zip(dur, tl["cum_value"], strict=True):
             if c >= target:
                 return used + d * (target - prev) / (c - prev)
             used, prev = used + d, c
@@ -196,11 +214,9 @@ def main(argv=None):
         o = sched.run("H2", tiles, uw, pp, queries, 5)["metrics"]
         sens[str(f)] = {"H2_value": _r(o["value"]), "H2_vs_B1": _r(o["value"] / res["5"]["B1"]["metrics"]["value"], 3) if res["5"]["B1"]["metrics"]["value"] else None,
                         "H2_vs_B2": _r(o["value"] / res["5"]["B2"]["metrics"]["value"], 3) if res["5"]["B2"]["metrics"]["value"] else None}
-    r5 = res["5"]
     robust = {"note": "H1 sends full chips only: no packet-fraction assumption involved.",
               "H1_vs_B1": h["5"]["ratio_vs_fifo"]["H1"], "H1_vs_B2": h["5"]["ratio_vs_b2"]["H1"],
               "H2_packet_fraction_sensitivity_rho5": sens}
-    nz = [t for t in tiles if t["pA"] + t["pC"] > 0 and t["sev"] > 0]
     by = {d: [t for t in tiles if t["date"] == d] for d in ("c1", "c2", "t1")}
     frac = {d: _r(sum(1 for t in v if t["pA"] + t["pC"] > 0 and t["sev"] > 0) / max(1, len(v)), 3) for d, v in by.items()}
     cl = {d: _r(float(np.mean([t["cloud"] for t in v])) if v else 0, 3) for d, v in by.items()}
@@ -220,11 +236,13 @@ def main(argv=None):
            "mapping": "see herald/sim.py docstring: compressed replay (day index synthetic, time-of-day from real overpass); "
                       "pA=P(Ind+Res+Hwy)xgate; pC sand=P(River+SeaLake)xgate, clearing=P(Forest@t0)xgate"}
     (REPORTS / "sim.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
-    w = lambda n, d: (WEB_DATA / n).write_text(json.dumps(d, separators=(",", ":")), encoding="utf-8")
+    def w(n, d):
+        (WEB_DATA / n).write_text(json.dumps(d, separators=(",", ":")), encoding="utf-8")
     w("tiles.json", {"synthetic": syn, "classes": CLASSES, "fields": FIELDS, "rows": [[t[f] for f in FIELDS] for t in tiles]})
     w("results.json", {"synthetic": syn, "rhos": RHOS, "policies": sched.POLICIES, "n_tiles": len(tiles),
                        "window_ids": [x["id"] for x in uw], "by_rho": res})
     w("queries.json", {"synthetic": syn, "params": raw["params"], "queries": raw["queries"]})
+    w("sched_windows.json", {"synthetic": syn, "proc_latency_min": PROC_LAT_MIN, "windows": uw})
     w("windows.json", {"synthetic": syn, "epoch_utc": "2025-01-15T00:00:00Z", "min_el": orbit.MIN_EL,
                        "first_capture_min": t_first, "windows": wins})
     tr = orbit.track(a.days)
