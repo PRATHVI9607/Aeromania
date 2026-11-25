@@ -67,6 +67,8 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   const [mode, setMode] = useState<"3d" | "2d">("3d"), [safe, setSafe] = useState(false), [diag, setDiag] = useState<Diag | null>(null);
   const failRef = useRef<(d: Diag) => void>(() => {});
   failRef.current = (d) => { if (!safe) { setSafe(true); } else { setDiag(d); setMode("2d"); } };
+  const [live, setLive] = useState<{ state: "idle" | "loading" | "ok" | "err"; items: { id: string; date: string; cloud: number | null; thumb: string; bbox: number[] }[]; msg?: string; sel?: string }>({ state: "idle", items: [] });
+  const liveLayer = useRef<ImageryLayer | null>(null);
   const sidx = useJson<Record<string, any>>("sites_index.json");
   const [ins, setIns] = useState<{ key: string | null; track: string; title: string; chips: [string, string][]; rec: any; lat: number; lon: number } | null>(null);
   const [sview, setSview] = useState<string>("t1"), [smask, setSmask] = useState(false), [split, setSplit] = useState(0.5);
@@ -167,6 +169,24 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
     (window as any).__herald = { ...(window as any).__herald, layers: n };
   }, [layers, siting, data.reports, data.track, data.stations, aois, t0, mode, safe]);
 
+  // the only network call in the app: newest real Sentinel-2 scenes over Bengaluru from Earth Search STAC, on click only
+  const drapeLive = (it: { id: string; thumb: string; bbox: number[] }) => {
+    const v = viewer.current; setLive((l) => ({ ...l, sel: it.id })); if (!v || v.isDestroyed()) return;
+    if (liveLayer.current) v.imageryLayers.remove(liveLayer.current);
+    const rect = Rectangle.fromDegrees(it.bbox[0], it.bbox[1], it.bbox[2], it.bbox[3]);
+    if (it.thumb) { liveLayer.current = ImageryLayer.fromProviderAsync(SingleTileImageryProvider.fromUrl(it.thumb, { rectangle: rect }), { alpha: 0.95 }); v.imageryLayers.add(liveLayer.current); }
+    followRef.current = false; setFollow(false); v.camera.flyTo({ destination: rect, duration: reduced() ? 0 : 2.2, easingFunction: EasingFunction.CUBIC_IN_OUT });
+  };
+  const fetchLatest = async () => {
+    const b = aois.get("blr"); if (!b) return; setLive({ state: "loading", items: [] });
+    try {
+      const r = await fetch(`https://earth-search.aws.element84.com/v1/search?collections=sentinel-2-l2a&bbox=${b.join(",")}&limit=3&sortby=-properties.datetime`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json(), items = (j.features ?? []).map((f: any) => ({ id: f.id as string, date: String(f.properties.datetime).slice(0, 10), cloud: (f.properties["eo:cloud_cover"] ?? null) as number | null, thumb: (f.assets?.thumbnail?.href ?? "") as string, bbox: f.bbox as number[] }));
+      if (!items.length) throw new Error("no scenes");
+      setLive({ state: "ok", items, sel: items[0].id }); drapeLive(items[0]);
+    } catch (e) { setLive({ state: "err", items: [], msg: navigator.onLine ? `request failed: ${String((e as Error).message ?? e)}` : "no internet" }); }
+  };
   // zoom in to check: fly to a lead or evidence case, drape its native 10 m chips at the true bbox
   const openSite = (o: any) => {
     const v = viewer.current; const d = o.d; let key: string | null = null, title = "", chips: [string, string][] = [];
@@ -339,6 +359,14 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
               <i className={`sw t${tr || "N"}`} /><span>{label}</span>
             </label>))}
           <div className="legendkey"><span><i className="sw tA" />Track A</span><span><i className="sw tB" />Track B</span><span><i className="sw tC" />Track C</span></div>
+          <div className="livebox">
+            <button onClick={fetchLatest} disabled={live.state === "loading"}>{live.state === "loading" ? "Fetching" : "Fetch latest real pass"}</button>
+            <span className="chip warn">live, uses internet</span>
+            {live.state === "err" && <span className="chip bad">{live.msg}</span>}
+            {live.items.map((it) => (
+              <button key={it.id} className={`liveit ${live.sel === it.id ? "on" : ""}`} onClick={() => drapeLive(it)} title={it.id}>
+                {it.thumb && <img src={it.thumb} alt="" width={36} height={36} />}<span className="mono">{it.date}</span><span className="mono dim">{it.cloud != null ? `${it.cloud.toFixed(0)}% cloud` : ""}</span></button>))}
+          </div>
           <div className="capnote mono">Coverage cap: {(capRangeM() / 1000).toFixed(0)} km ground range at {EL_MIN} deg elevation, {ORBIT_KM} km orbit</div>
         </aside>
         <div className="globe" aria-label="Globe with satellite, recent ground track, stations and AOI boxes">

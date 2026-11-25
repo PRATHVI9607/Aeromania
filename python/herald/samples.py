@@ -48,6 +48,8 @@ def main(argv: list[str]) -> int:
         cut("blr", "t1", tb, "blr_construction.tif"),
         cut("hasdeo", "t1", th, "hasdeo_mine.tif"),
         cut("blr", "c2", tb, "blr_cloudy.tif"),
+        cut("blr", "t0", tb, "blr_before.tif"),      # before/after pairs: *_before.tif + the t1 crops above
+        cut("hasdeo", "t0", th, "hasdeo_before.tif"),
     ]
     print("\n".join(lines))
     (OUT / "README.txt").write_text(
@@ -55,6 +57,7 @@ def main(argv: list[str]) -> int:
         "Band order: B02,B03,B04,B08,B11 (blue,green,red,NIR,SWIR1).\n"
         "Own data: Copernicus Browser multi-band GeoTIFF with raw bands (UINT16) in that order (5 bands),\n"
         "or a full 12/13-band stack in S2 order (B01..B12 incl. B8A) - the Lab picks the 5 it needs.\n"
+        "Change check: before = *_before.tif (t0), after = blr_construction.tif / hasdeo_mine.tif (t1); same footprint.\n"
         "RGB-only (3 bands) is rejected: the onboard model needs NIR and SWIR.\n\n" + "\n".join(lines) + "\n",
         encoding="utf-8", newline="\n")
     return 0

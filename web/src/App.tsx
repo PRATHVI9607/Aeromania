@@ -14,6 +14,7 @@ import { Economics, Hardware, About } from "./views/Static";
 import { Tabs, Empty } from "./kit";
 const DeepC = lazy(() => import.meta.glob("./deep/TrackC.tsx")["./deep/TrackC.tsx"]?.() as Promise<any> ?? Promise.resolve({ default: () => <Empty title="Deep dive not installed">web/src/deep/TrackC.tsx is not present in this build.</Empty> }));
 const Mission = lazy(() => import("./views/Mission"));
+const Lab = lazy(() => import.meta.glob("./lab/Lab.tsx")["./lab/Lab.tsx"]?.() as Promise<any> ?? Promise.resolve({ default: () => <Empty title="AI Lab">web/src/lab/Lab.tsx is not present in this build.</Empty> }));
 const Simulation = lazy(() => import("./views/Simulation"));
 
 interface V { id: string; label: string; group: string; track?: string; title: string }
@@ -26,11 +27,12 @@ const VIEWS: V[] = [
   { id: "queries", label: "Downlink planner", group: "Track B: Build the orbit", track: "B", title: "Downlink planner" },
   { id: "evidence", label: "Evidence", group: "Track C: Guard the nation", track: "C", title: "Evidence chain" },
   { id: "simulation", label: "Simulation", group: "Simulation", title: "Simulation" },
+  { id: "lab", label: "AI Lab", group: "AI Lab", title: "AI Lab" },
   { id: "model", label: "Model and hardware", group: "System", title: "Model and hardware" },
   { id: "econ", label: "Economics", group: "System", title: "Economics" },
   { id: "gates", label: "Gates and limits", group: "System", title: "Gates and limits" },
 ];
-const GROUPS = ["", "Track A: Read the planet", "Track B: Build the orbit", "Track C: Guard the nation", "Simulation", "System"];
+const GROUPS = ["", "Track A: Read the planet", "Track B: Build the orbit", "Track C: Guard the nation", "Simulation", "AI Lab", "System"];
 const GROUP_NOTE: Record<string, string> = {};
 const hashId = () => { const h = location.hash.replace(/^#\/?/, ""); return h === "mission" ? "command" : h; };
 const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === hashId()));
@@ -78,7 +80,7 @@ function Shell({ data }: { data: Data }) {
         <div className="navs" ref={navRef} onKeyDown={onKey}>
           {GROUPS.map((g) => (
             <div className="grp" key={g || "top"} role="group" aria-label={g || "Overview"}>
-              {g && g !== "Simulation" && <span className={`gtl t${g[6]}`}><b>{g.split(": ")[0]}</b>{g.includes(": ") ? <small>{g.split(": ")[1]}</small> : null}</span>}
+              {g && g !== "Simulation" && g !== "AI Lab" && <span className={`gtl t${g[6]}`}><b>{g.split(": ")[0]}</b>{g.includes(": ") ? <small>{g.split(": ")[1]}</small> : null}</span>}
               {VIEWS.map((v, k) => v.group === g && (
                 <a key={v.id} href={`#/${v.id}`} className={k === i ? "on" : ""} aria-current={k === i ? "page" : undefined} title={v.label}
                   onClick={(e) => { e.preventDefault(); go(v.id); }}>
@@ -111,6 +113,7 @@ function Shell({ data }: { data: Data }) {
               {cur.id === "fifo" && <Guard label="FIFO vs HERALD"><Fifo {...common} setRho={setRho} /></Guard>}
               {cur.id === "queries" && <Guard label="Planner"><Planner {...common} setQueries={setQueries} ms={ms} /></Guard>}
               {cur.id === "evidence" && <Guard label="Evidence"><Tabs tabs={[{ id: "cases", label: "Cases", node: () => <Evidence {...common} /> }, { id: "deep", label: "Deep dive", node: () => <Guard label="Track C deep dive"><Suspense fallback={<Skeleton rows={4} />}><DeepC {...common} /></Suspense></Guard> }]} /></Guard>}
+              {cur.id === "lab" && <Guard label="AI Lab"><Suspense fallback={<Skeleton rows={4} />}><Lab {...common} /></Suspense></Guard>}
               {cur.id === "model" && <Guard label="Model and hardware"><Hardware data={data} /></Guard>}
               {cur.id === "econ" && <Guard label="Economics"><Economics data={data} /></Guard>}
               {cur.id === "gates" && <Guard label="Gates"><About data={data} ms={ms} runs={runs} /></Guard>}

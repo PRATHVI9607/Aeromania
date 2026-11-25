@@ -33,7 +33,7 @@ export function ChangeView({ r, rate, a2 }: { r: PairRes; rate: number; a2?: Rea
         <div className="lab-mix">{r.classes.map((c, k) => r.mix[k] > 0 && <Chip key={c}>{c} {r.mix[k]}</Chip>)}</div>
       </div>
       <div className="lab-main">
-        <div>
+        <div className="lab-swwrap">
           <div className="lab-map lab-sw" data-testid="swipe">
             <div ref={host} style={{ position: "absolute", inset: 0 }} />
             <canvas ref={ov} width={r.W} height={r.H} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", imageRendering: "pixelated", opacity: mask ? 1 : 0, pointerEvents: "none" }} />
@@ -42,6 +42,7 @@ export function ChangeView({ r, rate, a2 }: { r: PairRes; rate: number; a2?: Rea
           <input className="lab-range" type="range" min={0} max={100} value={pos} onChange={(e) => setPos(+e.target.value)} aria-label="swipe before / after" />
         </div>
         <div className="lab-side">
+          <Chip>rule-based leads, not verdicts</Chip>
           <label className="lab-tog"><input type="checkbox" checked={mask} onChange={(e) => setMask(e.target.checked)} /> change mask</label>
           <div className="lab-mix">{MASKS.map(([, c, l]) => <span key={l} className="lab-chip dim"><i style={{ background: c }} />{l}</span>)}</div>
         </div>

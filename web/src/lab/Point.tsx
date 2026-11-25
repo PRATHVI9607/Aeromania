@@ -12,6 +12,7 @@ const f = (v: any, d = 1) => (typeof v === "number" ? v.toFixed(d) : v);
 
 function Picker({ boxes, pick, p }: { boxes: ReturnType<typeof aoiBoxes>; pick: (p: LL) => void; p: LL | null }) {
   const [aoi, setAoi] = useState("blr");
+  useEffect(() => { const h = p && boxes.find((x) => inBox(x, p)); if (h) setAoi(h.aoi); }, [p, boxes]);
   const b = boxes.find((x) => x.aoi === aoi);
   if (!b) return null;
   const mark = p && inBox(b, p) ? { l: ((p.lon - b.lon0) / (b.lon1 - b.lon0)) * 100, t: ((b.lat1 - p.lat) / (b.lat1 - b.lat0)) * 100 } : null;

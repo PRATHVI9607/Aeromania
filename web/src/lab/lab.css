@@ -48,3 +48,5 @@
 .lab-mix{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .lab-sw{touch-action:none}.lab-split{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px #000;pointer-events:none}
 .lab-range{width:100%;margin-top:8px;accent-color:var(--acc)}
+.lab-swwrap{width:min(640px,100%);flex:none}
+.lab-stats div.lab-mix{flex-direction:row;flex-wrap:wrap;background:none;border:0;padding:0;align-self:center;min-width:0;max-width:560px}
