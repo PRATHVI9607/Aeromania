@@ -1,5 +1,4 @@
 // Onboard model in the browser: onnxruntime-web, wasm EP, local files only.
-import type * as Ort from "onnxruntime-web";
 
 export interface Chip { site: string; aoi: string; date: string; tile: number; lat: number; lon: number; ground: { probs: number[]; cloud: number } }
 export interface Sample {
@@ -46,33 +45,35 @@ export function compare(probs: number[], cloud: number, c: Chip) {
   return { maxDiff, cloudDiff, match: maxDiff <= TOL && cloudDiff <= TOL };
 }
 
-let sess: Promise<{ s: Ort.InferenceSession; ort: typeof Ort; threads: number; loadMs: number }> | null = null;
-export function getSession() {
-  return (sess ??= (async () => {
-    const t0 = performance.now();
-    const ort = await import("onnxruntime-web/wasm");
-    const threads = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1));
-    ort.env.wasm.numThreads = threads;
-    ort.env.wasm.wasmPaths = "/model/ort/";
-    ort.env.wasm.proxy = true; // run in ORT's own worker so the UI thread stays free
-    const s = await ort.InferenceSession.create("/model/herald_int8.onnx", { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
-    return { s, ort, threads: ort.env.wasm.numThreads ?? threads, loadMs: performance.now() - t0 };
-  })().catch((e) => { sess = null; throw e; }));
+interface Ready { threads: number; loadMs: number }
+let wk: Worker | null = null, ready: Promise<Ready> | null = null, seq = 0;
+const pending = new Map<number, { res: (m: any) => void; rej: (e: Error) => void }>();
+
+export function getSession(): Promise<Ready> {
+  return (ready ??= new Promise<Ready>((res, rej) => {
+    wk = new Worker(new URL("./ortWorker.ts", import.meta.url), { type: "module" });
+    wk.onerror = (e) => rej(new Error(e.message || "worker failed to start"));
+    wk.onmessage = (e) => {
+      const m = e.data;
+      if (m.type === "ready") res({ threads: m.threads, loadMs: m.loadMs });
+      else if (m.type === "error" && m.id === undefined) rej(new Error(m.message));
+      else if (m.id !== undefined) { const p = pending.get(m.id); pending.delete(m.id); m.type === "error" ? p?.rej(new Error(m.message)) : p?.res(m); }
+    };
+    wk.postMessage({ type: "init" });
+  }).catch((e) => { ready = null; wk?.terminate(); throw e; }));
 }
 
 /** Run chips idx in one batch; returns per-chip outputs + total ms (per-chip ms = total/n). */
 export async function infer(s: Sample, idx: number[]): Promise<{ outs: ChipOut[]; totalMs: number }> {
-  const { s: session, ort } = await getSession();
-  const x = inputFor(s, idx);
-  const t0 = performance.now();
-  const r = await session.run({ x: new ort.Tensor("float32", x, [idx.length, s.shape[1], s.shape[2], s.shape[3]]) });
-  const totalMs = performance.now() - t0;
-  const K = s.classes.length, lg = r.logits.data as Float32Array, cl = r.cloud.data as Float32Array;
+  await getSession();
+  const x = inputFor(s, idx), id = ++seq;
+  const m = await new Promise<any>((res, rej) => { pending.set(id, { res, rej }); wk!.postMessage({ type: "run", id, x, n: idx.length, c: s.shape[1], h: s.shape[2], w: s.shape[3] }, [x.buffer]); });
+  const K = s.classes.length;
   const outs = idx.map((ci, k) => {
-    const probs = softmaxT(lg, k * K, K, s.temperature), cloud = cl[k];
-    return { probs, cloud, ms: totalMs / idx.length, ...compare(probs, cloud, s.chips[ci]) };
+    const probs = softmaxT(m.logits, k * K, K, s.temperature), cloud = m.cloud[k] as number;
+    return { probs, cloud, ms: m.ms / idx.length, ...compare(probs, cloud, s.chips[ci]) };
   });
-  return { outs, totalMs };
+  return { outs, totalMs: m.ms as number };
 }
 
 /** 2-98 percentile stretched RGB (B04,B03,B02) of chip ci into an ImageData. */

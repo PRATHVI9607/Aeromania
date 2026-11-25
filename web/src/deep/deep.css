@@ -82,7 +82,7 @@ details.deep-how summary{cursor:pointer;color:var(--d-tx)}details.deep-how pre{f
 .deep-swipe .h{position:absolute;top:0;bottom:0;width:2px;background:var(--d-acc);pointer-events:none}
 .deep-radar{display:grid;grid-template-columns:repeat(3,auto) minmax(220px,1fr);gap:16px;align-items:start}
 @media(max-width:1000px){.deep-radar{grid-template-columns:repeat(3,auto)}.deep-radar>.deep-chart{grid-column:1/-1}}
-.deep-chart svg{width:100%;height:auto;display:block;font-family:var(--d-mono)}
+.deep-chart svg{width:100%;max-width:300px;height:auto;display:block;font-family:var(--d-mono)}
 .deep-chain{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0}
 .deep-link{width:44px;height:36px;border-radius:3px;border:1px solid var(--d-l2);background:var(--d-p2);font:10px/1 var(--d-mono);color:var(--d-mut);display:flex;align-items:center;justify-content:center;transition:background .35s,border-color .35s,color .35s}
 .deep-link.ok{border-color:#2c5a50;color:var(--d-ok)}

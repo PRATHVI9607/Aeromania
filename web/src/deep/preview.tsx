@@ -14,6 +14,6 @@ function P() {
   const which = new URLSearchParams(location.search).get("deep");
   if (e) return <pre>{e}</pre>;
   if (!d) return <p>loading</p>;
-  return <main style={{ padding: 24, overflow: "auto", height: "100vh" }}>{which === "c" ? <TrackC data={d} /> : <TrackB data={d} />}</main>;
+  return <main style={{ padding: 24, height: "auto", overflow: "visible" }}>{which === "c" ? <TrackC data={d} /> : <TrackB data={d} />}</main>;
 }
 createRoot(document.getElementById("root")!).render(<P />);

@@ -22,5 +22,12 @@ for (const f of files) {
 }
 const cfg = join(root, "config", "stations.json");
 if (existsSync(cfg)) cpSync(cfg, join(dst, "stations.json"));
+// Onboard model + onnxruntime-web wasm runtime, served locally (no CDN).
+const mdl = join(root, "web", "public", "model");
+mkdirSync(join(mdl, "ort"), { recursive: true });
+const onnx = join(root, "models", "herald_int8.onnx");
+if (existsSync(onnx)) cpSync(onnx, join(mdl, "herald_int8.onnx"));
+const ortDist = join(root, "web", "node_modules", "onnxruntime-web", "dist");
+for (const f of ["ort-wasm-simd-threaded.wasm", "ort-wasm-simd-threaded.mjs"]) if (existsSync(join(ortDist, f))) cpSync(join(ortDist, f), join(mdl, "ort", f));
 writeFileSync(join(dst, "index.json"), JSON.stringify(copied));
 console.log(`prepare: ${copied.length} report(s) -> web/public/data/reports`);

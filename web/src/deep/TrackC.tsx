@@ -91,7 +91,7 @@ function Radar({ card, site }: { card: any; site: any }) {
           <div className="deep-chart">
             <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Mean VH backscatter in dB: ${pts.map((p) => `${p[0]} ${p[1]}`).join(", ")}`}>
               {pts.map((p, i) => <g key={p[0]}><rect x={X(i) - 22} y={Y(p[1])} width="44" height={H - 34 - Y(p[1])} fill={p[0] === "t1" ? "#f2a93b" : "#2d3742"} rx="2" /><text x={X(i)} y={Y(p[1]) - 4} fontSize="11" fill="#dde3ea" textAnchor="middle">{p[1]}</text><text x={X(i)} y={H - 18} fontSize="11" fill="#8e9ba8" textAnchor="middle">{p[0]}</text></g>)}
-              <text x="4" y={H - 3} fontSize="10" fill="#8e9ba8">mean VH dB over the crop (higher bar = less negative)</text>
+              <text x="4" y={H - 3} fontSize="10" fill="#8e9ba8">mean VH dB, whole crop</text>
             </svg>
           </div>
         )}
@@ -194,7 +194,7 @@ function Certificate({ ev, sel, site }: { ev: Ev; sel: number; site: any }) {
           <dt>Verified at</dt><dd>{v ? v.at : "running..."}</dd>
           <dt>Result</dt><dd className="res">{v ? (pass ? "VERIFIED: card hash recomputed, link to previous card holds, image hashes match" : `FAILED: ${[!v.hashOk && "card hash", !v.linkOk && "link", v.imgs.some((i) => !i.ok) && "image hash"].filter(Boolean).join(", ")}`) : "..."}</dd>
         </dl>
-        <div className="cav">{card.caveat ?? "Evidence lead, needs ground verification; not legal proof."} Land cover only, never people.</div>
+        <div className="cav">Evidence lead, needs ground verification; not legal proof. {card.caveat} Land cover only, never people.</div>
       </article>
     </div>
   );
