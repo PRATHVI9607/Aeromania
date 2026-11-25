@@ -105,6 +105,49 @@ def main(argv: list[str]) -> int:
                               "bbox": [sw["bbox"][0], sw["bbox"][1], ne["bbox"][2], ne["bbox"][3]],
                               "dates": {d: dates[d]["datetime"][:10] for d in chips if d in dates},
                               "cloud": cloud, "files": files}
+    s1_crops(index)
+    onboard_sample(index)
     (paths.WEB_DATA / "sites_index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
     print(f"{len(index)} sites -> {OUT}")
     return 0
+
+
+def s1_crops(index: dict) -> None:
+    """Sentinel-1 VH (dB) 3x3-chip crops for evidence sites whose AOI has radar: t0, t1, monsoon (grey, -25..-5 dB)."""
+    for sid, x in index.items():
+        if not sid.startswith("ev_"):
+            continue
+        r0, c0, _ = x["window_chips"]
+        idx = [(r0 + i) * G + (c0 + j) for i in range(3) for j in range(3)]
+        for lab in ("t0", "t1", "monsoon"):
+            f = paths.S1 / f"{x['aoi']}_{lab}.npy"
+            if not f.exists():
+                continue
+            vh = np.asarray(np.load(f, mmap_mode="r")[idx][:, 1]).astype(np.float32)          # [9,64,64] dB
+            vh = vh.reshape(3, 3, C, C).transpose(0, 2, 1, 3).reshape(3 * C, 3 * C)
+            g = (np.clip((np.nan_to_num(vh, nan=-25) + 25) / 20, 0, 1) * 255).astype(np.uint8)
+            Image.fromarray(g).save(OUT / f"{sid}_s1vh_{lab}.png", optimize=True)
+            x["files"][f"s1vh_{lab}"] = f"img/sites/{sid}_s1vh_{lab}.png"
+            x.setdefault("s1_mean_vh_db", {})[lab] = round(float(np.nanmean(vh)), 2)
+
+
+def onboard_sample(index: dict, n_sites: int = 24) -> None:
+    """Raw uint16 chips + the ground model's outputs, so the browser can run the int8 ONNX model and prove parity."""
+    picks, rows = [], []
+    for sid, x in list(index.items())[:n_sites]:
+        r0, c0, _ = x["window_chips"]
+        i = (r0 + 1) * G + (c0 + 1)                                                        # centre chip of the window
+        for d in ("t0", "t1"):
+            f, sc = paths.CHIPS / f"{x['aoi']}_{d}.npy", paths.SCORES / f"{x['aoi']}_{d}.npz"
+            if not (f.exists() and sc.exists()):
+                continue
+            z = np.load(sc)
+            picks.append(np.asarray(np.load(f, mmap_mode="r")[i], dtype="<u2"))
+            rows.append({"site": sid, "aoi": x["aoi"], "date": d, "tile": i, "lat": x["lat"], "lon": x["lon"],
+                         "ground": {"probs": [round(float(v), 4) for v in z["probs"][i]], "cloud": round(float(z["cloud"][i]), 4)}})
+    np.stack(picks).astype("<u2").tofile(paths.WEB_DATA / "onboard_sample.bin")
+    norm = json.loads((paths.MODELS / "norm.json").read_text(encoding="utf-8"))
+    rep = json.loads((paths.REPORTS / "model.json").read_text(encoding="utf-8"))
+    meta = {"dtype": "uint16-le", "shape": [len(picks), 5, C, C], "scale": 1e-4, "bands": norm["bands"], "mean": norm["mean"], "std": norm["std"],
+            "temperature": rep["eurosat"]["temperature"], "classes": rep["classes"], "model": "models/herald_int8.onnx", "chips": rows}
+    (paths.WEB_DATA / "onboard_sample.json").write_text(json.dumps(meta, separators=(",", ":")), encoding="utf-8")
