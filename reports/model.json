@@ -1,0 +1,55 @@
+{
+  "backbone": "SSL4EO-S12 ResNet-18 (torchgeo SENTINEL2_ALL_MOCO), conv1 sliced to B02,B03,B04,B08,B11",
+  "eurosat": {
+    "val_top1_best": 0.9827777777777778,
+    "train_s": 97,
+    "top1_fp32": 0.9831481481481481,
+    "ece_before": 0.08917284247499922,
+    "ece_after": 0.0053635247713990026,
+    "temperature": 0.5864418745040894,
+    "n_test": 5400,
+    "top1_onnx_fp32": 0.9831481481481481,
+    "top1_int8": 0.9803703703703703,
+    "int8_drop_pt": 0.2777777777777768
+  },
+  "classes": [
+    "AnnualCrop",
+    "Forest",
+    "HerbaceousVegetation",
+    "Highway",
+    "Industrial",
+    "Pasture",
+    "PermanentCrop",
+    "Residential",
+    "River",
+    "SeaLake"
+  ],
+  "onnx": {
+    "calib_chips": 576,
+    "int8_mb": 11.32
+  },
+  "latency": {
+    "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
+    "method": "median of 30 runs after 5 warmup, ms/chip amortized",
+    "ms_per_chip_int8_cpu_b1": 3.2819400003063492,
+    "ms_per_chip_int8_cpu_b64": 1.2853131093777392,
+    "ms_per_chip_fp32_cpu_b1": 5.900818499867455,
+    "ms_per_chip_fp32_cpu_b64": 2.5526013515531076,
+    "ms_per_chip_torch_gpu_b64": 0.2179377734279342,
+    "gpu": "NVIDIA GeForce RTX 2050",
+    "device": "13th Gen Intel(R) Core(TM) i5-13420H",
+    "ms_per_chip_int8_cpu_b64_t2": 1.0628353828110448,
+    "ms_per_chip_int8_cpu_b64_t4": 1.1941526171881378,
+    "ms_per_chip_int8_cpu_b64_best": 1.0628353828110448,
+    "load_avg_1m": 6.56884765625
+  },
+  "cloud": {
+    "mae": 0.08876556903123856,
+    "heldout_aoi": "hasdeo",
+    "train_aois": [
+      "blr",
+      "sone"
+    ],
+    "mean_baseline_mae": 0.2959120571613312
+  }
+}
