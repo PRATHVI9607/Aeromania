@@ -18,7 +18,6 @@ COMMANDS = {
     "sim": "sim",            # capture timeline -> schedule -> results.json
     "bench": "bench",        # latency / accuracy report
     "evidence": "evidence",  # hash-chained evidence cards
-    "economics": "economics",
     "siting": "siting",
     "all": "pipeline",       # run everything in order
 }
