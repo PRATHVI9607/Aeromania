@@ -116,13 +116,16 @@ The ledger is dated, hashed and the same for everyone. It doesn't decide who is 
 ## 5. Track A, objective 2: renewable siting
 
 **Q: How do you rank land?**
-Per 1 km cell: NASA POWER irradiance and 50 m wind, Copernicus 30 m DEM slope, ESA WorldCover land use, and OSM grid lines and substations. Exclusions: water, wetland, built-up, dense forest, protected areas, steep slope. Score = LCOE in ₹/kWh versus the SECI auction tariff (₹2.6/kWh, 2025). Base capex ₹3.7 cr/MW (GoI ₹3.5–4 cr/MW range, 2025), WACC 9.5%, 25 yr. Best cell ₹2.72/kWh — 4.6% above tariff; viability flips at ₹3.1 cr/MW (2,613 of 2,883 cells viable). Insight: auction margins are wafer-thin, so location and scale decide who profits.
+Per 1 km cell: NASA POWER irradiance and 50 m wind, Copernicus 30 m DEM slope, ESA WorldCover land use, and OSM grid lines and substations. Exclusions: water, wetland, built-up, dense forest, protected areas, steep slope. Score = LCOE in ₹/kWh versus the SECI auction tariff (₹2.6/kWh, 2025). Base capex ₹3.7 cr/MW (GoI ₹3.5–4 cr/MW range, 2025), WACC 9.5%, 25 yr, plus access-road cost, heat derate (NASA POWER temperature) and flood exclusion (JRC water history). The best cell is ₹2.98/kWh, above the ₹2.6 tariff. At ₹3.1 cr/MW capex, 267 cells become viable. There are 10 near-viable solar blocks of 50 MW or more (reported capped at 500 MW, because 1 km chaining inflates clusters). Insight: auction margins are wafer-thin, so location and scale decide who profits.
 
 **Q: How do you know the ranking is right?**
 We check it against reality: the real Pavagada Solar Park's cells rank at the 96th percentile (median), with 5 of 7 in the top 10%.
 
 **Q: Wind?**
 Not viable in this box at NASA POWER's 0.5° resolution. Karnataka's wind belt is the Chitradurga and Gadag ridges. Global Wind Atlas is the upgrade. We say so rather than force a result.
+
+**Q: Did you check whether developers actually built where you rank high?**
+We tried, using a Pavagada 2023→2025 image pair. The 10 m solar-panel detector reached only ~33% precision on top tiles (dark rock and burn scars look like panels), and only 2 cells gained new PV, which is too few to conclude anything. We report it as inconclusive rather than claim it.
 
 **Q: Why does a satellite company care about siting?**
 Siting is a ground product, but HERALD keeps it current: when a top-ranked parcel gets built on, the construction ledger drops it, and new solar farms appear as a ledger category.
