@@ -20,6 +20,7 @@ COMMANDS = {
     "evidence": "evidence",  # hash-chained evidence cards
     "crops": "crops",        # native-10 m site imagery for the detail panel
     "siting": "siting",
+    "samples": "samples",    # web Lab sample GeoTIFFs
     "all": "pipeline",       # run everything in order
 }
 
