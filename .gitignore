@@ -7,7 +7,7 @@ web/dist/
 vault/raw/
 vault/chips/
 vault/*.zip
-data/
+/data/
 *.ckpt
 *.pt
 !reports/**

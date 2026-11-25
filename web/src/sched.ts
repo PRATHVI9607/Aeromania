@@ -2,6 +2,8 @@
 import type { Params, PolicyId, Query, RunOut, SchedOut, Tile, Window } from "./types";
 import { levelBytes, tileValue } from "./value";
 
+// mirrors sched.py LOOKAHEAD: a window gives up after this many does-not-fit items
+export const LOOKAHEAD = 8;
 export const POLICIES: PolicyId[] = ["B1", "B2", "B3", "H1", "H2"];
 type Entry = [number, number, number]; // (key, tile index, level): python tuple ordering
 
@@ -113,7 +115,7 @@ export function run(policy: PolicyId, tiles: Tile[], windows: Window[], p: Param
       const e = heap.pop();
       const i = e[1], L = e[2];
       const inc = B[i][L] - (L && h2 ? B[i][L - 1] : 0);
-      if (inc > left) { skipped.push(e); continue; }
+      if (inc > left) { skipped.push(e); if (skipped.length >= LOOKAHEAD) break; continue; }
       left -= inc;
       const df = fr[L] - (L && h2 ? fr[L - 1] : 0.0);
       const dv = V[i] * df;
