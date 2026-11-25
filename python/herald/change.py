@@ -34,10 +34,14 @@ DEFAULTS = {
                      # layout detector: thin bright new lines (line-opening minus 3x3 opening on t1 visible brightness)
                      "road_r": 0.03, "road_r0": 0.015, "layout_density": 0.03, "layout_min_road_px": 15,
                      "layout_orient_share": 0.15, "building_frac": 0.4, "wet_chip": 0.10, "wet_mndwi": -0.3},
-    # literature-sensible: MNDWI>0 water (Xu 2006); BSI rise 0.10; 300 m buffer = 30 px
-    "sand": {"c_dbsi": 0.10, "buffer_px": 30, "min_px": 8, "wc80_chip": 0.25},
-    # forest NDVI>0.5; clearing = dNDVI < -0.25 (Hansen-style loss, dry-season pair); WC tree chips relax to 0.35
-    "clearing": {"forest_ndvi": 0.5, "d_ndvi": 0.25, "min_px": 8, "wc10_chip": 0.5, "wc_ndvi": 0.35},
+    # sand v2: pits = new/growing rectangular water in the JRC river corridor (MNDWI>0, Xu 2006); corridor = JRC occurrence>0 + 500 m
+    "sand": {"c_dbsi": 0.10, "buffer_px": 50, "min_px": 5, "wc80_chip": 0.25, "pit_min_ha": 0.05, "pit_max_ha": 5.0,
+             "rect_min": 0.7, "ring_ndvi_max": 0.15, "ring_bsi_min": 0.08, "ring_bare_frac": 0.6, "pit_old_frac": 0.3, "grow_ratio": 1.5, "bsi_bar": 0.0, "d_tex": 0.02, "dist_min_px": 50,
+             "moist_px": 3, "bright_db": -3.0, "water_db": -15.0, "bright_max_px": 4},
+    # forest NDVI>0.5; clearing = dNDVI < -0.25 (Hansen-style loss, dry-season pair); WC tree chips relax to 0.35;
+    # components >= 45 px (~0.5 ha); t0 water + 3 px margin excluded (reservoir drawdown); mine hint = touches a >=10 ha bare patch at t0
+    "clearing": {"forest_ndvi": 0.5, "d_ndvi": 0.25, "min_px": 45, "wc10_chip": 0.5, "wc_ndvi": 0.35, "water_margin_px": 3,
+                 "mine_bare_ndvi": 0.2, "mine_min_px": 1000, "mine_touch_px": 2},
 }
 CFG_PATH = paths.CONFIG / "change_thresholds.json"
 
@@ -81,17 +85,15 @@ def detect(kind, x0, x1, valid, thr, ctx=None):
         m = ((d["ndvi"] < -thr["a_dndvi"]) & ((d["ndbi"] > thr["b_dndbi"]) | (d["bsi"] > thr["c_dbsi"]))
              & (i1["mndwi"] < 0) & (i0["mndwi"] < 0) & (i1["ndvi"] < thr.get("ndvi1_max", 1.0)))
     elif kind == "sand":
-        w0, w1 = i0["mndwi"] > 0, i1["mndwi"] > 0
-        near = ((w0 | w1) & valid)
-        buf = (ndi.distance_transform_edt(~near) <= thr["buffer_px"]) if near.any() else np.zeros_like(near)
-        if ctx is not None and ctx.get("river_chip") is not None:
-            buf |= ctx["river_chip"]
-        m = buf & ((w0 != w1) | ((d["bsi"] > thr["c_dbsi"]) & ~w1))
+        m, buf, extra = sand_detect(x0, x1, i0, i1, d, valid, thr, ctx["occ"])
+        if ctx is not None:
+            ctx["_sand"] = extra
     elif kind == "clearing":
         forest = i0["ndvi"] > thr["forest_ndvi"]
         if ctx is not None and ctx.get("forest_chip") is not None:
             forest |= ctx["forest_chip"] & (i0["ndvi"] > thr["wc_ndvi"])
-        m = forest & (d["ndvi"] < -thr["d_ndvi"])
+        wet0 = ndi.binary_dilation(i0["mndwi"] > 0, iterations=thr.get("water_margin_px", 0)) if thr.get("water_margin_px") else i0["mndwi"] > 0
+        m = forest & (d["ndvi"] < -thr["d_ndvi"]) & ~wet0
     else:
         raise ValueError(kind)
     if kind == "construction" and ctx:
@@ -240,6 +242,150 @@ def injected_test(kind, x0, x1, valid, thr, ctx_fn, base_sev, rng, per_size=20):
     return res
 
 
+# ---------------------------------------------------------------- sand v2: pits, disturbance, S1
+def jrc_occ(aoi):
+    """JRC Global Surface Water occurrence (%) on the AOI 10 m mosaic grid. Cached (network only on first call)."""
+    f = paths.LABELS / f"jrc_{aoi}.npz"
+    if f.exists():
+        return np.load(f)["occ"]
+    import rasterio
+    from rasterio.transform import from_origin
+    from rasterio.warp import Resampling, reproject
+    sc, x0, y0, _, inv = _geo(aoi)
+    lon, lat = inv.transform(x0 + M * 5, y0 - M * 5)
+    tile = f"{int(lon // 10 * 10):d}E_{int(np.ceil(lat / 10) * 10):d}N"   # named by top-left corner
+    u = f"https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_{tile}v1_4_2021.tif"
+    out = np.zeros((M, M), np.uint8)
+    with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", AWS_NO_SIGN_REQUEST="YES"), rasterio.open(u) as d:
+        reproject(rasterio.band(d, 1), out, dst_transform=from_origin(x0, y0, 10, 10), dst_crs=f"EPSG:{sc['epsg']}",
+                  resampling=Resampling.nearest)
+    np.savez_compressed(f, occ=out)
+    return out
+
+
+def rectness(coords):
+    """area / min-area bounding rectangle of a pixel set (coords [n,2]); 1 = perfect rectangle. Angle scan, 3 deg step."""
+    c = coords.astype(float)
+    best = 1e18
+    for t in np.deg2rad(np.arange(0, 90, 3)):
+        r = c @ np.array([[np.cos(t), -np.sin(t)], [np.sin(t), np.cos(t)]])
+        best = min(best, (np.ptp(r[:, 0]) + 1) * (np.ptp(r[:, 1]) + 1))
+    return len(c) / best
+
+
+def find_pits(w0, w1, cor, valid, thr, ring_bare=None):
+    """Rectangular water components (0.05-5 ha) of the t1 water mask inside the corridor that are NEW (<30% water at t0)
+    or GROWING (area >= 1.5x the t0 water in its 2 px neighbourhood). Seasonal level change moves the edge of big
+    water bodies (merged, > 5 ha, or low rectangularity), it does not create compact rectangles. ring_bare (bare-sand
+    mask) keeps only pits whose 1-4 px dry ring is >= 60% bare sand: drops paddies, village ponds, urban tanks."""
+    from skimage import measure
+    lab = ndi.label(w1 & cor & valid)[0]
+    pits = []
+    w1p, rbp = np.pad(w1, 4), (np.pad(ring_bare, 4) if ring_bare is not None else None)
+    for r in measure.regionprops(lab):
+        ha = r.area * 0.01
+        if not thr["pit_min_ha"] <= ha <= thr["pit_max_ha"]:
+            continue
+        rect = rectness(r.coords)
+        if rect < thr["rect_min"]:
+            continue
+        sl = tuple(slice(max(a - 2, 0), b + 2) for a, b in zip(r.bbox[:2], r.bbox[2:]))
+        mk = lab[sl] == r.label
+        a0 = int((w0[sl] & ndi.binary_dilation(mk, iterations=2)).sum())
+        old = float(w0[sl][mk].mean())
+        new = old < thr["pit_old_frac"] and a0 < r.area * (thr["pit_old_frac"])
+        grow = a0 > 0 and r.area >= thr["grow_ratio"] * a0 and not new
+        if (new or grow) and ring_bare is not None:
+            pw = tuple(slice(q.start, q.stop + 8) for q in sl)   # padded coords: window grown by 4 px each side
+            big = np.pad(mk, 4)
+            ring = ndi.binary_dilation(big, iterations=4) & ~ndi.binary_dilation(big, iterations=1) & ~w1p[pw]
+            if ring.sum() < 8 or rbp[pw][ring].mean() < thr["ring_bare_frac"]:
+                continue
+        if new or grow:
+            pits.append({"label": r.label, "ha": ha, "rect": rect, "new": bool(new), "cy": r.centroid[0], "cx": r.centroid[1]})
+    return lab, pits
+
+
+def sand_detect(x0, x1, i0, i1, d, valid, thr, occ):
+    """-> (mask, corridor, extra). mask = pit pixels | bar-disturbance pixels (secondary).
+    Seasonal-water guards: pits need compact rectangles that are new/growing; disturbance excludes t0 water and a
+    moist margin (receding water exposes bright wet sand: dBSI up, but it is level change); turbidity changes MNDWI
+    weakly and is not a water-mask change; disturbance additionally needs a texture (local std) rise."""
+    cor = ndi.binary_dilation(occ > 0, iterations=thr["buffer_px"]) if (occ > 0).any() else np.zeros(occ.shape, bool)
+    w0, w1 = i0["mndwi"] > 0, i1["mndwi"] > 0
+    bare = (i1["ndvi"] < thr["ring_ndvi_max"]) & (i1["bsi"] > thr["ring_bsi_min"]) & ~w1
+    lab, pits = find_pits(w0, w1, cor, valid, thr, bare)
+    pitm = np.isin(lab, [p["label"] for p in pits]) if pits else np.zeros(lab.shape, bool)
+    moist = ndi.binary_dilation(w0, iterations=thr["moist_px"])
+    sd = lambda x: np.sqrt(np.maximum(ndi.uniform_filter(x * x, 5) - ndi.uniform_filter(x, 5) ** 2, 0))
+    dtex = sd(x1[2]) - sd(x0[2])
+    dist = (cor & ~w0 & ~w1 & ~moist & (i1["bsi"] > thr["bsi_bar"]) & (d["bsi"] > thr["c_dbsi"]) & (dtex > thr["d_tex"]))
+    dist = remove_small(dist & valid, thr["dist_min_px"]) & ~pitm
+    return pitm | dist, cor, {"pit": pitm, "dist": dist, "pits": pits, "pit_lab": lab}
+
+
+def clear_split(ndvi0, mndwi0, mask, thr):
+    """Split clearing pixels: mine_expansion = component touches a >=10 ha non-water bare patch at t0 (open-cast mine,
+    bare pit/overburden), else forest_clearing. Land-cover hint only."""
+    bare = remove_small((ndvi0 < thr["mine_bare_ndvi"]) & (mndwi0 < 0), thr["mine_min_px"])
+    near = ndi.binary_dilation(bare, iterations=thr["mine_touch_px"])
+    lab, n = ndi.label(mask, structure=np.ones((3, 3)))
+    hit = np.zeros(n + 1, bool)
+    hit[np.unique(lab[near & mask])] = True
+    hit[0] = False
+    mine = hit[lab]
+    return mask & ~mine, mine
+
+
+def bright_points(vv, cor, thr):
+    """Monsoon activity index: bright point returns (VV > -3 dB, 1-4 px blobs) on a water surface (>=60% of the 11x11
+    window < -15 dB) inside the corridor. Returns per-chip counts [N]; blob positions are discarded (aggregate only)."""
+    ctx = ndi.uniform_filter((vv < thr["water_db"]).astype(np.float32), 11) >= 0.6
+    lab, n = ndi.label((vv > thr["bright_db"]) & ctx & cor, structure=np.ones((3, 3)))
+    sz = np.bincount(lab.ravel(), minlength=n + 1)
+    keep = np.flatnonzero((sz >= 1) & (sz <= thr["bright_max_px"]) & (np.arange(n + 1) > 0))
+    if not len(keep):
+        return np.zeros(N, int)
+    cy, cx = np.array(ndi.center_of_mass(np.ones_like(vv), lab, keep)).T.astype(int)
+    return np.bincount((cy // C) * G + cx // C, minlength=N)
+
+
+def injected_pits(x0, x1, valid, thr, occ, rng, per_size=20, sizes=(0.1, 0.25, 0.5, 1, 2)):
+    """Paint square water pits (real t1 water spectra) into dry sand-bar pixels of t1 inside the corridor; recall by size.
+    Hit = a returned pit overlaps >= 50% of the painted square. Each trial runs on an 80x80 crop (bar must be dry at t0)."""
+    i0, i1 = indices(x0), indices(x1)
+    cor = ndi.binary_dilation(occ > 0, iterations=thr["buffer_px"])
+    pool = x1[:, valid & cor & (i1["mndwi"] > 0.1)]
+    bar = valid & cor & (i0["mndwi"] < -0.1) & (i1["mndwi"] < -0.1) & (i1["bsi"] > thr["bsi_bar"])
+    if pool.shape[1] < 500:
+        return {"error": "too few water pixels", "pool_px": int(pool.shape[1])}
+    H = 40
+    res = {"recall_by_size": {}, "n_trials": {}, "seed": 11, "pool_px": int(pool.shape[1]),
+           "note": "square pits, real water spectra, painted into dry sand bars; no real pit texture or edges"}
+    for ha in sizes:
+        side = max(2, int(round(np.sqrt(ha * 100))))
+        hit = done = 0
+        for _ in range(400):
+            if done == per_size:
+                break
+            y, x = (int(v) for v in rng.integers(H, M - H - side, 2))
+            if not bar[y - 6:y + side + 6, x - 6:x + side + 6].all():
+                continue
+            sl = (slice(y - H, y + H + side), slice(x - H, x + H + side))
+            w0, a1 = (i0["mndwi"][sl] > 0), x1[(slice(None),) + sl].copy()
+            a1[:, H:H + side, H:H + side] = pool[:, rng.integers(0, pool.shape[1], side * side)].reshape(5, side, side)
+            j1 = indices(a1)
+            w1 = j1["mndwi"] > 0
+            lab, pits = find_pits(w0, w1, np.ones_like(w1), np.ones_like(w1), thr,
+                                  (j1["ndvi"] < thr["ring_ndvi_max"]) & (j1["bsi"] > thr["ring_bsi_min"]) & ~w1)
+            ok_ = any((lab[H:H + side, H:H + side] == p_["label"]).mean() >= 0.5 for p_ in pits)
+            hit += ok_
+            done += 1
+        res["recall_by_size"][str(ha)] = round(hit / max(done, 1), 3)
+        res["n_trials"][str(ha)] = done
+    return res
+
+
 # ---------------------------------------------------------------- imagery
 def write_images(aoi, dates, mask_px):
     from PIL import Image
@@ -302,21 +448,29 @@ def _geo(aoi):
     return sc, x0, y0, Transformer.from_crs(4326, sc["epsg"], always_xy=True), Transformer.from_crs(sc["epsg"], 4326, always_xy=True)
 
 
-def rasterize_wards(aoi):
-    """-> (ward index raster [M,M] uint16, 0 = outside any ward; ward props list indexed from 1)."""
-    from rasterio import features
-    from rasterio.transform import from_origin
+def _ward_geoms(aoi):
+    """-> (ward polygons in AOI UTM, props, AOI box) for wards touching the AOI."""
     from shapely.geometry import box, shape
     from shapely.ops import transform
     sc, x0, y0, fwd, _ = _geo(aoi)
     gj = json.loads(WARDS.read_text(encoding="utf-8"))
     aoi_box = box(x0, y0 - M * 10, x0 + M * 10, y0)
-    shapes, props = [], []
+    geoms, props = [], []
     for f in gj["features"]:
         g = transform(fwd.transform, shape(f["geometry"]))
         if g.intersects(aoi_box):
             props.append({"id": f["properties"]["KGISWardNo"], "name": f["properties"]["KGISWardName"]})
-            shapes.append((g, len(props)))
+            geoms.append(g)
+    return geoms, props, aoi_box
+
+
+def rasterize_wards(aoi):
+    """-> (ward index raster [M,M] uint16, 0 = outside any ward; ward props list indexed from 1)."""
+    from rasterio import features
+    from rasterio.transform import from_origin
+    sc, x0, y0, _, _ = _geo(aoi)
+    geoms, props, _ = _ward_geoms(aoi)
+    shapes = [(g, i + 1) for i, g in enumerate(geoms)]
     r = features.rasterize(shapes, out_shape=(M, M), transform=from_origin(x0, y0, 10, 10), fill=0, dtype="uint16") if shapes \
         else np.zeros((M, M), np.uint16)
     return r, props
@@ -326,6 +480,100 @@ def ward_raster(aoi):
     wr, props = rasterize_wards(aoi)
     props = props + [{"id": "peri", "name": "Outside BBMP (peri-urban)"}]
     return np.where(wr == 0, len(props), wr).astype(np.int64), props
+
+
+MAJOR = ("motorway", "trunk", "primary", "secondary", "tertiary")
+ROAD_CLASSES = MAJOR + ("residential", "unclassified")
+ROADS_NOTE = ("Planning indicator, not traffic measurement: construction growth per km of mapped major road (OSM, incomplete). "
+              "High values = growth outrunning road capacity.")
+
+
+def growth_per_road_km(new_ha, road_km_major):
+    return new_ha / max(road_km_major, 0.5)
+
+
+def fetch_roads(aoi):
+    """OSM highway lines for the AOI bbox (cached once, offline afterwards). Returns [(highway, LineString UTM)]."""
+    import time
+    import requests
+    from shapely.geometry import LineString
+    from shapely.ops import transform
+    sc, x0, y0, fwd, inv = _geo(aoi)
+    cache = paths.LABELS / f"osm_roads_{aoi}.json"
+    if not cache.exists():
+        w, n = inv.transform(x0, y0)
+        e, s_ = inv.transform(x0 + M * 10, y0 - M * 10)
+        cls = "|".join(c + "(_link)?" for c in ROAD_CLASSES)
+        q = f'[out:json][timeout:300];way["highway"~"^({cls})$"]({s_},{w},{n},{e});out geom qt;'
+        for k in range(6):
+            try:
+                r = requests.post(("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")[k % 2],
+                                  data={"data": q}, timeout=400, headers={"User-Agent": "herald-hackathon/0.1"})
+                r.raise_for_status()
+                cache.write_text(json.dumps(r.json(), separators=(",", ":")), encoding="utf-8")
+                break
+            except Exception as ex:
+                print("overpass failed:", str(ex)[:80])
+                time.sleep(5 * (k + 1))
+        else:
+            return None
+    out = []
+    for el in json.loads(cache.read_text(encoding="utf-8"))["elements"]:
+        if len(el.get("geometry", [])) >= 2:
+            out.append((el["tags"]["highway"].replace("_link", ""),
+                        transform(fwd.transform, LineString([(g["lon"], g["lat"]) for g in el["geometry"]]))))
+    return out
+
+
+def ward_road_km(geoms, roads):
+    """Road km per ward polygon (metric CRS), clipped to the polygon. -> [(km_major, km_all)] aligned with geoms."""
+    from shapely.strtree import STRtree
+    tree = STRtree(geoms)
+    km = [[0.0, 0.0] for _ in geoms]
+    for hw, ln in roads:
+        for i in tree.query(ln):
+            d = geoms[i].intersection(ln).length / 1000
+            km[i][1] += d
+            if hw in MAJOR:
+                km[i][0] += d
+    return [tuple(k) for k in km]
+
+
+def add_roads(aoi, out):
+    """Add road fields to out['wards_all'] and out['wards_ranked'] rows, plus growth_outrunning_roads and drain_road_sites."""
+    from shapely.geometry import Point
+    from shapely.ops import transform, unary_union
+    roads = fetch_roads(aoi)
+    if roads is None:
+        return out
+    _, _, _, fwd, _ = _geo(aoi)
+    geoms, props, aoi_box = _ward_geoms(aoi)
+    peri = aoi_box.difference(unary_union([g.buffer(0) for g in geoms]))
+    km = dict(zip([p["name"] for p in props] + ["Outside BBMP (peri-urban)"], ward_road_km([g.buffer(0) for g in geoms] + [peri], roads)))
+    for r in out["wards_all"]:
+        km_major, km_all = km.get(r["ward"], (0.0, 0.0))
+        r.update(road_km_major=round(km_major, 1), road_km_all=round(km_all, 1),
+                 growth_per_road_km=round(growth_per_road_km(r["new_construction_ha"], km_major), 2))
+    by = {r["ward"]: r for r in out["wards_all"]}
+    keys = ("new_construction_ha", "road_km_major", "road_km_all", "growth_per_road_km")
+    for r in out["wards_ranked"]:
+        r.update({k: by[r["ward"]][k] for k in keys if r["ward"] in by})
+    out["growth_outrunning_roads"] = sorted(out["wards_all"], key=lambda r: -r["growth_per_road_km"])[:10]
+    near = unary_union([ln for hw, ln in roads if hw in MAJOR[:4]]).buffer(100)
+    sp = paths.REPORTS / f"sites_{aoi}.json"
+    sites = json.loads(sp.read_text(encoding="utf-8"))["sites"] if sp.exists() else []
+    out["drain_road_sites"] = sum(1 for t in sites if t.get("near_drain") and near.contains(Point(*fwd.transform(t["lon"], t["lat"]))))
+    out["drain_road_sites_note"] = (f"near_drain sites within 100 m of an OSM motorway-secondary road, among the {len(sites)} "
+                                    "ranked sites listed in sites file (not all changed sites)")
+    out["roads_note"] = ROADS_NOTE
+    return out
+
+
+def roads_only(aoi="blr"):
+    sp = paths.REPORTS / f"survey_{aoi}.json"
+    out = add_roads(aoi, json.loads(sp.read_text(encoding="utf-8")))
+    sp.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    return out
 
 
 def survey(aoi, thr, i0, i1, valid, ok_px, mask, cleared, built, wr, props, cats):
@@ -364,6 +612,8 @@ def survey(aoi, thr, i0, i1, valid, ok_px, mask, cleared, built, wr, props, cats
                      "rupees_expected": round(new_ha * rate_a * conf), "hotspot": [round(lat, 5), round(lon, 5)],
                      "top_tiles": [int(t) for t in np.argsort(-pair[k])[:3] if pair[k][t] > 0]})
     rows.sort(key=lambda r: -r["rupees_expected"])
+    wards_all = [{"ward_id": r["ward_id"], "ward": r["ward"], "new_construction_ha": round(r["new_layout_ha"] + r["building_construction_ha"], 2)}
+                 for r in rows]   # new_layout + building_construction
     nb0, nb1, nv = int(b0.sum()), int(b1.sum()), int(ok.sum())
     f0, f1 = nb0 / nv, nb1 / nv
     aoi_sum = {"years": round(yrs, 3), "new_built_ha": round(float(built.sum()) * px_ha, 1),
@@ -380,7 +630,9 @@ def survey(aoi, thr, i0, i1, valid, ok_px, mask, cleared, built, wr, props, cats
            "confidence_def": "share of ward new-built px in connected components >= 25 px (0.25 ha); spatial-coherence "
                              "heuristic, not a calibrated probability",
            "built_t0_def": "NDBI>0 and NDVI<0.2 at t0 (proxy)", "aoi_summary": aoi_sum, "wards_ranked": rows[:15],
-           "n_wards_with_data": len(rows)}
+           "n_wards_with_data": len(rows),
+           "wards_all": wards_all}
+    add_roads(aoi, out)
     (paths.REPORTS / f"survey_{aoi}.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
     return aoi_sum
 
@@ -707,7 +959,7 @@ def run_aoi(aoi, kind, cfg, retune=False):
     x1, s1 = load_aoi(aoi, "t1")
     valid = valid_mask(s0, s1)
     wc = lab["wc"]
-    ctx = {"river_chip": chip_to_px(wc[:, WC_IDX[80]] >= cfg["sand"]["wc80_chip"]) if kind == "sand" else None,
+    ctx = {"occ": jrc_occ(aoi) if kind == "sand" else None,
            "forest_chip": chip_to_px(wc[:, WC_IDX[10]] >= cfg["clearing"]["wc10_chip"]) if kind == "clearing" else None}
     thr = cfg[kind]
     val = {"caveat": CAVEAT}
@@ -744,27 +996,53 @@ def run_aoi(aoi, kind, cfg, retune=False):
         ha_bu = chipify(built).reshape(N, -1).sum(1) * 0.01
     recs = []
     s1x = {}
-    if kind == "sand":
+    if kind in ("sand", "clearing"):
         for lbl in ("t0", "t1", "monsoon"):
             f = paths.S1 / f"{aoi}_{lbl}.npy"
             if f.exists():
                 s1x[lbl] = np.load(f).astype(np.float32)
     s1ok = "t0" in s1x and "t1" in s1x
+    act = {}
     bufc = chipify(buf) if buf is not None else None
+    if kind == "sand":
+        sx = ctx["_sand"]
+        pitc, distc = chipify(sx["pit"]), chipify(sx["dist"])
+        pit_lab = chipify(sx["pit_lab"])
+        n_pit = np.zeros(N, int)
+        n_new = np.zeros(N, int)
+        pit_ha = np.zeros(N)
+        for p_ in sx["pits"]:
+            t = int(p_["cy"] // C) * G + int(p_["cx"] // C)
+            n_pit[t] += 1
+            n_new[t] += p_["new"]
+            pit_ha[t] += p_["ha"]
+        act = {k: bright_points(mosaic(s1x[k][:, 0]), buf, thr) for k in ("monsoon", "t1") if k in s1x}
+    if kind == "clearing":
+        cl, mine = clear_split(i0["ndvi"], i0["mndwi"], mask, thr)
+        clc, minec = chipify(cl), chipify(mine)
+    if kind in ("sand", "clearing"):   # per-chip lead masks for evidence crops (compressed, gitignored with vault)
+        a_, b_ = (pitc, distc) if kind == "sand" else (clc, minec)
+        np.savez_compressed(paths.LABELS / f"leadmask_{aoi}.npz", a=a_, b=b_, names=np.array(["pit", "dist"] if kind == "sand" else ["forest", "mine"]))
     for i in range(N):
         r = {"i": i, "kind": kind, "sev": round(float(sev[i]), 5), "ha": round(float(ha[i]), 3), "valid": bool(ok[i]),
              "valid_frac": round(float(vf[i]), 3)}
         for k, v in means.items():
             r[k] = None if np.isnan(v[i]) else round(float(v[i]), 4)
+        if kind == "sand" and ok[i]:
+            r.update(n_pits=int(n_pit[i]), n_new_pits=int(n_new[i]), pit_ha=round(float(pit_ha[i]), 3),
+                     dist_ha=round(float(distc[i].sum()) * 0.01, 3))
+            if "monsoon" in act:
+                r["monsoon_activity"] = int(act["monsoon"][i])
+                r["dry_activity"] = int(act["t1"][i]) if "t1" in act else None
+        if kind == "clearing":
+            r["ha_forest_clearing"], r["ha_mine_expansion"] = round(float(clc[i].sum()) * 0.01, 3), round(float(minec[i].sum()) * 0.01, 3)
         if s1ok and ok[i]:
             dv = s1x["t1"][i] - s1x["t0"][i]
             cm = cmask[i]
             for ch, nm in ((0, "vv"), (1, "vh")):
                 r[f"s1_d{nm}"] = round(float(np.nanmean(dv[ch][cm])), 3) if cm.any() else None
-                r[f"s1_d{nm}_buffer"] = round(float(np.nanmean(dv[ch][bufc[i]])), 3) if bufc[i].any() else None
-            if "monsoon" in s1x:
-                mv = np.abs(s1x["monsoon"][i, 0] - s1x["t0"][i, 0])
-                r["monsoon_activity"] = round(float(np.nanmean(mv[bufc[i]])), 3) if bufc[i].any() else None
+                if bufc is not None:
+                    r[f"s1_d{nm}_buffer"] = round(float(np.nanmean(dv[ch][bufc[i]])), 3) if bufc[i].any() else None
         if kind == "construction":
             r["ha_cleared"], r["ha_built"] = round(float(ha_cl[i]), 3), round(float(ha_bu[i]), 3)
             r["cropland"] = round(float(wc[i, 3]), 3)
@@ -775,11 +1053,11 @@ def run_aoi(aoi, kind, cfg, retune=False):
     if kind != "sand":
         def cfn(i):
             w = wc[i]
-            return {"river_chip": None, "forest_chip": np.full((C, C), bool(w[0] >= cfg["clearing"]["wc10_chip"]))
+            return {"forest_chip": np.full((C, C), bool(w[0] >= cfg["clearing"]["wc10_chip"]))
                     } if kind == "clearing" else None
         val["injected"] = injected_test(kind, x0, x1, valid, thr, cfn, base_sev, rng)
     else:
-        val["injected"] = {"note": "not run for sand: no pixel-level ground truth; see visual QA and S1 corroboration"}
+        val["injected"] = injected_pits(x0, x1, valid, thr, ctx["occ"], rng)
     if kind == "construction":
         col = np.tile(np.arange(G), G)
         lab_pos = osm >= thr["osm_frac"]
@@ -791,10 +1069,21 @@ def run_aoi(aoi, kind, cfg, retune=False):
         e = val["osm"]["east_test"]
         val["osm"]["precision"], val["osm"]["recall"] = e["precision"], e["recall"]
         print(f"[{aoi}] OSM east test P={e['precision']} R={e['recall']} (n_pos={e['n_pos']})")
-    if kind == "sand" and s1ok:
-        ch = np.array([r.get("s1_dvv") is not None for r in recs])
-        val["s1_corroboration"] = {"n_tiles_with_changed_px_and_s1": int(ch.sum()),
-                                   "note": "reported per tile, not used as a gate"}
+    if kind == "sand":
+        t = [r for r in recs if r["valid"]]
+        pt = [r for r in t if r["n_pits"]]
+        mo, dr = [r["monsoon_activity"] for r in t if "monsoon_activity" in r], [r["dry_activity"] for r in t if r.get("dry_activity") is not None]
+        val["pits"] = {"n_pits": sum(r["n_pits"] for r in t), "n_new_pits": sum(r["n_new_pits"] for r in t),
+                       "pit_ha": round(sum(r["pit_ha"] for r in t), 2), "n_tiles_with_pits": len(pt),
+                       "disturbance_ha": round(sum(r["dist_ha"] for r in t), 1),
+                       "corridor_frac": round(float(buf.mean()), 3), "rule": "see sand_detect docstring"}
+        val["s1_corroboration"] = {
+            "pit_tiles_mean_dvv_db": round(float(np.nanmean([r["s1_dvv"] for r in pt if r.get("s1_dvv") is not None] or [np.nan])), 3),
+            "pit_tiles_mean_dvh_db": round(float(np.nanmean([r["s1_dvh"] for r in pt if r.get("s1_dvh") is not None] or [np.nan])), 3),
+            "monsoon_bright_points_total": int(sum(mo)), "dry_t1_bright_points_total": int(sum(dr)),
+            "monsoon_tiles_with_points": int(sum(v > 0 for v in mo)),
+            "note": "per tile aggregate counts of 1-4 px VV>-3 dB blobs on water inside the corridor; positions are not stored; "
+                    "wind-roughened water and fixed structures also produce them; corroboration only, not a gate"}
     if kind == "construction":
         wr, props = ward_raster(aoi)
         ring, hits, lk_meta = buffer_flags(aoi, lakes, cleared | built)
@@ -872,7 +1161,11 @@ def main(argv):
     ap.add_argument("cmd", nargs="?")
     ap.add_argument("--aoi")
     ap.add_argument("--retune", action="store_true")
+    ap.add_argument("--roads-only", action="store_true")
     a = ap.parse_args(argv)
+    if a.roads_only:
+        roads_only(a.aoi or "blr")
+        return 0
     cfg = json.loads(CFG_PATH.read_text(encoding="utf-8")) if CFG_PATH.exists() else json.loads(json.dumps(DEFAULTS))
     for k, v in DEFAULTS.items():
         cfg[k] = {**v, **cfg.get(k, {})}

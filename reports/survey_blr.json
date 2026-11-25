@@ -50,7 +50,11 @@
     22,
     2061,
     68
-   ]
+   ],
+   "new_construction_ha": 542.78,
+   "road_km_major": 1304.2,
+   "road_km_all": 4902.1,
+   "growth_per_road_km": 0.42
   },
   {
    "ward_id": "81",
@@ -73,7 +77,11 @@
     2100,
     1916,
     1962
-   ]
+   ],
+   "new_construction_ha": 11.57,
+   "road_km_major": 18.4,
+   "road_km_all": 156.0,
+   "growth_per_road_km": 0.63
   },
   {
    "ward_id": "83",
@@ -96,7 +104,11 @@
     2056,
     2057,
     2011
-   ]
+   ],
+   "new_construction_ha": 9.08,
+   "road_km_major": 5.2,
+   "road_km_all": 47.3,
+   "growth_per_road_km": 1.75
   },
   {
    "ward_id": "15",
@@ -119,7 +131,11 @@
     1802,
     1850,
     1757
-   ]
+   ],
+   "new_construction_ha": 1.93,
+   "road_km_major": 18.1,
+   "road_km_all": 96.3,
+   "growth_per_road_km": 0.11
   },
   {
    "ward_id": "1",
@@ -142,7 +158,11 @@
     1630,
     1583,
     1539
-   ]
+   ],
+   "new_construction_ha": 14.32,
+   "road_km_major": 33.9,
+   "road_km_all": 99.2,
+   "growth_per_road_km": 0.42
   },
   {
    "ward_id": "12",
@@ -164,7 +184,11 @@
    "top_tiles": [
     1946,
     1947
-   ]
+   ],
+   "new_construction_ha": 1.74,
+   "road_km_major": 10.2,
+   "road_km_all": 65.9,
+   "growth_per_road_km": 0.17
   },
   {
    "ward_id": "10",
@@ -187,7 +211,11 @@
     2090,
     2042,
     1995
-   ]
+   ],
+   "new_construction_ha": 5.24,
+   "road_km_major": 31.8,
+   "road_km_all": 86.2,
+   "growth_per_road_km": 0.16
   },
   {
    "ward_id": "3",
@@ -210,7 +238,11 @@
     1533,
     1671,
     1578
-   ]
+   ],
+   "new_construction_ha": 1.98,
+   "road_km_major": 13.9,
+   "road_km_all": 77.3,
+   "growth_per_road_km": 0.14
   },
   {
    "ward_id": "4",
@@ -233,7 +265,11 @@
     1623,
     1668,
     1667
-   ]
+   ],
+   "new_construction_ha": 4.12,
+   "road_km_major": 23.0,
+   "road_km_all": 126.3,
+   "growth_per_road_km": 0.18
   },
   {
    "ward_id": "16",
@@ -256,7 +292,11 @@
     1756,
     1755,
     1709
-   ]
+   ],
+   "new_construction_ha": 25.59,
+   "road_km_major": 13.5,
+   "road_km_all": 104.9,
+   "growth_per_road_km": 1.89
   },
   {
    "ward_id": "9",
@@ -277,7 +317,11 @@
    ],
    "top_tiles": [
     2046
-   ]
+   ],
+   "new_construction_ha": 0.72,
+   "road_km_major": 14.0,
+   "road_km_all": 92.7,
+   "growth_per_road_km": 0.05
   },
   {
    "ward_id": "94",
@@ -299,7 +343,11 @@
    "top_tiles": [
     2093,
     2096
-   ]
+   ],
+   "new_construction_ha": 0.47,
+   "road_km_major": 7.9,
+   "road_km_all": 34.8,
+   "growth_per_road_km": 0.06
   },
   {
    "ward_id": "5",
@@ -320,7 +368,11 @@
    ],
    "top_tiles": [
     1720
-   ]
+   ],
+   "new_construction_ha": 1.09,
+   "road_km_major": 19.7,
+   "road_km_all": 69.7,
+   "growth_per_road_km": 0.06
   },
   {
    "ward_id": "6",
@@ -343,7 +395,11 @@
     1724,
     1585,
     1588
-   ]
+   ],
+   "new_construction_ha": 11.0,
+   "road_km_major": 32.6,
+   "road_km_all": 233.7,
+   "growth_per_road_km": 0.34
   },
   {
    "ward_id": "17",
@@ -366,8 +422,379 @@
     1940,
     1892,
     1939
-   ]
+   ],
+   "new_construction_ha": 3.87,
+   "road_km_major": 12.2,
+   "road_km_all": 117.5,
+   "growth_per_road_km": 0.32
   }
  ],
- "n_wards_with_data": 35
+ "n_wards_with_data": 35,
+ "wards_all": [
+  {
+   "ward_id": "peri",
+   "ward": "Outside BBMP (peri-urban)",
+   "new_construction_ha": 542.78,
+   "road_km_major": 1304.2,
+   "road_km_all": 4902.1,
+   "growth_per_road_km": 0.42
+  },
+  {
+   "ward_id": "81",
+   "ward": "Horamavu",
+   "new_construction_ha": 11.57,
+   "road_km_major": 18.4,
+   "road_km_all": 156.0,
+   "growth_per_road_km": 0.63
+  },
+  {
+   "ward_id": "83",
+   "ward": "Kalkere",
+   "new_construction_ha": 9.08,
+   "road_km_major": 5.2,
+   "road_km_all": 47.3,
+   "growth_per_road_km": 1.75
+  },
+  {
+   "ward_id": "15",
+   "ward": "Kuvempunagar",
+   "new_construction_ha": 1.93,
+   "road_km_major": 18.1,
+   "road_km_all": 96.3,
+   "growth_per_road_km": 0.11
+  },
+  {
+   "ward_id": "1",
+   "ward": "Kempegowda Ward",
+   "new_construction_ha": 14.32,
+   "road_km_major": 33.9,
+   "road_km_all": 99.2,
+   "growth_per_road_km": 0.42
+  },
+  {
+   "ward_id": "12",
+   "ward": "Kodigehalli",
+   "new_construction_ha": 1.74,
+   "road_km_major": 10.2,
+   "road_km_all": 65.9,
+   "growth_per_road_km": 0.17
+  },
+  {
+   "ward_id": "10",
+   "ward": "Kempapura",
+   "new_construction_ha": 5.24,
+   "road_km_major": 31.8,
+   "road_km_all": 86.2,
+   "growth_per_road_km": 0.16
+  },
+  {
+   "ward_id": "3",
+   "ward": "Someshwara Ward",
+   "new_construction_ha": 1.98,
+   "road_km_major": 13.9,
+   "road_km_all": 77.3,
+   "growth_per_road_km": 0.14
+  },
+  {
+   "ward_id": "4",
+   "ward": "Atturu Layout",
+   "new_construction_ha": 4.12,
+   "road_km_major": 23.0,
+   "road_km_all": 126.3,
+   "growth_per_road_km": 0.18
+  },
+  {
+   "ward_id": "16",
+   "ward": "Kammagondanahalli",
+   "new_construction_ha": 25.59,
+   "road_km_major": 13.5,
+   "road_km_all": 104.9,
+   "growth_per_road_km": 1.89
+  },
+  {
+   "ward_id": "9",
+   "ward": "Amrutahalli",
+   "new_construction_ha": 0.72,
+   "road_km_major": 14.0,
+   "road_km_all": 92.7,
+   "growth_per_road_km": 0.05
+  },
+  {
+   "ward_id": "94",
+   "ward": "Hennur",
+   "new_construction_ha": 0.47,
+   "road_km_major": 7.9,
+   "road_km_all": 34.8,
+   "growth_per_road_km": 0.06
+  },
+  {
+   "ward_id": "5",
+   "ward": "Yelahanka Satellite Town",
+   "new_construction_ha": 1.09,
+   "road_km_major": 19.7,
+   "road_km_all": 69.7,
+   "growth_per_road_km": 0.06
+  },
+  {
+   "ward_id": "6",
+   "ward": "Kogilu",
+   "new_construction_ha": 11.0,
+   "road_km_major": 32.6,
+   "road_km_all": 233.7,
+   "growth_per_road_km": 0.34
+  },
+  {
+   "ward_id": "17",
+   "ward": "Shettihalli",
+   "new_construction_ha": 3.87,
+   "road_km_major": 12.2,
+   "road_km_all": 117.5,
+   "growth_per_road_km": 0.32
+  },
+  {
+   "ward_id": "67",
+   "ward": "Sanjaya Nagar",
+   "new_construction_ha": 2.21,
+   "road_km_major": 11.0,
+   "road_km_all": 35.7,
+   "growth_per_road_km": 0.2
+  },
+  {
+   "ward_id": "11",
+   "ward": "Byatarayanapura",
+   "new_construction_ha": 0.69,
+   "road_km_major": 35.9,
+   "road_km_all": 100.6,
+   "growth_per_road_km": 0.02
+  },
+  {
+   "ward_id": "2",
+   "ward": "Chowdeswari Ward",
+   "new_construction_ha": 8.57,
+   "road_km_major": 11.0,
+   "road_km_all": 86.1,
+   "growth_per_road_km": 0.78
+  },
+  {
+   "ward_id": "40",
+   "ward": "Veeramadakari",
+   "new_construction_ha": 0.73,
+   "road_km_major": 18.7,
+   "road_km_all": 51.2,
+   "growth_per_road_km": 0.04
+  },
+  {
+   "ward_id": "20",
+   "ward": "Mallasandra",
+   "new_construction_ha": 0.0,
+   "road_km_major": 5.8,
+   "road_km_all": 35.4,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "59",
+   "ward": "Mattikere",
+   "new_construction_ha": 0.0,
+   "road_km_major": 0.7,
+   "road_km_all": 4.9,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "21",
+   "ward": "T Dasarahalli",
+   "new_construction_ha": 0.0,
+   "road_km_major": 8.7,
+   "road_km_all": 39.7,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "22",
+   "ward": "Chokkasandra",
+   "new_construction_ha": 0.0,
+   "road_km_major": 7.2,
+   "road_km_all": 37.2,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "39",
+   "ward": "Kanneshwara Rama",
+   "new_construction_ha": 0.0,
+   "road_km_major": 9.3,
+   "road_km_all": 27.4,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "38",
+   "ward": "J P Park",
+   "new_construction_ha": 0.0,
+   "road_km_major": 2.8,
+   "road_km_all": 14.2,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "8",
+   "ward": "Jakkuru",
+   "new_construction_ha": 6.52,
+   "road_km_major": 40.2,
+   "road_km_all": 205.0,
+   "growth_per_road_km": 0.16
+  },
+  {
+   "ward_id": "7",
+   "ward": "Thanisandra",
+   "new_construction_ha": 0.25,
+   "road_km_major": 11.5,
+   "road_km_all": 97.6,
+   "growth_per_road_km": 0.02
+  },
+  {
+   "ward_id": "28",
+   "ward": "Dodda Bidarakallu",
+   "new_construction_ha": 0.0,
+   "road_km_major": 3.1,
+   "road_km_all": 30.1,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "66",
+   "ward": "Radhakrishna Temple Ward",
+   "new_construction_ha": 0.0,
+   "road_km_major": 4.9,
+   "road_km_all": 30.2,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "68",
+   "ward": "Vishwanath Nagenahalli",
+   "new_construction_ha": 0.3,
+   "road_km_major": 4.0,
+   "road_km_all": 18.3,
+   "growth_per_road_km": 0.08
+  },
+  {
+   "ward_id": "70",
+   "ward": "Hebbala",
+   "new_construction_ha": 0.0,
+   "road_km_major": 2.4,
+   "road_km_all": 5.7,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "13",
+   "ward": "Dodda Bommasandra",
+   "new_construction_ha": 0.72,
+   "road_km_major": 10.0,
+   "road_km_all": 52.7,
+   "growth_per_road_km": 0.07
+  },
+  {
+   "ward_id": "14",
+   "ward": "Vidyaranyapura",
+   "new_construction_ha": 0.0,
+   "road_km_major": 7.4,
+   "road_km_all": 62.1,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "18",
+   "ward": "Bagalakunte",
+   "new_construction_ha": 0.0,
+   "road_km_major": 5.4,
+   "road_km_all": 52.0,
+   "growth_per_road_km": 0.0
+  },
+  {
+   "ward_id": "19",
+   "ward": "Defence Colony",
+   "new_construction_ha": 0.0,
+   "road_km_major": 11.7,
+   "road_km_all": 54.2,
+   "growth_per_road_km": 0.0
+  }
+ ],
+ "growth_outrunning_roads": [
+  {
+   "ward_id": "16",
+   "ward": "Kammagondanahalli",
+   "new_construction_ha": 25.59,
+   "road_km_major": 13.5,
+   "road_km_all": 104.9,
+   "growth_per_road_km": 1.89
+  },
+  {
+   "ward_id": "83",
+   "ward": "Kalkere",
+   "new_construction_ha": 9.08,
+   "road_km_major": 5.2,
+   "road_km_all": 47.3,
+   "growth_per_road_km": 1.75
+  },
+  {
+   "ward_id": "2",
+   "ward": "Chowdeswari Ward",
+   "new_construction_ha": 8.57,
+   "road_km_major": 11.0,
+   "road_km_all": 86.1,
+   "growth_per_road_km": 0.78
+  },
+  {
+   "ward_id": "81",
+   "ward": "Horamavu",
+   "new_construction_ha": 11.57,
+   "road_km_major": 18.4,
+   "road_km_all": 156.0,
+   "growth_per_road_km": 0.63
+  },
+  {
+   "ward_id": "peri",
+   "ward": "Outside BBMP (peri-urban)",
+   "new_construction_ha": 542.78,
+   "road_km_major": 1304.2,
+   "road_km_all": 4902.1,
+   "growth_per_road_km": 0.42
+  },
+  {
+   "ward_id": "1",
+   "ward": "Kempegowda Ward",
+   "new_construction_ha": 14.32,
+   "road_km_major": 33.9,
+   "road_km_all": 99.2,
+   "growth_per_road_km": 0.42
+  },
+  {
+   "ward_id": "6",
+   "ward": "Kogilu",
+   "new_construction_ha": 11.0,
+   "road_km_major": 32.6,
+   "road_km_all": 233.7,
+   "growth_per_road_km": 0.34
+  },
+  {
+   "ward_id": "17",
+   "ward": "Shettihalli",
+   "new_construction_ha": 3.87,
+   "road_km_major": 12.2,
+   "road_km_all": 117.5,
+   "growth_per_road_km": 0.32
+  },
+  {
+   "ward_id": "67",
+   "ward": "Sanjaya Nagar",
+   "new_construction_ha": 2.21,
+   "road_km_major": 11.0,
+   "road_km_all": 35.7,
+   "growth_per_road_km": 0.2
+  },
+  {
+   "ward_id": "4",
+   "ward": "Atturu Layout",
+   "new_construction_ha": 4.12,
+   "road_km_major": 23.0,
+   "road_km_all": 126.3,
+   "growth_per_road_km": 0.18
+  }
+ ],
+ "drain_road_sites": 9,
+ "drain_road_sites_note": "near_drain sites within 100 m of an OSM motorway-secondary road, among the 200 ranked sites listed in sites file (not all changed sites)",
+ "roads_note": "Planning indicator, not traffic measurement: construction growth per km of mapped major road (OSM, incomplete). High values = growth outrunning road capacity."
 }

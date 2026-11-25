@@ -58,3 +58,14 @@ def test_roadness_thin_line_vs_blob():
     x[:3, 5:12, 5:12] = 0.35      # 7x7 blob (survives a 3x3 opening)
     r, _ = ch.roadness(x)
     assert r[20, 10:30].min() > 0.1 and r[8, 8] < 1e-6
+
+
+def test_growth_per_road_km_synthetic_wards():
+    from shapely.geometry import LineString, box
+    a, b = box(0, 0, 2000, 2000), box(2000, 0, 4000, 2000)   # two 2 km wards (metres)
+    roads = [("primary", LineString([(0, 1000), (4000, 1000)])),   # 2 km in each ward
+             ("residential", LineString([(2500, 0), (2500, 500)]))]   # 0.5 km, ward b only
+    (ma, aa), (mb, ab) = ch.ward_road_km([a, b], roads)
+    assert (round(ma, 3), round(aa, 3), round(mb, 3), round(ab, 3)) == (2.0, 2.0, 2.0, 2.5)
+    assert ch.growth_per_road_km(10, ma) == 5.0
+    assert ch.growth_per_road_km(3, 0.0) == 6.0   # floor 0.5 km
