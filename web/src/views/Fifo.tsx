@@ -87,6 +87,7 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   return (
     <div className="grid2">
       <div className="span2">
+        <div className="kicker">Track B</div>
         <h2 className="headline">Same antenna, same minutes, far more value</h2>
         <p className="muted">HERALD vs FIFO value at rho 1 / 2 / 5 / 10: {[1, 2, 5, 10].map((r) => rr(r) != null ? `${rr(r).toFixed(1)}x` : "n/a").join(" / ")}. First insight after capture (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></p>
       </div>

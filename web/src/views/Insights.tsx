@@ -51,6 +51,7 @@ export function Insights({ data }: ViewProps) {
 
   return (
     <div className="ins">
+      <div className="kicker">Track A, objective 1</div>
       <h2 className="headline">Bengaluru's construction ledger: every new layout and building, caught the month it starts, checked against no-build zones</h2>
       <p className="muted">Pair {survey.dates[0].slice(0, 10)} to {survey.dates[1].slice(0, 10)} (Sentinel-2, 10 m). {nc} new-construction leads covering {ncHa.toFixed(0)} ha; {R.sites_blr.n_buffer_flagged_sites} sites flagged near lake buffers (KTCDA tiers), {R.sites_blr.n_near_drain_sites} near drains. Leads need ground verification.</p>
       <div className="insgrid">

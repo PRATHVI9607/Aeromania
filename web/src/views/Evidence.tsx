@@ -58,8 +58,9 @@ export function Evidence(_: ViewProps) {
 
   return (
     <div className="ins">
-      <h2 className="headline">Evidence cards: land-cover change leads with a tamper-evident hash chain</h2>
-      <p className="muted">Land-cover change only; cannot see people or vehicles. Leads need ground verification. The chain shows tamper evidence, not legal admissibility.</p>
+      <div className="kicker">Track C</div>
+      <h2 className="headline">Sand and forest crimes, timestamped from orbit</h2>
+      <p className="muted">Tamper-evident evidence leads for mines and forest departments, monsoon-proof with radar. Land-cover change only; cannot see people or vehicles. Leads need ground verification. The chain shows tamper evidence, not legal admissibility.</p>
       <div className="insgrid">
         <section className="panel">
           <h3>Cards <small>{cards.length}</small>

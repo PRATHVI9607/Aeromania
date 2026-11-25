@@ -29,8 +29,9 @@ export function Siting({ data }: ViewProps) {
   };
   return (
     <div className="ins">
-      <h2 className="headline">Renewable siting: where a 1 km cell can host solar or wind, ranked by assumed annual value net of grid distance</h2>
-      <p className="muted">60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source).</p>
+      <div className="kicker">Track A, objective 2</div>
+      <h2 className="headline">Where the next gigawatt should go</h2>
+      <p className="muted">Solar and wind sites ranked by irradiance, slope, land use and grid distance, validated against the real Pavagada park. 60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source).</p>
       <div className="insgrid">
         <section className="panel">
           <h3>Heatmap

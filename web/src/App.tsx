@@ -25,7 +25,7 @@ function Shell({ data }: { data: Data }) {
   const [tab, setTab] = useState(0);
   const [queries, setQueries] = useState<Query[]>(data.queries);
   const [rho, setRho] = useState(5);
-  const { out, ms } = useSched(data.tiles, data.wins, data.params, queries, rho);
+  const { out, ms, runs } = useSched(data.tiles, data.wins, data.params, queries, rho);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const onKey = (e: React.KeyboardEvent) => {
     const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -37,7 +37,7 @@ function Shell({ data }: { data: Data }) {
   return (
     <div className="app">
       <header>
-        <div className="brand">HERALD<span>onboard value scheduler</span></div>
+        <div className="brand">HERALD<span>the satellite that sends home answers, not pictures.</span></div>
         <div className="flags">
           {data.synthetic && <span className="badge warn">synthetic orbit data</span>}
           {data.sample.length > 0 && <span className="badge warn" title={data.sample.join(", ")}>sample data: {data.sample.join(", ")}</span>}
@@ -59,7 +59,7 @@ function Shell({ data }: { data: Data }) {
           {tab === 5 && <Evidence {...common} />}
           {tab === 6 && <Economics data={data} />}
           {tab === 7 && <Hardware data={data} />}
-          {tab === 8 && <About />}
+          {tab === 8 && <About data={data} ms={ms} runs={runs} />}
         </Suspense>
       </main>
     </div>
