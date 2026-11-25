@@ -1,0 +1,130 @@
+{
+ "aois": {
+  "blr": {
+   "mgrs": "43PGQ",
+   "rel_orbit": 19,
+   "epsg": 32643,
+   "origin_xy": [
+    769020.0,
+    1472420.0
+   ],
+   "scenes": {
+    "t0": {
+     "item_id": "S2B_43PGQ_20230207_0_L2A",
+     "date": "2023-02-07",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    },
+    "t1": {
+     "item_id": "S2B_43PGQ_20250206_0_L2A",
+     "date": "2025-02-06",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    },
+    "c1": {
+     "item_id": "S2B_43PGQ_20250117_0_L2A",
+     "date": "2025-01-17",
+     "aoi_cloud_pct": 30.07,
+     "boa_offset_applied": false
+    },
+    "c2": {
+     "item_id": "S2A_43PGQ_20260628_0_L2A",
+     "date": "2026-06-28",
+     "aoi_cloud_pct": 55.66,
+     "boa_offset_applied": false
+    }
+   },
+   "chips": 8464,
+   "bytes": 381395761,
+   "s1": {},
+   "selection": "group ('MGRS-43PGQ', 19) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%"
+  },
+  "sone": {
+   "mgrs": "44RRP",
+   "rel_orbit": 119,
+   "epsg": 32644,
+   "origin_xy": [
+    862040.0,
+    2840640.0
+   ],
+   "scenes": {
+    "t0": {
+     "item_id": "S2B_44RRP_20230405_0_L2A",
+     "date": "2023-04-05",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    },
+    "t1": {
+     "item_id": "S2A_44RRP_20250401_1_L2A",
+     "date": "2025-04-01",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    },
+    "c1": {
+     "item_id": "S2A_44RRP_20260913_1_L2A",
+     "date": "2026-09-13",
+     "aoi_cloud_pct": 30.23,
+     "boa_offset_applied": false
+    },
+    "c2": {
+     "item_id": "S2C_44RRP_20260822_0_L2A",
+     "date": "2026-08-22",
+     "aoi_cloud_pct": 55.07,
+     "boa_offset_applied": false
+    }
+   },
+   "chips": 8464,
+   "bytes": 485393128,
+   "s1": {
+    "t0": "2023-04-08",
+    "t1": "2025-03-28",
+    "monsoon": "2023-08-18"
+   },
+   "selection": "group ('MGRS-44RRP', 119) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%"
+  },
+  "hasdeo": {
+   "mgrs": "44QPL",
+   "rel_orbit": 119,
+   "epsg": 32644,
+   "origin_xy": [
+    657420.0,
+    2539580.0
+   ],
+   "scenes": {
+    "t0": {
+     "item_id": "S2A_44QPL_20230209_0_L2A",
+     "date": "2023-02-09",
+     "aoi_cloud_pct": 0.3,
+     "boa_offset_applied": false
+    },
+    "t1": {
+     "item_id": "S2B_44QPL_20250203_0_L2A",
+     "date": "2025-02-03",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    },
+    "c1": {
+     "item_id": "S2A_44QPL_20230619_0_L2A",
+     "date": "2023-06-19",
+     "aoi_cloud_pct": 30.21,
+     "boa_offset_applied": false
+    },
+    "c2": {
+     "item_id": "S2B_44QPL_20260519_0_L2A",
+     "date": "2026-05-19",
+     "aoi_cloud_pct": 55.6,
+     "boa_offset_applied": false
+    }
+   },
+   "chips": 8464,
+   "bytes": 485390909,
+   "s1": {
+    "t0": "2023-02-10",
+    "t1": "2025-01-30",
+    "monsoon": "2023-08-09"
+   },
+   "selection": "group ('MGRS-44QPL', 119) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%"
+  }
+ },
+ "total_bytes": 1352179798
+}
