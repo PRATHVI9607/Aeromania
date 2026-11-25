@@ -12,7 +12,7 @@ def cells(n=2, **kw):
     wc = np.zeros((n, n, 11))
     wc[..., 5] = 1.0                                   # all bare
     c = dict(wc=wc, prot=np.zeros((n, n)), f5=np.ones((n, n)), f15=np.ones((n, n)), ghi=np.full((n, n), 5.0),
-             ws50=np.full((n, n), 6.0), d_sub=np.full((n, n), 10.0))
+             ws50=np.full((n, n), 6.0), d_sub=np.full((n, n), 10.0), t2m=np.full((n, n), 5.0), road_km=np.zeros((n, n)), road_km_blade=np.zeros((n, n)))
     c.update(kw)
     return c
 
@@ -66,3 +66,19 @@ def test_lcoe_formula():
     crf = w / (1 - (1 + w) ** -n)
     exp = (S["capex_cr_per_mw"]["v"] * 1e7 * crf + S["om_lakh_per_mw_yr"]["v"] * 1e5) / (r["mwh"] / r["mw"] * 1000)
     assert np.allclose(r["lcoe"], exp) and np.allclose(r["score"], -exp)
+
+
+def test_heat_derate_and_road_cost():
+    S = CFG["solar"]
+    assert np.isclose(st.pr_adj(np.array(5.0), S), S["pr"]["v"])                      # T_cell 25 C: no derate
+    assert np.isclose(st.pr_adj(np.array(25.0), S), S["pr"]["v"] * (1 - 0.004 * 20))   # T_cell 45 C
+    a, b = st.solar(cells(), CFG), st.solar(cells(road_km=np.full((2, 2), 4.0)), CFG)
+    w, n = S["wacc"]["v"], S["life_yr"]["v"]
+    crf = w / (1 - (1 + w) ** -n)
+    assert np.allclose((b["lcoe"] - a["lcoe"]) * a["mwh"] * 1000, 4.0 * S["road_cr_per_km"]["v"] * 1e7 * crf)
+
+
+def test_clusters():
+    r = dict(score=np.array([[-2., np.nan, -2.], [np.nan, -2., np.nan]]), lcoe=np.array([[2., 9, 2.], [9, 2., 9]]), mw=np.full((2, 3), 10.))
+    mw, lab = st.clusters(r, CFG["solar"], 2.6)
+    assert (mw == [[30, 0, 30], [0, 30, 0]]).all()                                   # diagonal neighbours join

@@ -28,6 +28,7 @@ CACHE = VAULT / "siting"
 N, DEM_PX, WC_PX = 60, 25, 10          # cells per side; DEM and WorldCover pixel sizes (m)
 OVERPASS = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")
 DEM_URL = "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_{n}_00_{e}_00_DEM/Copernicus_DSM_COG_10_{n}_00_{e}_00_DEM.tif"
+JRC_URL = "https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_70E_20Nv1_4_2021.tif"
 WCI = dict(tree=0, shrub=1, grass=2, crop=3, built=4, bare=5, water=7, wetland=8, mangrove=9)
 WC_CLASSES = (10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100)
 
@@ -80,15 +81,15 @@ def fetch(cfg, g, force=False):
     box = f"{s},{w},{n},{e}"
     # NASA POWER: 4x4 points, 0.25 deg spacing, covers the box
     f = CACHE / "power.json"
-    if force or not f.exists():
+    if force or not f.exists() or "t2m" not in json.loads(f.read_text(encoding="utf-8"))["pts"][0]:
         lats, lons = np.arange(13.75, 14.51, .25), np.arange(77.0, 77.76, .25)
         pts = []
         for la in lats:
             for lo in lons:
-                u = ("https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,WS50M"
+                u = ("https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,WS50M,T2M"
                      f"&community=RE&longitude={lo}&latitude={la}&format=JSON")
                 p = requests.get(u, timeout=60).json()["properties"]["parameter"]
-                pts.append(dict(lat=float(la), lon=float(lo), ghi=p["ALLSKY_SFC_SW_DWN"]["ANN"], ws50=p["WS50M"]["ANN"]))
+                pts.append(dict(lat=float(la), lon=float(lo), ghi=p["ALLSKY_SFC_SW_DWN"]["ANN"], ws50=p["WS50M"]["ANN"], t2m=p["T2M"]["ANN"]))
         f.write_text(json.dumps(dict(lats=lats.tolist(), lons=lons.tolist(), pts=pts)), encoding="utf-8")
         log("power fetched")
     # DEM 25 m, UTM grid
@@ -117,7 +118,16 @@ def fetch(cfg, g, force=False):
                 wc = np.where(wc == 0, v.read(1), wc)
         np.save(f, wc)
         log("worldcover fetched")
+    f = CACHE / "jrc.npy"
+    if force or not f.exists():
+        tr, S = from_origin(g["x0"], g["y1"], DEM_PX, DEM_PX), N * 1000 // DEM_PX
+        with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"), rasterio.open(JRC_URL) as src, \
+                WarpedVRT(src, crs=f"EPSG:{g['epsg']}", transform=tr, width=S, height=S, resampling=Resampling.nearest, nodata=255) as v:
+            np.save(f, np.where(v.read(1) <= 100, v.read(1), 0).astype(np.uint8))
+        log("jrc fetched")
     for name, q in dict(
+        roads=f'[out:json][timeout:150];way["highway"~"^(motorway|trunk|primary|secondary|tertiary)(_link)?$"]({wide});out geom tags;',
+        water=f'[out:json][timeout:150];(way["natural"="water"]({box});way["waterway"~"^(river|canal)$"]({box});relation["natural"="water"]({box}););out center tags;',
         lines=f'[out:json][timeout:150];way["power"="line"]({wide});out geom tags;',
         subs=f'[out:json][timeout:150];nwr["power"="substation"]({wide});out geom tags;',
         solar=f'[out:json][timeout:150];(nwr["generator:source"="solar"]({box});nwr["power"="plant"]["plant:source"="solar"]({box});'
@@ -137,7 +147,9 @@ def osm_geoms(elements, area=False):
     out = []
     for el in elements:
         t = el.get("tags", {})
-        if el["type"] == "node":
+        if "center" in el and "geometry" not in el:
+            out.append((Point(el["center"]["lon"], el["center"]["lat"]), t))
+        elif el["type"] == "node":
             out.append((Point(el["lon"], el["lat"]), t))
         elif el["type"] == "way" and len(el.get("geometry", [])) >= 2:
             c = [(p["lon"], p["lat"]) for p in el["geometry"]]
@@ -190,16 +202,25 @@ def features(cfg, g):
     gy, gx = np.gradient(dem, DEM_PX)
     slope = np.degrees(np.arctan(np.hypot(gx, gy)))
     blk = lambda a: a.reshape(N, a.shape[0] // N, N, a.shape[1] // N).mean(axis=(1, 3))
+    jrc = np.load(CACHE / "jrc.npy")
+    flood, wet = blk(jrc > cfg["exclusion"]["flood_occurrence_pct"]["v"]), blk(jrc > 50) > 0
+    from scipy.ndimage import distance_transform_edt
     wc = np.load(CACHE / "wc.npy")
     wcf = np.stack([blk((wc == c).astype(np.float32)) for c in WC_CLASSES], axis=-1)
     el = lambda n: json.loads((CACHE / f"osm_{n}.json").read_text(encoding="utf-8"))
     lines = [(geo, volt(t)) for geo, t in osm_geoms(el("lines"))]
     subs = [geo.centroid for geo, _ in osm_geoms(el("subs"), area=True)]
+    roads = [(geo, t.get("highway", "").replace("_link", "")) for geo, t in osm_geoms(el("roads"))]
+    water = to_utm([geo for geo, _ in osm_geoms(el("water"))], g)
+    d_water = nearest_km(x, y, water)
+    d_water = np.minimum(d_water, distance_transform_edt(~wet) if wet.any() else np.inf)
     solar = osm_geoms(el("solar"), area=True)
     prot = [geo for geo, _ in osm_geoms(el("prot"), area=True) if geo.geom_type in ("Polygon", "MultiPolygon")]
     return dict(
         x=x, y=y, lat=lat, lon=lon, ghi=ip("ghi"), ws50=ip("ws50"), slope=blk(slope), f5=blk(slope < 5), f15=blk(slope < 15),
-        wc=wcf, d_sub=nearest_km(x, y, to_utm(subs, g)),
+        wc=wcf, t2m=ip("t2m"), flood=flood, d_water=d_water,
+        road_km=nearest_km(x, y, to_utm([a for a, _ in roads], g)),
+        road_km_blade=nearest_km(x, y, to_utm([a for a, h in roads if h != "tertiary"], g)), d_sub=nearest_km(x, y, to_utm(subs, g)),
         d_l33=nearest_km(x, y, to_utm([a for a, v in lines if v >= 33000], g)),
         prot=np.clip(cover(to_utm(prot, g), g), 0, 1),
         solar_cover=cover(to_utm([a for a, _ in solar if a.geom_type in ("Polygon", "MultiPolygon") and a.area > 0], g), g),
@@ -215,23 +236,28 @@ def excluded(c, P, built_ok=None):
     w, ex = c["wc"], P["exclusion"]
     built = w[..., WCI["built"]] * (1 if built_ok is None else ~built_ok)
     bad = w[..., WCI["water"]] + w[..., WCI["wetland"]] + w[..., WCI["mangrove"]] + built
-    return (w[..., WCI["tree"]] > ex["tree_frac"]["v"]) | (bad > ex["unusable_frac"]["v"]) | (c["prot"] > ex["unusable_frac"]["v"])
+    return (w[..., WCI["tree"]] > ex["tree_frac"]["v"]) | (bad > ex["unusable_frac"]["v"]) | (c["prot"] > ex["unusable_frac"]["v"]) | (c.get("flood", 0) > ex["unusable_frac"]["v"])
 
 
 def landshare(c, wts, built_ok=None):
     s = sum(w * c["wc"][..., WC_CLASSES.index(int(k))] for k, w in wts.items())
     if built_ok is not None:
         s = s + built_ok * c["wc"][..., WCI["built"]]
-    return s * (1 - c["prot"])
+    return s * (1 - c["prot"]) * (1 - c.get("flood", 0))
 
 
-def econ(mw, mwh, S, grid_km):
+def econ(mw, mwh, S, grid_km, road_km=0.0):
     rev = mwh * 1000 * S["tariff_rs_kwh"]["v"]
     w, n = S["wacc"]["v"], S["life_yr"]["v"]
     crf = w / (1 - (1 + w) ** -n)
-    cost = mw * (S["om_lakh_per_mw_yr"]["v"] * 1e5 + S["capex_cr_per_mw"]["v"] * 1e7 * crf) + grid_km * S["grid_cr_per_km"]["v"] * 1e7 * crf
+    cost = mw * (S["om_lakh_per_mw_yr"]["v"] * 1e5 + S["capex_cr_per_mw"]["v"] * 1e7 * crf) + (grid_km * S["grid_cr_per_km"]["v"] + road_km * S["road_cr_per_km"]["v"]) * 1e7 * crf
     lcoe = cost / np.maximum(mwh * 1000, 1e-9)
     return rev, rev - cost, lcoe
+
+
+def pr_adj(t2m, S):
+    """PR x (1 - coeff x max(0, T_cell - 25)), T_cell = T2M + rise (documented in config)."""
+    return S["pr"]["v"] * (1 - S["temp_coeff_per_c"]["v"] * np.maximum(0, t2m + S["t_cell_rise_c"]["v"] - 25))
 
 
 def solar(c, P, built_ok=None):
@@ -239,9 +265,9 @@ def solar(c, P, built_ok=None):
     S = P["solar"]
     ha = 100 * landshare(c, S["weights"]["v"], built_ok) * c["f5"]
     mw = ha / S["ha_per_mw"]["v"]
-    cuf = c["ghi"] * 365 * S["pr"]["v"] / 8760
+    cuf = c["ghi"] * 365 * pr_adj(c["t2m"], S) / 8760
     mwh = mw * 8760 * cuf
-    rev, net, lcoe = econ(mw, mwh, S, c["d_sub"])
+    rev, net, lcoe = econ(mw, mwh, S, c["d_sub"], c["road_km"])
     ok = ~excluded(c, P, built_ok) & (mw >= S["min_project_mw"]["v"])
     return dict(ha=ha, mw=mw, cuf=cuf, mwh=mwh, rev=rev, net=net, lcoe=lcoe, score=np.where(ok, -lcoe, np.nan))
 
@@ -263,9 +289,18 @@ def wind(c, P):
     mw = km2 * W["mw_per_km2"]["v"]
     cuf = wind_cuf(c["ws50"], W)
     mwh = mw * 8760 * cuf
-    rev, net, lcoe = econ(mw, mwh, W, c["d_sub"])
+    rev, net, lcoe = econ(mw, mwh, W, c["d_sub"], c["road_km_blade"])
     ok = ~excluded(c, P) & (mw >= W["min_project_mw"]["v"]) & (c["ws50"] >= W["min_ws50"]["v"])
     return dict(km2=km2, mw=mw, cuf=cuf, mwh=mwh, rev=rev, net=net, lcoe=lcoe, score=np.where(ok, -lcoe, np.nan))
+
+
+def clusters(r, S, tariff):
+    """8-neighbour clusters of ranked cells with LCOE <= factor x tariff. Returns (cluster_mw per cell, 0 if unsuitable; label array)."""
+    from scipy.ndimage import label
+    ok = ~np.isnan(r["score"]) & (r["lcoe"] <= S["cluster_lcoe_factor"]["v"] * tariff)
+    lab, n = label(ok, structure=np.ones((3, 3)))
+    tot = np.bincount(lab.ravel(), weights=np.where(ok, r["mw"], 0).ravel(), minlength=n + 1)
+    return np.where(ok, tot[lab], 0.0), lab
 
 
 def pct(score, mask):
@@ -286,20 +321,23 @@ def top_idx(score, k=20):
 
 
 # ---------------------------------------------------------------- outputs
-def record(c, r, k, kind, rank):
+def record(c, r, k, kind, rank, P_=None):
     i, j = divmod(k, N)
     w = c["wc"][i, j]
     mix = {n: round(float(w[WCI[n]]), 2) for n in WCI if w[WCI[n]] >= .01}
     reasons = []
     if kind == "solar":
-        reasons += [f"GHI {c['ghi'][i, j]:.2f} kWh/m2/day -> CUF {r['cuf'][i, j]:.3f}", f"{r['ha'][i, j]:.0f} usable ha (flat, usable land)"]
+        reasons += [f"T2M {c['t2m'][i, j]:.1f} C -> PR derate to {pr_adj(c['t2m'][i, j], P_['solar']):.3f}", f"GHI {c['ghi'][i, j]:.2f} kWh/m2/day -> CUF {r['cuf'][i, j]:.3f}", f"{r['ha'][i, j]:.0f} usable ha (flat, usable land)"]
     else:
         reasons += [f"WS50M {c['ws50'][i, j]:.2f} m/s -> CUF {r['cuf'][i, j]:.3f}", f"{r['km2'][i, j]:.2f} km2 developable (slope<15 deg)"]
+    rd = c["road_km_blade" if kind == "wind" else "road_km"][i, j]
+    reasons.append(f"{rd:.1f} km to {'primary+ road (blades)' if kind == 'wind' else 'heavy-haul road'}; water for cleaning {c['d_water'][i, j]:.1f} km (info only)")
     reasons.append(f"{c['d_sub'][i, j]:.1f} km to substation, {c['d_l33'][i, j]:.1f} km to >=33 kV line")
     return dict(rank=rank, lat=round(float(c["lat"][i, j]), 4), lon=round(float(c["lon"][i, j]), 4), mw=round(float(r["mw"][i, j]), 1),
                 mwh_yr=round(float(r["mwh"][i, j])), revenue_rs_yr=round(float(r["rev"][i, j])), net_value_rs_yr=round(float(r["net"][i, j])), net_value_rs_per_mw_yr=round(float(r["net"][i, j] / max(r["mw"][i, j], 1e-9))), lcoe_rs_kwh=round(float(r["lcoe"][i, j]), 2),
                 grid_km_substation=round(float(c["d_sub"][i, j]), 1), grid_km_line33=round(float(c["d_l33"][i, j]), 1),
-                slope_mean_deg=round(float(c["slope"][i, j]), 1), land_mix=mix, reasons=reasons)
+                slope_mean_deg=round(float(c["slope"][i, j]), 1), road_km=round(float(rd), 1), water_km=round(float(c["d_water"][i, j]), 1), t2m=round(float(c["t2m"][i, j]), 1),
+                cluster_mw=round(float(r["cluster_mw"][i, j]), 1), block_ge_50mw=bool(r["cluster_mw"][i, j] >= (P_ or {}).get(kind, {}).get("block_mw", {}).get("v", 50)), land_mix=mix, reasons=reasons)
 
 
 def heat(score, path):
@@ -320,7 +358,11 @@ def main(argv=None):
     g = grid(cfg)
     fetch(cfg, g, force)
     c = features(cfg, g)
+    prev_f = REPORTS / "siting.json"
+    prev = json.loads(prev_f.read_text(encoding="utf-8")) if prev_f.exists() else None
     S, W = solar(c, cfg), wind(c, cfg)
+    S["cluster_mw"], S["lab"] = clusters(S, cfg["solar"], cfg["solar"]["tariff_rs_kwh"]["v"])
+    W["cluster_mw"], W["lab"] = clusters(W, cfg["wind"], cfg["wind"]["tariff_rs_kwh"]["v"])
     cell_ha = 100.0
 
     # validation 1/2: OSM solar footprints
@@ -364,6 +406,13 @@ def main(argv=None):
                          mwh_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["mwh"])))),
                          revenue_rs_yr=round(float(np.nansum(np.where(np.isnan(r["score"]), np.nan, r["rev"])))))
     ts, tw = top_idx(S["score"]), top_idx(W["score"])
+    blk_ok = np.where(S["cluster_mw"] >= cfg["solar"]["block_mw"]["v"], S["score"], np.nan)
+    tb = top_idx(blk_ok)
+    nb = lambda r, k: len({int(l) for l in r["lab"][r["cluster_mw"] >= cfg[k]["block_mw"]["v"]]})
+    val["vs_previous_run"] = None if not prev else dict(
+        top20_overlap=len({(t["lat"], t["lon"]) for t in prev["top_solar"]} & {(round(float(c["lat"].ravel()[k]), 4), round(float(c["lon"].ravel()[k]), 4)) for k in ts}),
+        prev_pavagada_mean_pct=prev["validation"]["pavagada_park"]["as_is"]["mean_pct"], prev_pavagada_median_pct=prev["validation"]["pavagada_park"]["as_is"]["median_pct"],
+        note="previous run = LCOE ranking before access road, heat derate, flood exclusion")
     wv = W["lcoe"][~np.isnan(W["score"])]
     wind_note = dict(status=cfg["wind"]["status"], ranked=int(len(wv)), viable_lcoe_below_wind_tariff=int((wv < cfg["wind"]["tariff_rs_kwh"]["v"]).sum()))
     params = {k: cfg[k] for k in ("solar", "wind", "exclusion", "sources")}
@@ -372,8 +421,9 @@ def main(argv=None):
         caveats=["NASA POWER irradiance/wind is native ~0.5-1 deg: only 16 sample points, cell values are smooth interpolation, ridge-top wind NOT resolved (Global Wind Atlas would be the upgrade).",
                  "Slope-share and land-use share are multiplied as if independent.", "All Rs numbers are assumptions (config/siting.json).",
                  "Substation distance is a straight-line proxy; no capacity, voltage-level or land-ownership data."],
-        region_totals=dict(wind_status=wind_note, solar=tot(S), wind=tot(W), n_substations=c["n_sub"], n_lines_ge33kv=c["n_line33"], n_cells_excluded=int(excluded(c, cfg).sum())),
-        top_solar=[record(c, S, k, "solar", n + 1) for n, k in enumerate(ts)], top_wind=[record(c, W, k, "wind", n + 1) for n, k in enumerate(tw)],
+        region_totals=dict(solar_blocks_ge_50mw=nb(S, "solar"), wind_blocks_ge_50mw=nb(W, "wind"), cells_flood_excluded=int((c["flood"] > .5).sum()), solar_viable_cells=int((S["lcoe"][~np.isnan(S["score"])] < cfg["solar"]["tariff_rs_kwh"]["v"]).sum()), wind_status=wind_note, solar=tot(S), wind=tot(W), n_substations=c["n_sub"], n_lines_ge33kv=c["n_line33"], n_cells_excluded=int(excluded(c, cfg).sum())),
+        top_solar=[record(c, S, k, "solar", n + 1, cfg) for n, k in enumerate(ts)], top_solar_blocks=[record(c, S, k, "solar", n + 1, cfg) for n, k in enumerate(tb)],
+        top_wind=[record(c, W, k, "wind", n + 1, cfg) for n, k in enumerate(tw)],
         params=params, validation=val)
     ensure(REPORTS, WEB_DATA / "img")
     (REPORTS / "siting.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
@@ -387,9 +437,9 @@ def main(argv=None):
     web = dict(bbox=rep["bbox"], n=N, cell_km=1, params=dict(solar=dict(tariff=cfg["solar"]["tariff_rs_kwh"]["v"], ha_per_mw=cfg["solar"]["ha_per_mw"]["v"]),
                wind=dict(min_ws50=cfg["wind"]["min_ws50"]["v"], mw_per_km2=cfg["wind"]["mw_per_km2"]["v"]), note="all Rs values are assumptions, see reports/siting.json"),
                cells=[dict(lat=round(float(c["lat"][i, j]), 3), lon=round(float(c["lon"][i, j]), 3), solar_score=int(ps[i, j]), wind_score=int(pw[i, j]),
-                           ghi=round(float(c["ghi"][i, j]), 2), ws50=round(float(c["ws50"][i, j]), 2), slope=round(float(c["slope"][i, j]), 1))
+                           ghi=round(float(c["ghi"][i, j]), 2), t2m=round(float(c["t2m"][i, j]), 1), road_km=round(float(c["road_km"][i, j]), 1), cluster_mw=round(float(S["cluster_mw"][i, j])), **({"flood_excluded": True} if c["flood"][i, j] > .5 else {}), ws50=round(float(c["ws50"][i, j]), 2))
                       for i in range(N) for j in range(N)],
-               top_solar=rep["top_solar"], top_wind=rep["top_wind"], validation=val,
+               top_solar=rep["top_solar"], top_solar_blocks=rep["top_solar_blocks"], top_wind=rep["top_wind"], validation=val,
                images=dict(solar="img/siting_solar.png", wind="img/siting_wind.png"), caveats=rep["caveats"])
     (WEB_DATA / "siting.json").write_text(json.dumps(web, separators=(",", ":")), encoding="utf-8")
     heat(S["score"], WEB_DATA / "img" / "siting_solar.png")

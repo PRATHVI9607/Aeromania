@@ -63,6 +63,26 @@
   "life_yr": {
    "v": 25,
    "src": "assumption: 25-year project life, standard PPA term. CRF = w/(1-(1+w)^-n) = 0.106"
+  },
+  "road_cr_per_km": {
+   "v": 0.5,
+   "src": "assumption: ~Rs 0.5 crore/km new heavy-haul access road (6-7 m, compacted), unverified"
+  },
+  "t_cell_rise_c": {
+   "v": 20,
+   "src": "assumption: module temperature = annual-mean T2M + 20 C (operating rise at sun, simple approximation; overstates annual mean since night hours are cooler, so derate is conservative)"
+  },
+  "temp_coeff_per_c": {
+   "v": 0.004,
+   "src": "assumption: crystalline-Si power temperature coefficient -0.4 %/C (typical datasheet); applied above 25 C. PR 0.77 treated as the 25 C-module reference"
+  },
+  "cluster_lcoe_factor": {
+   "v": 1.2,
+   "src": "assumption: 'suitable' for clustering = ranked and LCOE <= 1.20 x tariff (Rs 3.12/kWh solar). Raised from 1.10 because the best solar cell is Rs 2.98 and no cell is viable at base capex; blocks are therefore 'near-viable', not viable"
+  },
+  "block_mw": {
+   "v": 50,
+   "src": "assumption: developers want contiguous blocks >= 50 MW (user brief)"
   }
  },
  "wind": {
@@ -129,7 +149,19 @@
    "v": 25,
    "src": "assumption: 25-year project life, standard PPA term. CRF = w/(1-(1+w)^-n) = 0.106"
   },
-  "status": "not viable in this box at 0.5 deg resolution; Karnataka's wind belt is the Chitradurga/Gadag ridges; Global Wind Atlas is the upgrade"
+  "status": "not viable in this box at 0.5 deg resolution; Karnataka's wind belt is the Chitradurga/Gadag ridges; Global Wind Atlas is the upgrade",
+  "road_cr_per_km": {
+   "v": 0.5,
+   "src": "assumption: as solar; wind distance uses primary/secondary/trunk/motorway only because blade transport needs them"
+  },
+  "cluster_lcoe_factor": {
+   "v": 1.2,
+   "src": "assumption: 'suitable' for clustering = ranked and LCOE <= 1.20 x tariff (Rs 3.12/kWh solar). Raised from 1.10 because the best solar cell is Rs 2.98 and no cell is viable at base capex; blocks are therefore 'near-viable', not viable"
+  },
+  "block_mw": {
+   "v": 50,
+   "src": "assumption: as solar"
+  }
  },
  "exclusion": {
   "tree_frac": {
@@ -139,6 +171,10 @@
   "unusable_frac": {
    "v": 0.5,
    "src": "assumption: cell excluded if water+wetland+built+mangrove > 50%, or protected area > 50%"
+  },
+  "flood_occurrence_pct": {
+   "v": 5,
+   "src": "assumption (user brief): pixels with JRC Global Surface Water occurrence > 5% are excluded; cell usable area scaled by (1 - flooded share), cell excluded if flooded share > 50%"
   }
  },
  "validation": {
@@ -151,7 +187,10 @@
   "irradiance_wind": "NASA POWER climatology API, ALLSKY_SFC_SW_DWN and WS50M annual (2001-2025), https://power.larc.nasa.gov/ , coarse: native ~0.5-1 deg grid",
   "slope": "Copernicus DEM GLO-30 (2021) COGs, https://copernicus-dem-30m.s3.amazonaws.com/ , resampled to 25 m",
   "landcover": "ESA WorldCover 2021 v200, https://esa-worldcover.s3.eu-central-1.amazonaws.com/ , 10 m",
-  "grid_osm": "OpenStreetMap via Overpass API (power=line, power=substation, solar, protected areas), fetched 2026, ODbL"
+  "grid_osm": "OpenStreetMap via Overpass API (power=line, power=substation, solar, protected areas), fetched 2026, ODbL",
+  "roads": "OSM highway=motorway|trunk|primary|secondary|tertiary (+_link) via Overpass, fetched 2026",
+  "flood_water": "JRC Global Surface Water occurrence v1.4 (2021 release), https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_70E_20Nv1_4_2021.tif ; water for cleaning = km to nearest OSM natural=water/waterway or JRC occurrence > 50% (info only)",
+  "temperature": "NASA POWER T2M annual climatology, same API as irradiance"
  },
  "score_definition": "score = LCOE (Rs/kWh) = (capex*CRF + O&M + grid_line_cost*CRF/MW) / (MWh per MW per yr * 1000); lower is better, rank ascending (stored internally as score = -LCOE). Viable = LCOE < tariff (Rs 2.6/kWh, SECI 2025). Net Rs/MW/yr = (tariff - LCOE) * MWh/MW * 1000 is a secondary field. Cells below min_project_mw or excluded are unranked."
 }
