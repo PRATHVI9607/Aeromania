@@ -8,8 +8,8 @@ import { reduced, useTween } from "../anim";
 
 const POL: { id: PolicyId; name: string; color: string }[] = [
   { id: "B1", name: "FIFO", color: "#7b8794" }, { id: "B2", name: "Cloud filter + FIFO", color: "#9aa5b1" },
-  { id: "B3", name: "Value greedy", color: "#52606d" }, { id: "H1", name: "Value/byte", color: "#c9852a" },
-  { id: "H2", name: "HERALD progressive", color: "#f2a93b" },
+  { id: "B3", name: "Value greedy", color: "#52606d" }, { id: "H1", name: "HERALD, full chips by value/byte", color: "#e8892b" },
+  { id: "H2", name: "HERALD progressive (fastest first insight)", color: "#f2c06b" },
 ];
 const TH = 300, RACE_S = 10; // timeline canvas height px; race duration seconds
 const RHO = [1, 2, 5, 10];
@@ -60,7 +60,7 @@ function Timeline({ r, data, title, p, tone, value, ub, prog }: { prog: boolean;
   );
 }
 
-function Curves({ cum, ub, data, p }: { cum: number[][]; ub: number; data: ViewProps["data"]; p: number }) {
+function Curves({ cum, ub, data, p, hid }: { cum: number[][]; ub: number; data: ViewProps["data"]; p: number; hid: PolicyId }) {
   const W = 1300, H = 300, m = { l: 90, r: 12, t: 14, b: 24 };
   const wins = data.wins, nw = wins.length;
   const t0 = wins[0].start_min, t1 = wins[nw - 1].end_min;
@@ -83,18 +83,19 @@ function Curves({ cum, ub, data, p }: { cum: number[][]; ub: number; data: ViewP
       <line x1={m.l} x2={W - m.r} y1={y(ub)} y2={y(ub)} className="ub" />
       <text x={W - m.r} y={y(ub) - 4} textAnchor="end" className="ax">upper bound (relaxation)</text>
       <g clipPath="url(#reveal)">
-        {POL.map((q, k) => <path key={q.id} d={paths[k]} fill="none" stroke={q.color} strokeWidth={q.id === "H2" ? 2.6 : 1.4} />)}
+        {POL.map((q, k) => <path key={q.id} d={paths[k]} fill="none" stroke={q.color} strokeWidth={q.id === hid ? 2.8 : q.id === "B1" ? 1.8 : 1.2} opacity={q.id === hid || q.id === "B1" ? 1 : 0.55} />)}
       </g>
       <line x1={hx} x2={hx} y1={m.t} y2={H - m.b} className="cursor" />
-      {POL.filter((q) => q.id === "H2" || q.id === "B1").map((q) => <circle key={q.id} cx={hx} cy={y(at(cum[POL.indexOf(q)], p))} r={4} fill={q.color} stroke="#0b0e12" strokeWidth={1.5} />)}
+      {POL.filter((q) => q.id === hid || q.id === "B1").map((q) => <circle key={q.id} cx={hx} cy={y(at(cum[POL.indexOf(q)], p))} r={4} fill={q.color} stroke="#0b0e12" strokeWidth={1.5} />)}
     </svg>
   );
 }
 
 export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { setRho: (n: number) => void }) {
   const nw = data.wins.length;
-  const [p, setP] = useState(nw), [playing, setPlaying] = useState(false);
-  const pr = useRef(nw);
+  const [p, setP] = useState(reduced() ? nw : 0), [playing, setPlaying] = useState(!reduced());
+  const pr = useRef(reduced() ? nw : 0);
+  const [hid, setHid] = useState<PolicyId>("H1");
   useEffect(() => {
     if (!playing) return;
     let raf = 0, last = performance.now();
@@ -116,7 +117,7 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   const tw = useTween(flat, 600);
   if (!live || !out || !nw || tw.length !== flat.length) return <Skeleton label="scheduling" rows={6} />;
   const cum = POL.map((_, k) => tw.slice(k * nw, (k + 1) * nw)), ubT = tw[tw.length - 1];
-  const f = out.results.B1.metrics, h = out.results.H2.metrics;
+  const f = out.results.B1.metrics, h = out.results[hid].metrics;
   const sim = data.reports.sim, rob = sim?.robustness;
   // % of upper bound, not ratios: FIFO can approach 0 at high rho, which makes a ratio explode and mislead
   const pu = (r: number, q: string) => { const v = data.results?.by_rho?.[String(r)]?.[q]?.metrics?.pct_ub; return typeof v === "number" ? `${(v * 100).toFixed(1)}%` : "n/a"; };
@@ -124,24 +125,25 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   const match = { h: (sr?.minutes_to_match_fifo?.H2 ?? null) as number | null, f: (sr?.fifo_minutes_used ?? null) as number | null };
   const saved = match.h !== null && match.f !== null ? match.f - match.h : null;
   const rpm = data.params.rupees_per_contact_min;
-  const vH = at(cum[4], p), vF = at(cum[0], p);
+  const vH = at(cum[POL.findIndex((q) => q.id === hid)], p), vF = at(cum[0], p);
   return (
     <div className="grid2">
       <div className="span2">
         <ViewHead kicker="Track B" title="Same antenna, same minutes, far more value"
-          sub={<>Share of the best possible value (upper bound) delivered at rho 1 / 2 / 5 / 10: HERALD {RHO.map((r) => pu(r, "H2")).join(" / ")} vs FIFO {RHO.map((r) => pu(r, "B1")).join(" / ")} vs cloud filter {RHO.map((r) => pu(r, "B2")).join(" / ")}. First insight after capture (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></>} />
+          sub={<>Share of the best possible value (upper bound) delivered at rho 1 / 2 / 5 / 10: HERALD {RHO.map((r) => pu(r, "H1")).join(" / ")} (progressive {RHO.map((r) => pu(r, "H2")).join(" / ")}) vs FIFO {RHO.map((r) => pu(r, "B1")).join(" / ")} vs cloud filter {RHO.map((r) => pu(r, "B2")).join(" / ")}. First insight after capture with HERALD progressive (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></>} />
       </div>
       <section className="span2 bar">
         <button className="primary playbtn" onClick={play} aria-label="play the downlink race">{playing ? "Pause" : p >= nw ? (nw ? "Play race" : "") : "Resume"}</button>
         <label className="grow">Race
           <input type="range" min={0} max={nw} step={0.1} value={p} aria-label="race progress" onChange={(e) => { setPlaying(false); pr.current = +e.target.value; setP(pr.current); }} />
         </label>
+        <div className="seg" role="group" aria-label="HERALD variant">{(["H1", "H2"] as PolicyId[]).map((id) => <button key={id} className={hid === id ? "on" : ""} aria-pressed={hid === id} onClick={() => setHid(id)}>{id === "H1" ? "Value (H1)" : "First insight (H2)"}</button>)}</div>
         <label>Oversubscription rho
           <input type="range" min={0} max={3} step={1} value={RHO.indexOf(rho)} onChange={(e) => setRho(RHO[+e.target.value])} aria-valuetext={`rho ${rho}`} />
           <b className="mono">{rho}</b>
         </label>
         <div className="kv"><span>link capacity</span><b className="mono">{bytes(h.capacity_bytes)}</b></div>
-        <div className="kv"><span>HERALD / UB</span><b className="mono">{h.pct_ub !== null ? (100 * h.pct_ub).toFixed(1) : "-"}%</b></div>
+        <div className="kv"><span>{hid} / UB</span><b className="mono">{h.pct_ub !== null ? (100 * h.pct_ub).toFixed(1) : "-"}%</b></div>
         <div className="kv"><span>FIFO / UB</span><b className="mono">{f.pct_ub !== null ? (100 * f.pct_ub).toFixed(1) : "-"}%</b></div>
         <div className="card">
           <span>Contact minutes for HERALD to match FIFO's final value</span>
@@ -150,10 +152,10 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
         </div>
       </section>
       <div key={`f${rho}`} className="fade"><Timeline r={live.results.B1} data={data} title="FIFO (B1)" prog={false} p={p} tone="" value={vF} ub={ubT} /></div>
-      <div key={`h${rho}`} className="fade"><Timeline r={live.results.H2} data={data} title="HERALD (H2)" prog p={p} tone="accent" value={vH} ub={ubT} /></div>
+      <div key={`h${rho}${hid}`} className="fade"><Timeline r={live.results[hid]} data={data} title={hid === "H1" ? "HERALD (H1, full chips by value/byte)" : "HERALD progressive (H2)"} prog={hid === "H2"} p={p} tone="accent" value={vH} ub={ubT} /></div>
       <section className="panel span2">
         <h3>Cumulative realized value <small>{nw} contact windows, curves draw in step with the race</small></h3>
-        <Curves cum={cum} ub={ubT} data={data} p={p} />
+        <Curves cum={cum} ub={ubT} data={data} p={p} hid={hid} />
         <div className="legend">{POL.map((q) => <span key={q.id}><i style={{ background: q.color }} />{q.id} {q.name} <b className="mono">{((out.results[q.id].metrics.pct_ub ?? 0) * 100).toFixed(0)}%</b></span>)}
           <span><i className="dash" />upper bound</span></div>
       </section>

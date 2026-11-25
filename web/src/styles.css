@@ -17,7 +17,7 @@ nav button{background:none;border:0;border-radius:0;color:var(--mut);padding:12p
 nav button:hover{color:var(--tx);background:none}nav button[aria-selected=true]{color:var(--tx)}
 nav .ind{position:absolute;left:0;bottom:0;height:2px;width:100px;background:var(--acc);transform-origin:0 0;transition:transform .35s var(--ease)}
 main{flex:1;min-height:0;overflow:auto;padding:20px 24px 32px}
-.view{height:100%;display:flex;flex-direction:column;animation:enter .3s var(--ease) both}
+.view{height:100%;display:flex;flex-direction:column;animation:fadein .25s ease both}
 @keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .view>*{flex-shrink:0}
 .fade{animation:fadein .35s var(--ease) both;min-width:0}@keyframes fadein{from{opacity:.25}to{opacity:1}}
@@ -139,3 +139,19 @@ h3 small{font:400 12px var(--mono);color:var(--mut)}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}.span2{grid-column:auto}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.zoomer{transition:none}}
 .pri{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--mut)}.pri input{width:96px}
+.ledger3d,.sitegl{position:absolute;inset:0}.ledger3d .cesium-viewer-bottom,.sitegl .cesium-viewer-bottom{display:none}
+.hint{position:absolute;left:8px;bottom:8px;font:11px var(--mono);background:rgba(11,14,18,.8);padding:0 8px;border-radius:3px;color:var(--mut);pointer-events:none}
+.sitewrap{position:relative;height:220px;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:16px;background:#05070a}
+.wins li{grid-template-columns:44px minmax(0,1fr) 54px 150px;white-space:nowrap}
+.mission{grid-template-columns:minmax(0,1fr) 400px}
+
+/* enter choreography: cards rise with a stagger (backwards fill so hover transforms still work afterwards) */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.view>*,.grid2>*,.stats>*,.insmain>*,.evgrid>*,.cards3>*,.rightcol>*{animation:rise .55s var(--ease) backwards}
+:is(.view,.grid2,.stats,.insmain,.evgrid,.cards3,.rightcol)>:nth-child(2){animation-delay:.07s}
+:is(.view,.grid2,.stats,.insmain,.evgrid,.cards3,.rightcol)>:nth-child(3){animation-delay:.14s}
+:is(.view,.grid2,.stats,.insmain,.evgrid,.cards3,.rightcol)>:nth-child(4){animation-delay:.21s}
+:is(.view,.grid2,.stats,.insmain,.evgrid,.cards3,.rightcol)>:nth-child(n+5){animation-delay:.28s}
+.stat,.cards3>.panel,.ec{transition:transform .2s var(--ease),border-color .2s,background .15s}
+.stat:hover,.cards3>.panel:hover{transform:translateY(-2px)}
+.seg{display:flex;gap:4px}

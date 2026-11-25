@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { canon, cardsFromText, chainMeta, linkOk, sha256Hex } from "../canon";
 import type { ViewProps } from "./props";
 import { Chip, Skeleton, ViewHead } from "../ui";
+const SiteGlobe = lazy(() => import("./SiteGlobe"));
 import { ha as fha, pctf } from "../fmt";
 
 type Res = { hash: boolean; link: boolean; imgs: { key: string; ok: boolean | null }[]; mode?: string; shown: number };
@@ -96,9 +97,10 @@ export function Evidence(_: ViewProps) {
           </div>
         </section>
 
-        <section className="panel" key={cid(c)}>
+        <section className="panel">
           <h3><span>{kindName(c.kind)} <span className="mono dim">{cid(c)}</span></span>
             {exp(c.kind) ? <Chip tone="warn">experimental</Chip> : <Chip tone="ok">{pctf(c.confidence)} audit precision</Chip>}</h3>
+          {c.bbox && <div className="sitewrap"><Suspense fallback={<Skeleton rows={2} label="loading globe" />}><SiteGlobe bbox={c.bbox} lat={c.lat} lon={c.lon} imgUrl={imgs(c).find((x) => x.key === "t1")?.url ?? imgs(c)[0]?.url ?? ""} /></Suspense></div>}
           <div className="evimgs">{imgs(c).map((x) => <figure key={x.key}><img src={x.url} alt={`${cid(c)} ${x.key}`} width={240} height={240} /><figcaption className="mono">{dt?.[x.key] ?? x.key}</figcaption></figure>)}</div>
           <dl className="dl">
             <dt>Area</dt><dd className="mono">{fha(c.ha ?? 0, 2)}{c.n_pits ? `, ${c.n_pits} pits` : ""}</dd>

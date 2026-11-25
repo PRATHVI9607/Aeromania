@@ -1,7 +1,7 @@
 import type { ParamMeta, Params, Query, Station, Tile, TrackPt, Window } from "./types";
 
 export interface Data {
-  tiles: Tile[]; wins: Window[]; track: TrackPt[]; stations: Station[]; queries: Query[];
+  tiles: Tile[]; wins: Window[]; passes: Window[]; track: TrackPt[]; stations: Station[]; queries: Query[];
   params: Params; meta: Record<string, ParamMeta>; results: any | null; reports: Record<string, any>; sample: string[]; synthetic: boolean;
 }
 
@@ -33,6 +33,7 @@ export async function loadData(): Promise<Data> {
   const tiles: Tile[] = normTiles(t);
   const track = normTrack(tr);
   // sched_windows.json = contact windows split at capture times (python sim); same list the python scheduler used, so live recompute matches it.
+  const passes: Window[] = w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0)); // real contact passes (Mission view)
   const wins: Window[] = sw?.windows ?? w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0));
   const queries: Query[] = q.queries;
   const stations: Station[] = st?.stations ?? [];
@@ -41,7 +42,7 @@ export async function loadData(): Promise<Data> {
   const reports: Record<string, any> = {};
   await Promise.all((repIdx ?? []).map(async (f: string) => { reports[f.replace(/\.json$/, "")] = await get(`reports/${f}`); }));
   const synthetic = [t, w, tr, q].some((x) => x && x.synthetic === true);
-  return { tiles, wins, track, stations, queries, params, meta, results, reports, sample: [], synthetic };
+  return { tiles, wins, passes, track, stations, queries, params, meta, results, reports, sample: [], synthetic };
 }
 
 /** Fetch one optional JSON from /data; null if absent. */

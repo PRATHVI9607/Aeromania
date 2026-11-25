@@ -1,8 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import type { ViewProps } from "./props";
 import { Rupee } from "../Assume";
 import { inr, ha as fha } from "../fmt";
-import { BeforeAfter, Chip, Num, Stat, ViewHead } from "../ui";
+import { BeforeAfter, Chip, Num, Skeleton, Stat, ViewHead } from "../ui";
+
+const Ledger3D = lazy(() => import("./Ledger3D"));
 
 const N = 46, MS = 640, V = 5, S = 300, ZK = 3.2; // mosaic px, crop width in chips, crop px
 const NEW = new Set(["new_layout", "building_construction"]);
@@ -24,6 +26,7 @@ export function Insights({ data }: ViewProps) {
   const [show, setShow] = useState<Record<string, boolean>>({ new_construction: true, agri_ambiguous: false, lake_filling_lead: false });
   const [sel, setSel] = useState<Site | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [d3, setD3] = useState(false);
   const [onlyFlag, setOnlyFlag] = useState(false);
 
   // Georeference from tile-centre extremes (tile order i = row*46+col within blr t1); small UTM rotation ignored.
@@ -35,8 +38,17 @@ export function Insights({ data }: ViewProps) {
       (0.5 + ((lon - a.lon) / (b.lon - a.lon)) * (N - 1)) / N, (0.5 + ((lat - a.lat) / (b.lat - a.lat)) * (N - 1)) / N];
   }, [data.tiles]);
 
+  // mosaic edge rectangle [w, s, e, n] from the same tile-centre extremes (half a tile beyond the outer centres)
+  const rect = useMemo((): [number, number, number, number] | null => {
+    const t = data.tiles.filter((x) => x.aoi === "blr" && x.date === "t1");
+    if (t.length < N * N) return null;
+    const a = t[0], b = t[N * N - 1], dl = (b.lon - a.lon) / (N - 1), dt = (b.lat - a.lat) / (N - 1);
+    return [a.lon - dl / 2, Math.min(a.lat - dt / 2, b.lat + dt / 2), b.lon + dl / 2, Math.max(a.lat - dt / 2, b.lat + dt / 2)];
+  }, [data.tiles]);
   const list = useMemo(() => (sites ?? []).filter((s) => show[cat(s.category)] && (!onlyFlag || s.buffer_flag))
     .sort((a, b) => (cat(a.category) === "new_construction" ? 0 : 1) - (cat(b.category) === "new_construction" ? 0 : 1) || b.ha - a.ha).slice(0, 120), [sites, show, onlyFlag]);
+
+  const items3 = useMemo(() => list.map((x) => ({ rank: x.rank, lat: x.lat, lon: x.lon, ha: x.ha, color: CAT[cat(x.category)].color })), [list]);
 
   if (!sites || !survey) return <section className="panel"><h3>Insights <small>not generated</small></h3><p className="muted">reports/sites_blr.json and survey_blr.json are missing. Run the change step, then npm run prepare-data.</p></section>;
   const counts = R.sites_blr.category_counts;
@@ -69,13 +81,14 @@ export function Insights({ data }: ViewProps) {
       </div>
       <div className="insmain">
         <section className="panel">
-          <h3>Map <small>click a marker or a lead</small></h3>
+          <h3>Map <small>{d3 ? "click a column or a lead" : "click a marker or a lead"}</small><button className={d3 ? "on" : ""} aria-pressed={d3} onClick={() => setD3(!d3)} disabled={!rect}>3D ledger</button></h3>
           <div className="legendrow">
             {Object.entries(CAT).map(([k, c]) => (
               <label key={k} title={c.note}><input type="checkbox" checked={show[k]} onChange={(e) => setShow({ ...show, [k]: e.target.checked })} /><i style={{ background: c.color }} />{c.label}</label>
             ))}
             <label><input type="checkbox" checked={onlyFlag} onChange={(e) => setOnlyFlag(e.target.checked)} />lake-buffer only</label>
           </div>
+          {d3 && rect ? <div className="mosaic"><Suspense fallback={<Skeleton rows={4} label="loading 3D" />}><Ledger3D items={items3} rect={rect} imgUrl="/data/img/blr_t1.jpg" selRank={sel?.rank ?? null} onPick={(r) => { const x = list.find((y) => y.rank === r); if (x) pick(x); }} /></Suspense><span className="hint">column height = changed ha</span></div> :
           <div className="mosaic">
             <div className="zoomer" style={{ transform: `translate(${view.x * 100}%, ${view.y * 100}%) scale(${view.k})` }}>
               <img src="/data/img/blr_t1.jpg" alt="Bengaluru north mosaic at t1" />
@@ -88,7 +101,7 @@ export function Insights({ data }: ViewProps) {
               </svg>}
             </div>
             {view.k > 1 && <button className="reset" onClick={() => setSel(null)}>reset view</button>}
-          </div>
+          </div>}
           <p className="muted small">Red outline = within a lake buffer. Marker position is derived from tile-centre extremes; expect a few tens of metres of error.</p>
         </section>
 
