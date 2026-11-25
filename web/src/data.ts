@@ -26,13 +26,14 @@ function normTrack(j: any): TrackPt[] {
 }
 
 export async function loadData(): Promise<Data> {
-  const [t, w, tr, q, repIdx, st, results] = await Promise.all(
-    ["tiles.json", "windows.json", "track.json", "queries.json", "reports/index.json", "reports/stations.json", "results.json"].map(get));
+  const [t, w, tr, q, repIdx, st, results, sw] = await Promise.all(
+    ["tiles.json", "windows.json", "track.json", "queries.json", "reports/index.json", "reports/stations.json", "results.json", "sched_windows.json"].map(get));
   const missing = [["tiles", t], ["windows", w], ["track", tr], ["queries", q]].filter(([, v]) => !v).map(([k]) => k as string);
   if (missing.length) throw new Error(`required data files missing in web/public/data: ${missing.join(", ")}. Run the sim step.`);
   const tiles: Tile[] = normTiles(t);
   const track = normTrack(tr);
-  const wins: Window[] = w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0));
+  // sched_windows.json = contact windows split at capture times (python sim); same list the python scheduler used, so live recompute matches it.
+  const wins: Window[] = sw?.windows ?? w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0));
   const queries: Query[] = q.queries;
   const stations: Station[] = st?.stations ?? [];
   const params = Object.fromEntries(Object.entries(q.params).map(([k, v]: [string, any]) => [k, v.value])) as unknown as Params;

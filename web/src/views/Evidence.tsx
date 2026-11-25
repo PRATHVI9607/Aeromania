@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { canon, cardsFromText, sha256Hex } from "../canon";
+import { canon, cardsFromText, chainMeta, linkOk, sha256Hex } from "../canon";
 import type { ViewProps } from "./props";
 import { Chip, Skeleton, ViewHead } from "../ui";
 import { ha as fha, pctf } from "../fmt";
@@ -29,16 +29,16 @@ const sgn = (v: number) => `${v >= 0 ? "+" : "\u2212"}${Math.abs(v).toFixed(3)}`
 const IDX: Record<string, string> = { dndvi: "dNDVI vegetation", dndbi: "dNDBI built", dmndwi: "dMNDWI water", dbsi: "dBSI bare soil" };
 
 export function Evidence(_: ViewProps) {
-  const [st, setSt] = useState<{ cards: any[]; nodes: any[] } | null | undefined>(undefined);
+  const [st, setSt] = useState<{ cards: any[]; nodes: any[]; meta: { genesis: string; head: string | null } } | null | undefined>(undefined);
   const [sel, setSel] = useState(0);
   const [res, setRes] = useState<Record<string, Res>>({});
   const [busy, setBusy] = useState(false);
-  useEffect(() => { loadText().then((t) => { try { setSt(t ? cardsFromText(t) : null); } catch (e) { console.error(e); setSt(null); } }); }, []);
+  useEffect(() => { loadText().then((t) => { try { setSt(t ? { ...cardsFromText(t), meta: chainMeta(t) } : null); } catch (e) { console.error(e); setSt(null); } }); }, []);
   // display order: mine_expansion (by ha), forest_clearing, then experimental sand kinds; chain order is untouched
   const order = useMemo(() => (st ? st.cards.map((_, i) => i).sort((a, b) => rank(st.cards[a].kind) - rank(st.cards[b].kind) || (st.cards[b].ha ?? 0) - (st.cards[a].ha ?? 0)) : []), [st]);
   if (st === undefined) return <Skeleton rows={6} />;
   if (st === null) return <section className="panel"><h3>Evidence <small>not generated yet</small></h3><p className="muted">web/public/data/evidence.json is missing. It is produced by the Track C evidence step.</p></section>;
-  const { cards, nodes } = st;
+  const { cards, nodes, meta } = st;
 
   const verify = async () => {
     setBusy(true); setRes({});
@@ -48,7 +48,7 @@ export function Evidence(_: ViewProps) {
       setSel(d);
       let hash = false, mode = "";
       for (const asc of [true, false]) if (!hash && (await sha256Hex(canon(nodes[i], asc, "hash"))) === c.hash) { hash = true; mode = asc ? "ascii-escaped" : "utf-8"; }
-      const link = i === 0 ? true : c.prev_hash === cards[i - 1].hash;
+      const link = linkOk(cards, i, meta);
       const im = [];
       for (const x of imgs(c)) {
         let ok: boolean | null = null;
@@ -69,7 +69,7 @@ export function Evidence(_: ViewProps) {
   const total = Object.values(res).filter(done).length, ok = Object.values(res).filter(pass).length;
   const rows: { label: string; ok: boolean | null; note: string }[] = [
     { label: "Card hash (sha256 of canonical JSON)", ok: r ? r.hash : null, note: r ? (r.hash ? r.mode ?? "" : "MISMATCH") : "" },
-    { label: "Chain link to previous card", ok: r ? r.link : null, note: r ? (r.link ? "" : "BROKEN") : "" },
+    { label: "Chain link (previous hash, genesis, chain head)", ok: r ? r.link : null, note: r ? (r.link ? "" : "BROKEN") : "" },
     ...(r ? r.imgs : imgs(c).map((x) => ({ key: x.key, ok: null }))).map((m) => ({ label: `Image ${m.key} sha256`, ok: m.ok, note: m.ok === false ? "MISMATCH" : "" })),
   ];
   const cl = c.cloud_pct, dt = c.dates, ix = c.indices;

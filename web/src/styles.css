@@ -138,3 +138,4 @@ h3 small{font:400 12px var(--mono);color:var(--mut)}
 @media (max-width:1100px){.insmain,.evgrid,.stats,.mission{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.mission{min-height:900px;flex:none}}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}.span2{grid-column:auto}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.zoomer{transition:none}}
+.pri{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--mut)}.pri input{width:96px}

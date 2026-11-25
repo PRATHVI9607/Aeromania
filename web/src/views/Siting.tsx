@@ -5,6 +5,8 @@ import { Rupee } from "../Assume";
 import type { ViewProps } from "./props";
 
 const SZ = 600;
+/** number or "n/a"; never renders undefined */
+const nf = (x: unknown, d = 1) => (typeof x === "number" && isFinite(x) && x !== 0 ? x.toFixed(d) : x === 0 ? "0" : "n/a");
 const f0 = (x: number) => Math.round(x).toLocaleString("en-IN");
 
 export function Siting({ data }: ViewProps) {
@@ -44,7 +46,7 @@ export function Siting({ data }: ViewProps) {
             </svg>
           </div>
           <div className="legend"><span><i style={{ background: "#440154" }} />low</span><span><i style={{ background: "#21918c" }} />mid</span><span><i style={{ background: "#fde725" }} />high (rank-normalised among ranked cells)</span><span>transparent = excluded or unranked</span></div>
-          {hover && <p className="mono muted">cell {hover.lat}, {hover.lon}: solar rank {hover.solar_score || "-"}, wind rank {hover.wind_score || "-"}, GHI {hover.ghi}, WS50 {hover.ws50} m/s, slope {hover.slope} deg</p>}
+          {hover && <p className="mono muted">cell {nf(hover.lat, 3)}, {nf(hover.lon, 3)}: solar rank {hover.solar_score || "-"}, wind rank {hover.wind_score || "-"}, T2M {nf(hover.t2m, 1)} C, WS50 {nf(hover.ws50, 1)} m/s, road {nf(hover.road_km, 1)} km{hover.cluster_mw != null ? `, cluster ${nf(hover.cluster_mw, 0)} MW` : ""}{hover.lcoe_rs_kwh != null ? `, LCOE ${nf(hover.lcoe_rs_kwh, 2)}` : ""}</p>}
         </section>
         <section className="panel">
           <h3>Validation <small>sanity checks, not proof</small></h3>
@@ -52,7 +54,7 @@ export function Siting({ data }: ViewProps) {
             <dt>Pavagada solar park cells</dt><dd className="mono">{pv.cells} cells; mean percentile {pv.as_is.mean_pct ?? "n/a"} as is, {pv.built_treated_as_available.mean_pct ?? "n/a"} with built land treated as available; {pv.as_is.share_top_decile != null ? `${(pv.as_is.share_top_decile * 100).toFixed(0)}% in top decile` : ""}</dd>
             <dt>OSM polygon area</dt><dd className="mono">{pv.footprint_polygon_ha} ha vs ~{pv.reference_ha} ha reference</dd>
             {v.other_osm_solar && <><dt>Other OSM solar</dt><dd className="mono">{v.other_osm_solar.as_is.n_cells} cells, mean percentile {v.other_osm_solar.as_is.mean_pct ?? "n/a"}</dd></>}
-            {v.sensitivity_top20_overlap_of_20 && <><dt>Top-20 overlap under variants</dt><dd className="mono">{Object.entries(v.sensitivity_top20_overlap_of_20).map(([k, x]) => `${k}: ${x}/20`).join(", ")}</dd></>}
+            {v.sensitivity?.top20_overlap_with_base && <><dt>Top-20 overlap with base</dt><dd className="mono">{Object.entries(v.sensitivity.top20_overlap_with_base).map(([k, x]) => `${k}: ${x}/20`).join(", ")}</dd></>}
           </dl>}
           {pv && <p className="muted">{pv.note}</p>}
           <h3 style={{ marginTop: 12 }}>Caveats</h3>
@@ -61,7 +63,7 @@ export function Siting({ data }: ViewProps) {
         <section className="panel span2x">
           <h3>Top 20 {kind} cells <small>{kind === "solar" ? "MW = usable ha / ha per MW" : "MW = developable km2 x MW per km2"}</small></h3>
           <table className="tbl">
-            <thead><tr><th>#</th><th>MW</th><th>MWh/yr</th><th>Revenue Rs/yr</th><th>Net Rs/yr</th><th>Grid km (sub / 33 kV)</th><th>Reasons</th></tr></thead>
+            <thead><tr><th>#</th><th>MW</th><th>MWh/yr</th><th>Revenue Rs/yr</th><th>Net margin Rs/yr (all costs)</th><th>Grid km (sub / 33 kV)</th><th>Reasons</th></tr></thead>
             <tbody>{top.slice(0, 20).map((t) => (
               <tr key={t.rank}><td className="mono">{t.rank}</td><td className="mono">{t.mw}</td><td className="mono">{f0(t.mwh_yr)}</td>
                 <td className="mono"><Rupee v={t.revenue_rs_yr} name={`${kind}.${rsKey}`} meta={meta(rsKey)} value={sp[rsKey]?.v} /></td>

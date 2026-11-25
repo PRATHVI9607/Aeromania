@@ -15,7 +15,6 @@ export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & 
   const qRef = useRef<HTMLOListElement>(null), dRef = useRef<HTMLOListElement>(null), seen = useRef(new Set(queries.map((q) => q.id)));
   const [flash, setFlash] = useState(0);
   useEffect(() => { if (ms !== null) setFlash((n) => n + 1); }, [ms]);
-  const mv = (i: number, k: number) => { const a = queries.slice(); [a[i], a[i + k]] = [a[i + k], a[i]]; setQueries(a); };
   const rm = (q: Query) => { setLeaving(q.id); setTimeout(() => { setQueries(queries.filter((x) => x !== q)); setLeaving(null); }, 220); };
   const top = out ? out.results.H2.sel.slice(0, 10) : [];
   useFlip(qRef, [queries]);
@@ -26,17 +25,16 @@ export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & 
   return (
     <div className="grid2">
       <div className="span2"><ViewHead kicker="Track B, live scheduler" title="Change a customer's priority, and the downlink order reshuffles in milliseconds"
-        sub="Add, remove or reorder queries. The scheduler re-runs in a Web Worker on every edit; the measured round trip is shown beside the list." /></div>
+        sub="Add or remove queries, or drag a priority slider. A tile's value sums over every query that matches it, so list order does not matter. The scheduler re-runs in a Web Worker on every edit." /></div>
       <section className="panel">
-        <h3>Customer queries <small>{queries.length}, first has top say</small></h3>
+        <h3>Customer queries <small>{queries.length}, tile value sums over matching queries</small></h3>
         <ol className="qlist" ref={qRef}>
-          {queries.map((q, i) => (
+          {queries.map((q) => (
             <li key={q.id} data-key={q.id} className={`${leaving === q.id ? "leave" : ""} ${entering(q.id) ? "enter" : ""}`}>
               <span className="mono dim">{q.id}</span>
-              <span>{q.name ?? `Pack ${q.pack}`} <small>{q.aois.join(", ")}, severity {"≥"} {q.min_sev}, weight x{q.priority}</small></span>
+              <span>{q.name ?? `Pack ${q.pack}`} <small>{q.aois.join(", ")}, severity {"\u2265"} {q.min_sev}</small></span>
               <span className="btns">
-                <button disabled={i === 0} onClick={() => mv(i, -1)} aria-label={`move ${q.id} up`}>up</button>
-                <button disabled={i === queries.length - 1} onClick={() => mv(i, 1)} aria-label={`move ${q.id} down`}>down</button>
+                <label className="pri">priority <input type="range" min={0} max={5} step={0.1} value={q.priority} aria-label={`priority of ${q.id}`} onChange={(e) => setQueries(queries.map((x) => (x === q ? { ...x, priority: +e.target.value } : x)))} /><b className="mono">{q.priority.toFixed(1)}</b></label>
                 <button onClick={() => rm(q)} aria-label={`remove ${q.id}`}>remove</button>
               </span>
             </li>
@@ -53,9 +51,9 @@ export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & 
       <section className="panel">
         <h3>Schedule recompute <small>{data.tiles.length.toLocaleString()} tiles, 5 policies</small></h3>
         <div className="msrow">
-          <div key={flash} className={`msbig mono flash ${ms !== null && ms < 100 ? "ok" : "bad"}`} aria-live="polite">{ms === null ? "..." : msf(ms)}</div>
-          <div className="msnote"><Chip tone={ms !== null && ms < 100 ? "ok" : "bad"}>{ms !== null && ms < 100 ? "under 100 ms target" : "over 100 ms target"}</Chip>
-            <span className="small dim">measured with performance.now(): post to Web Worker, schedule, return</span></div>
+          <div key={flash} className={`msbig mono flash ${ms !== null && ms < 60 ? "ok" : "bad"}`} aria-live="polite">{ms === null ? "..." : msf(ms)}</div>
+          <div className="msnote"><Chip tone={ms !== null && ms < 60 ? "ok" : "bad"}>{ms !== null && ms < 60 ? "under 60 ms (gate G6)" : "over 60 ms (gate G6)"}</Chip>
+            <span className="small dim">G6 measurement: performance.now() around post to Web Worker, schedule, return</span></div>
         </div>
         {out && <dl className="dl">
           <dt>HERALD value</dt><dd className="mono"><Rupee v={hv} name="rupees_per_ha" meta={data.meta.rupees_per_ha} value={data.params.rupees_per_ha} /></dd>

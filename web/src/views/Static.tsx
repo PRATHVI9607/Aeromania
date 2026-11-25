@@ -12,7 +12,8 @@ const Card = ({ title, payer, children }: { title: string; payer: string; childr
 export function Economics({ data }: { data: Data }) {
   const p = data.params, m = data.meta, R = data.reports;
   const sv = R.survey_blr, sit = R.siting, sim = R.sim;
-  const wardRs = sv ? sv.wards_ranked.reduce((a: number, w: any) => a + w.rupees_expected, 0) : null;
+  const wardAll: any[] | undefined = sv?.wards_all;
+const wardRs = sv ? (wardAll ?? sv.wards_ranked).reduce((a: number, w: any) => a + w.rupees_expected, 0) : null;
   const rpm = p.rupees_per_contact_min;
   const sitMeta = (kind: "solar" | "wind", k: string) => ({ assumption: true, source: sit?.params?.[kind]?.[k]?.src ?? "config/siting.json" });
   const sw = useJson<any>("siting.json");
@@ -27,14 +28,14 @@ export function Economics({ data }: { data: Data }) {
         <Card title="City revenue and planning" payer="Pack A, property-tax survey triage">
           <dt>Rupees per ha of new built-up</dt><dd className="mono"><Rupee v={p.rupees_per_ha.A} name="rupees_per_ha.A" meta={m.rupees_per_ha} value={p.rupees_per_ha} /></dd>
           {sv && <><dt>New built-up detected</dt><dd className="mono">{sv.aoi_summary.new_built_ha} ha over {sv.aoi_summary.years.toFixed(1)} yr</dd>
-            <dt>Expected recoverable value, all wards</dt><dd className="mono"><Rupee v={wardRs} name="survey_blr.wards_ranked[].rupees_expected" meta={{ assumption: true, source: `${sv.rupees_source} ${sv.rupees_note}` }} /></dd>
+            <dt>Expected recoverable value, {wardAll ? "all" : `top ${sv.wards_ranked.length}`} wards</dt><dd className="mono"><Rupee v={wardRs} name="survey_blr.wards_ranked[].rupees_expected" meta={{ assumption: true, source: `${sv.rupees_source} ${sv.rupees_note}` }} /></dd>
             <dt>Confidence</dt><dd><small>{sv.confidence_def}</small></dd></>}
         </Card>
         <Card title="Siting developer" payer="Pack A2, renewable siting around Pavagada">
           {topS ? <>
             <dt>Top solar cell</dt><dd className="mono">{topS.mw} MW, {topS.mwh_yr.toLocaleString("en-IN")} MWh/yr</dd>
             <dt>Revenue per year</dt><dd className="mono"><Rupee v={topS.revenue_rs_yr} name="solar.tariff_rs_kwh" meta={sitMeta("solar", "tariff_rs_kwh")} value={sit?.params?.solar?.tariff_rs_kwh?.v} /></dd>
-            <dt>Net of grid connection</dt><dd className="mono"><Rupee v={topS.net_value_rs_yr} name="solar.grid_cr_per_km" meta={sitMeta("solar", "grid_cr_per_km")} value={sit?.params?.solar?.grid_cr_per_km?.v} /></dd>
+            <dt>Net margin after all costs (assumptions)</dt><dd className="mono"><Rupee v={topS.net_value_rs_yr} name="solar.grid_cr_per_km" meta={sitMeta("solar", "grid_cr_per_km")} value={sit?.params?.solar?.grid_cr_per_km?.v} /></dd>
           </> : <><dt>Status</dt><dd>reports/siting.json not generated yet</dd></>}
         </Card>
         <Card title="Mines and forest departments" payer="Pack C, evidence for enforcement">

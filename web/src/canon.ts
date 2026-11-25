@@ -72,3 +72,25 @@ export function cardsFromText(text: string): { cards: any[]; nodes: Node[] } {
   const cards = JSON.parse(text);
   return { cards: Array.isArray(cards) ? cards : cards.cards, nodes: arr.v };
 }
+
+const ZERO = "0".repeat(64);
+/** Chain anchors from evidence.json: genesis (prev_hash of card 0) and chain_head (hash of the last card), when present. */
+export function chainMeta(text: string): { genesis: string; head: string | null } {
+  const d = JSON.parse(text);
+  return { genesis: (!Array.isArray(d) && d.genesis) || ZERO, head: (!Array.isArray(d) && d.chain_head) || null };
+}
+/** Link check for card i: prev_hash equals the previous hash (genesis for card 0); the last card must also equal chain_head. */
+export function linkOk(cards: any[], i: number, m: { genesis: string; head: string | null }): boolean {
+  return cards[i].prev_hash === (i === 0 ? m.genesis : cards[i - 1].hash) && (i !== cards.length - 1 || m.head === null || cards[i].hash === m.head);
+}
+/** Whole-chain verification used by the Gates and tests: every hash recomputes, every link holds, genesis and head anchor. */
+export async function verifyChainText(text: string): Promise<{ ok: boolean; hashes: number; links: number; n: number }> {
+  const { cards, nodes } = cardsFromText(text), m = chainMeta(text);
+  let hashes = 0, links = 0;
+  for (let i = 0; i < cards.length; i++) {
+    const h1 = await sha256Hex(canon(nodes[i], true, "hash")), h2 = await sha256Hex(canon(nodes[i], false, "hash"));
+    if (h1 === cards[i].hash || h2 === cards[i].hash) hashes++;
+    if (linkOk(cards, i, m)) links++;
+  }
+  return { ok: hashes === cards.length && links === cards.length, hashes, links, n: cards.length };
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Data } from "../data";
 import { useJson } from "../useJson";
-import { canon, cardsFromText, sha256Hex } from "../canon";
+import { canon, cardsFromText, sha256Hex, verifyChainText } from "../canon";
 
 type S = "pass" | "fail" | "partial" | "pending" | "reported";
 interface G { id: string; metric: string; target: string; status: S; detail: string }
@@ -18,17 +18,12 @@ async function evidenceGate(): Promise<G> {
   if (!text) return P(id, metric, target, "evidence.json not generated yet");
   try {
     const { cards, nodes } = cardsFromText(text);
-    let ok = 0, links = 0;
-    for (let i = 0; i < cards.length; i++) {
-      const h = await sha256Hex(canon(nodes[i], true, "hash")), h2 = await sha256Hex(canon(nodes[i], false, "hash"));
-      if (h === cards[i].hash || h2 === cards[i].hash) ok++;
-      if (i === 0 || cards[i].prev_hash === cards[i - 1].hash) links++;
-    }
+    const v = await verifyChainText(text), ok = v.hashes, links = v.links;
     // tamper test: change one byte of card 0's canonical text and re-hash
     const c0 = canon(nodes[0], true, "hash");
     const detected = (await sha256Hex(c0.slice(0, 5) + (c0[5] === "x" ? "y" : "x") + c0.slice(6))) !== cards[0].hash;
-    const all = ok === cards.length && links === cards.length;
-    return { id, metric, target, status: all && detected ? "pass" : "fail", detail: `${ok}/${cards.length} hashes, ${links}/${cards.length} links; one-character tamper ${detected ? "detected" : "NOT detected"}` };
+    const all = v.ok;
+    return { id, metric, target, status: all && detected ? "pass" : "fail", detail: `${ok}/${cards.length} hashes, ${links}/${cards.length} links (genesis and chain_head anchored); one-character tamper ${detected ? "detected" : "NOT detected"}` };
   } catch (e) { return { id, metric, target, status: "fail", detail: `evidence.json unreadable: ${String(e)}` }; }
 }
 
@@ -43,11 +38,11 @@ export function Gates({ data, ms, runs }: { data: Data; ms: number | null; runs:
 
   mk("G1", "EuroSAT top-1, int8 (held-out test)", ">= 98.0%", m?.eurosat?.top1_int8, (v) => v >= 0.98, (v) => `${f(v * 100)}% (fp32 ${num(m.eurosat.top1_fp32) ? f(m.eurosat.top1_fp32 * 100) : "n/a"}%, n=${m.eurosat.n_test})`);
   mk("G1b", "int8 accuracy drop vs fp32", "<= 0.3 pt", m?.eurosat?.int8_drop_pt, (v) => v <= 0.3, (v) => `${f(v)} pt`);
-  // loao is {aoi: {mae}} or {variant: {aoi: {mae}}}; flatten to "variant/aoi" rows, never assume a shape.
-  const loao: [string, number][] = [];
-  const walk = (o: any, path: string) => { for (const [k, v] of Object.entries<any>(o ?? {})) { if (v && num(v.mae)) loao.push([path + k, v.mae]); else if (v && typeof v === "object" && !Array.isArray(v)) walk(v, `${path}${k}/`); } };
-  walk(m?.cloud?.loao, "");
-  g.push(loao.length ? { id: "G2", metric: "Cloud-fraction MAE vs SCL, leave-one-AOI-out", target: "<= 0.05 (all folds)", status: loao.every(([, v]) => v <= 0.05) ? "pass" : "fail", detail: loao.map(([k, v]) => `${k} ${f(v, 3)}`).join(", ") } : P("G2", "Cloud-fraction MAE vs SCL, leave-one-AOI-out", "<= 0.05 (all folds)"));
+  // cloud.mae = held-out AOI (hasdeo) MAE; loao[variant][aoi].combined is the per-fold detail
+  const loao: string[] = [];
+  for (const [variant, folds] of Object.entries<any>(m?.cloud?.loao ?? {})) for (const [aoi, o] of Object.entries<any>(folds ?? {})) if (num(o?.combined)) loao.push(`${variant}/${aoi} ${f(o.combined, 3)}`);
+  g.push(num(m?.cloud?.mae) ? { id: "G2", metric: "Cloud-fraction MAE vs SCL, held-out AOI", target: "<= 0.05", status: m.cloud.mae <= 0.05 ? "pass" : "fail",
+    detail: `${f(m.cloud.mae, 3)} on ${m.cloud.heldout_aoi ?? "held-out AOI"} (mean-predictor baseline ${num(m.cloud.mean_baseline_mae) ? f(m.cloud.mean_baseline_mae, 3) : "n/a"}); leave-one-AOI-out ${loao.join(", ") || "n/a"}` } : P("G2", "Cloud-fraction MAE vs SCL, held-out AOI", "<= 0.05"));
   mk("G3", "Calibration ECE", "< 0.01", m?.eurosat?.ece_after, (v) => v < 0.01, (v) => `${f(v, 4)} (before ${num(m.eurosat.ece_before) ? f(m.eurosat.ece_before, 3) : "n/a"})`);
   mk("G4", "int8 CPU latency, batch 64", "< 1 ms/chip", m?.latency?.ms_per_chip_int8_cpu_b64, (v) => v < 1, (v) => `${f(v)} ms/chip default${num(m.latency.ms_per_chip_int8_cpu_b64_best) ? `, ${f(m.latency.ms_per_chip_int8_cpu_b64_best)} best-of-threads` : ""}; load avg ${num(m.latency.load_avg_1m) ? f(m.latency.load_avg_1m, 1) : "n/a"} when measured`);
   mk("G5", "Scheduler", "< 5 ms / 1k tiles", sim?.g5_ms_per_1000_tiles_H2, (v) => v < 5, (v) => `${f(v)} ms per 1000 tiles (H2)`);

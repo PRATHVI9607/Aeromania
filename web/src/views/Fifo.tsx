@@ -16,12 +16,12 @@ const RHO = [1, 2, 5, 10];
 
 /** value of a per-window cumulative array at fractional window progress p */
 function at(a: ArrayLike<number>, p: number) {
-  const n = a.length; if (p >= n) return a[n - 1] ?? 0;
+  const n = a.length; if (!(p >= 0)) return 0; if (p >= n) return a[n - 1] ?? 0;
   const i = Math.floor(p), lo = i === 0 ? 0 : a[i - 1];
   return lo + (a[i] - lo) * (p - i);
 }
 
-function Timeline({ r, data, title, p, tone, value, ub }: { r: RunOut; data: ViewProps["data"]; title: string; p: number; tone: string; value: number; ub: number }) {
+function Timeline({ r, data, title, p, tone, value, ub, prog }: { prog: boolean; r: RunOut; data: ViewProps["data"]; title: string; p: number; tone: string; value: number; ub: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const nw = data.wins.length;
   const byWin = useMemo(() => {
@@ -39,14 +39,14 @@ function Timeline({ r, data, title, p, tone, value, ub }: { r: RunOut; data: Vie
       let x = 0;
       for (const [i, L] of byWin[y]) {
         const t = data.tiles[i];
-        const b = L === 0 ? data.params.level_bytes[0] : L === 1 ? data.params.level_bytes[1] - data.params.level_bytes[0] : Math.max(t.full_bytes, data.params.level_bytes[1] + 1) - data.params.level_bytes[1];
+        const b = L === 0 ? data.params.level_bytes[0] : L === 1 ? data.params.level_bytes[1] - data.params.level_bytes[0] : (prog ? Math.max(t.full_bytes, data.params.level_bytes[1] + 1) - data.params.level_bytes[1] : Math.max(t.full_bytes, data.params.level_bytes[1] + 1));
         const wd = (b / maxCap) * W;
         g.fillStyle = t.cloud > 0.5 ? "#5b6670" : `hsl(36 ${35 + 20 * L}% ${30 + 30 * Math.min(1, t.sev * 2)}%)`;
         g.fillRect(x, y * RH, Math.max(wd - 0.4, 0.6), Math.max(RH - 0.5, 0.8));
         x += wd;
       }
     }
-  }, [r, byWin, data, nw]);
+  }, [r, byWin, data, nw, prog]);
   return (
     <div className="panel racepanel">
       <h3>{title} <small>{bytes(at(r.timeline.bytes.reduce<number[]>((a, v) => (a.push((a[a.length - 1] ?? 0) + v), a), []), p))} sent</small></h3>
@@ -149,8 +149,8 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
           <span className="mono">FIFO used {match.f !== null ? match.f.toFixed(0) : "n/a"} min{saved !== null && <> : saves {saved.toFixed(0)} min = <Rupee v={saved * rpm} name="rupees_per_contact_min" meta={data.meta.rupees_per_contact_min} value={rpm} /></>}</span>
         </div>
       </section>
-      <div key={`f${rho}`} className="fade"><Timeline r={live.results.B1} data={data} title="FIFO (B1)" p={p} tone="" value={vF} ub={ubT} /></div>
-      <div key={`h${rho}`} className="fade"><Timeline r={live.results.H2} data={data} title="HERALD (H2)" p={p} tone="accent" value={vH} ub={ubT} /></div>
+      <div key={`f${rho}`} className="fade"><Timeline r={live.results.B1} data={data} title="FIFO (B1)" prog={false} p={p} tone="" value={vF} ub={ubT} /></div>
+      <div key={`h${rho}`} className="fade"><Timeline r={live.results.H2} data={data} title="HERALD (H2)" prog p={p} tone="accent" value={vH} ub={ubT} /></div>
       <section className="panel span2">
         <h3>Cumulative realized value <small>{nw} contact windows, curves draw in step with the race</small></h3>
         <Curves cum={cum} ub={ubT} data={data} p={p} />
