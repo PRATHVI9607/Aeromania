@@ -4,11 +4,12 @@ import { useSched } from "./useSched";
 import type { Query } from "./types";
 import { Fifo } from "./views/Fifo";
 import { Insights } from "./views/Insights";
+import { Siting } from "./views/Siting";
 import { QueriesView } from "./views/Queries";
 import { Evidence, Economics, Hardware, About } from "./views/Static";
 
 const Mission = lazy(() => import("./views/Mission"));
-const TABS = ["Mission", "FIFO vs HERALD", "Insights", "Queries", "Evidence", "Economics", "Hardware", "About / Limits"] as const;
+const TABS = ["Mission", "FIFO vs HERALD", "Insights", "Siting", "Queries", "Evidence", "Economics", "Hardware", "About / Limits"] as const;
 
 export function App() {
   const [data, setData] = useState<Data | null>(null);
@@ -52,11 +53,12 @@ function Shell({ data }: { data: Data }) {
           {tab === 0 && <Mission {...common} />}
           {tab === 1 && <Fifo {...common} setRho={setRho} />}
           {tab === 2 && <Insights {...common} />}
-          {tab === 3 && <QueriesView {...common} setQueries={setQueries} ms={ms} />}
-          {tab === 4 && <Evidence data={data} />}
-          {tab === 5 && <Economics data={data} />}
-          {tab === 6 && <Hardware data={data} />}
-          {tab === 7 && <About />}
+          {tab === 3 && <Siting {...common} />}
+          {tab === 4 && <QueriesView {...common} setQueries={setQueries} ms={ms} />}
+          {tab === 5 && <Evidence data={data} />}
+          {tab === 6 && <Economics data={data} />}
+          {tab === 7 && <Hardware data={data} />}
+          {tab === 8 && <About />}
         </Suspense>
       </main>
     </div>
