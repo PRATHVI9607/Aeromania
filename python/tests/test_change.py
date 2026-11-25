@@ -88,3 +88,11 @@ def test_find_pits_new_rect_kept_seasonal_edge_dropped():
     thr = {**ch.DEFAULTS["sand"], "pit_max_ha": 3.0}
     lab, pits = ch.find_pits(w0, w1, ones, ones, thr, ~w1)
     assert len(pits) == 1 and pits[0]["new"] and abs(pits[0]["ha"] - 2.0) < 0.01
+
+
+def test_crop_window_stays_in_grid():
+    from herald.change import G
+    from herald.crops import window
+    assert window(0, 0) == (0, 0)
+    assert window(G - 1, G - 1) == (G - 3, G - 3)
+    assert window(10, 20) == (9, 19)

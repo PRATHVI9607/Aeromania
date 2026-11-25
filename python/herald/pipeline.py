@@ -29,7 +29,7 @@ def main(argv: list[str]) -> int:
     steps += [["score"]]
     if "--quick" not in flags:
         steps += [["score", "--change"]]
-    steps += [["change"], ["evidence"], ["evidence", "verify"], ["siting"], ["sim"]]
+    steps += [["change"], ["evidence"], ["evidence", "verify"], ["crops"], ["siting"], ["sim"]]
     if "--quick" not in flags:
         steps += [["bench"]]
     for s in steps:
