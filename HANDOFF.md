@@ -67,6 +67,7 @@ Dates per AOI (all same MGRS tile + same relative orbit):
 - Static only. Reads `web/public/data/*.json` + `models/` report copies. Every ₹ number has an "assumption" tooltip.
 
 ## Lead decisions (latest first)
+- TRACK A HEADLINE v4.1 (supersedes encroachment-only): construction ledger with categories new_layout / building_construction / lake_filling_lead / agri_ambiguous; tank-bed seasonal false positives excluded; stalled/active statuses dropped (dates do not support them); Boeing anchor dropped. Web Insights leads with the ranked lead list + category legend + audit precision.
 - 2026-11-25 TRACK A HEADLINE (final): "Catch the encroachment before the flood." Outputs: lake-buffer flags (KTCDA 2025 tiers), near_drain (50 m, OSM), site ledger with stage over 4 dates + `intervene_window`, ranked enforcement list `reports/sites_blr.json`; tax-roll survey + growth are secondary. Web Insights must lead with the enforcement list.
 - 2026-11-25 Track A re-grounded by research: payer = city revenue dept (BBMP/GBA property-tax survey triage) + planners. `config/value.json` rupees_per_ha.A = 84000 (sourced assumption), query `q_gba` replaces `q_lender`. Change engine adds cleared/built stages, BBMP ward aggregation (`config/ref/bbmp_wards.geojson`), `reports/survey_blr.json`, anchor-site check (Boeing BIETC campus, Devanahalli). PRD v4 §0, §1, §7, §22.
 - Pending for builder-orbit (on real-data rerun): G9 headline = contact minutes for H2/H1 to reach FIFO's final value; verify real-input path reads `reports/change_{aoi}.json`.
