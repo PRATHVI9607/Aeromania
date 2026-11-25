@@ -9,6 +9,7 @@
   "NASA POWER irradiance/wind is native ~0.5-1 deg: only 16 sample points, cell values are smooth interpolation, ridge-top wind NOT resolved (Global Wind Atlas would be the upgrade).",
   "Slope-share and land-use share are multiplied as if independent.",
   "All Rs numbers are assumptions (config/siting.json).",
+  "Clusters chain adjacent 1 km cells, so cluster_mw can reach GW scale; block_mw_capped = min(cluster_mw, 500) is the realistic reporting size.",
   "Substation distance is a straight-line proxy; no capacity, voltage-level or land-ownership data."
  ],
  "region_totals": {
@@ -55,6 +56,7 @@
    "water_km": 1.0,
    "t2m": 25.8,
    "cluster_mw": 1111.3,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.05,
@@ -87,6 +89,7 @@
    "water_km": 1.1,
    "t2m": 26.6,
    "cluster_mw": 264.9,
+   "block_mw_capped": 264.9,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.05,
@@ -118,6 +121,7 @@
    "water_km": 2.1,
    "t2m": 26.0,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.07,
@@ -151,6 +155,7 @@
    "water_km": 4.5,
    "t2m": 25.5,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.07,
@@ -184,6 +189,7 @@
    "water_km": 3.6,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.03,
@@ -216,6 +222,7 @@
    "water_km": 0.3,
    "t2m": 25.8,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.51,
@@ -247,6 +254,7 @@
    "water_km": 0.8,
    "t2m": 25.9,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.34,
@@ -278,6 +286,7 @@
    "water_km": 1.6,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.12,
@@ -311,6 +320,7 @@
    "water_km": 0.6,
    "t2m": 26.1,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.11,
@@ -344,6 +354,7 @@
    "water_km": 0.7,
    "t2m": 26.7,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -376,6 +387,7 @@
    "water_km": 2.2,
    "t2m": 26.7,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.78,
@@ -408,6 +420,7 @@
    "water_km": 1.0,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.04,
@@ -440,6 +453,7 @@
    "water_km": 0.8,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -474,6 +488,7 @@
    "water_km": 3.1,
    "t2m": 25.3,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.06,
@@ -506,6 +521,7 @@
    "water_km": 3.0,
    "t2m": 25.3,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "grass": 0.03,
@@ -537,6 +553,7 @@
    "water_km": 1.9,
    "t2m": 26.0,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.02,
@@ -569,6 +586,7 @@
    "water_km": 1.1,
    "t2m": 25.9,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.01,
@@ -601,6 +619,7 @@
    "water_km": 0.7,
    "t2m": 25.3,
    "cluster_mw": 2037.7,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.12,
@@ -635,6 +654,7 @@
    "water_km": 3.0,
    "t2m": 25.4,
    "cluster_mw": 2037.7,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -667,6 +687,7 @@
    "water_km": 2.8,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.07,
@@ -701,6 +722,7 @@
    "water_km": 1.0,
    "t2m": 25.8,
    "cluster_mw": 1111.3,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.05,
@@ -733,6 +755,7 @@
    "water_km": 1.1,
    "t2m": 26.6,
    "cluster_mw": 264.9,
+   "block_mw_capped": 264.9,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.05,
@@ -764,6 +787,7 @@
    "water_km": 2.1,
    "t2m": 26.0,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.07,
@@ -797,6 +821,7 @@
    "water_km": 4.5,
    "t2m": 25.5,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.07,
@@ -830,6 +855,7 @@
    "water_km": 3.6,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.03,
@@ -862,6 +888,7 @@
    "water_km": 0.3,
    "t2m": 25.8,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.51,
@@ -893,6 +920,7 @@
    "water_km": 0.8,
    "t2m": 25.9,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.34,
@@ -924,6 +952,7 @@
    "water_km": 1.6,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.12,
@@ -957,6 +986,7 @@
    "water_km": 0.6,
    "t2m": 26.1,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.11,
@@ -990,6 +1020,7 @@
    "water_km": 0.7,
    "t2m": 26.7,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -1022,6 +1053,7 @@
    "water_km": 2.2,
    "t2m": 26.7,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.78,
@@ -1054,6 +1086,7 @@
    "water_km": 1.0,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.04,
@@ -1086,6 +1119,7 @@
    "water_km": 0.8,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -1120,6 +1154,7 @@
    "water_km": 3.1,
    "t2m": 25.3,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.06,
@@ -1152,6 +1187,7 @@
    "water_km": 3.0,
    "t2m": 25.3,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "grass": 0.03,
@@ -1183,6 +1219,7 @@
    "water_km": 1.9,
    "t2m": 26.0,
    "cluster_mw": 10408.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.02,
@@ -1215,6 +1252,7 @@
    "water_km": 1.1,
    "t2m": 25.9,
    "cluster_mw": 7715.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.01,
@@ -1247,6 +1285,7 @@
    "water_km": 0.7,
    "t2m": 25.3,
    "cluster_mw": 2037.7,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.12,
@@ -1281,6 +1320,7 @@
    "water_km": 3.0,
    "t2m": 25.4,
    "cluster_mw": 2037.7,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -1313,6 +1353,7 @@
    "water_km": 2.8,
    "t2m": 25.4,
    "cluster_mw": 5073.0,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.07,
@@ -1347,6 +1388,7 @@
    "water_km": 1.0,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.05,
@@ -1378,6 +1420,7 @@
    "water_km": 1.4,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.11,
@@ -1410,6 +1453,7 @@
    "water_km": 0.9,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.08,
@@ -1442,6 +1486,7 @@
    "water_km": 3.3,
    "t2m": 25.9,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.08,
@@ -1473,6 +1518,7 @@
    "water_km": 1.4,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.05,
@@ -1505,6 +1551,7 @@
    "water_km": 0.0,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.14,
@@ -1537,6 +1584,7 @@
    "water_km": 2.1,
    "t2m": 26.0,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.07,
@@ -1569,6 +1617,7 @@
    "water_km": 2.2,
    "t2m": 26.7,
    "cluster_mw": 728.1,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.78,
@@ -1600,6 +1649,7 @@
    "water_km": 2.2,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.01,
@@ -1633,6 +1683,7 @@
    "water_km": 3.2,
    "t2m": 25.9,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.16,
@@ -1664,6 +1715,7 @@
    "water_km": 4.1,
    "t2m": 26.0,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.2,
@@ -1695,6 +1747,7 @@
    "water_km": 2.0,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.07,
@@ -1725,6 +1778,7 @@
    "water_km": 2.8,
    "t2m": 25.7,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.04,
@@ -1755,6 +1809,7 @@
    "water_km": 1.6,
    "t2m": 25.4,
    "cluster_mw": 1325.3,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.12,
@@ -1787,6 +1842,7 @@
    "water_km": 2.2,
    "t2m": 25.8,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.11,
@@ -1817,6 +1873,7 @@
    "water_km": 1.9,
    "t2m": 26.0,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.02,
@@ -1848,6 +1905,7 @@
    "water_km": 4.5,
    "t2m": 25.5,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.07,
@@ -1880,6 +1938,7 @@
    "water_km": 1.0,
    "t2m": 25.9,
    "cluster_mw": 2502.5,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.24,
@@ -1910,6 +1969,7 @@
    "water_km": 0.3,
    "t2m": 25.8,
    "cluster_mw": 624.9,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "shrub": 0.51,
@@ -1940,6 +2000,7 @@
    "water_km": 0.8,
    "t2m": 25.4,
    "cluster_mw": 1325.3,
+   "block_mw_capped": 500.0,
    "block_ge_50mw": true,
    "land_mix": {
     "tree": 0.03,
@@ -2134,6 +2195,40 @@
    "roads": "OSM highway=motorway|trunk|primary|secondary|tertiary (+_link) via Overpass, fetched 2026",
    "flood_water": "JRC Global Surface Water occurrence v1.4 (2021 release), https://storage.googleapis.com/global-surface-water/downloads2021/occurrence/occurrence_70E_20Nv1_4_2021.tif ; water for cleaning = km to nearest OSM natural=water/waterway or JRC occurrence > 50% (info only)",
    "temperature": "NASA POWER T2M annual climatology, same API as irradiance"
+  },
+  "a1_a2_link": {
+   "pv_area_px": {
+    "v": 5,
+    "src": "assumption: PV area = 5x5 window with >50% PV-like pixels (suppresses single-pixel flicker); new PV = area at t1 and not within 2 px of area at t0; components >= 20 px (0.2 ha)"
+   },
+   "converted_share": {
+    "v": 0.1,
+    "src": "assumption (user brief): cell flagged converted_2023_2025 if >10% of its area changed (new PV or construction rule)"
+   },
+   "newpv_cell_ha": {
+    "v": 5,
+    "src": "assumption: a cell counts as 'new PV landed here' if >= 5 ha (5%) of new PV"
+   },
+   "block_cap_mw": {
+    "v": 500,
+    "src": "assumption (user brief): block_mw_capped = min(cluster_mw, 500); chaining of 1 km cells inflates clusters"
+   },
+   "pv_blue_red_min": {
+    "v": 0.65,
+    "src": "calibrated on pvg (Sentinel-2 t0+t1): OSM solar polygons (308 ha in AOI) vs a 150 m ring of nearby land. Blue/red ratio is the best single discriminator (ROC AUC 0.88 t0, 0.84 t1): PV looks blue-grey, soil red. Rule blue/red>0.65 & NIR<0.24 & NDVI<0.25 flags 52-55% of polygon pixels vs 1.6-5% of the ring (ring includes unmapped PV, so an upper bound). An earlier NIR/NDBI-only rule fired on all dark terrain (10,862 ha PV at t0 vs a 5,261 ha park) and was rejected"
+   },
+   "pv_nir_max": {
+    "v": 0.24,
+    "src": "same calibration"
+   },
+   "pv_ndvi_max": {
+    "v": 0.25,
+    "src": "same calibration"
+   },
+   "new_t0_blue_red_max": {
+    "v": 0.6,
+    "src": "assumption: a new-PV pixel must have been clearly NOT blue-grey at t0 (B02/B04 < 0.60) and have MNDWI < -0.2 at t1 (excludes water); components >= 50 px (0.5 ha). Added after the first QA showed reservoir and burn-scar false positives"
+   }
   }
  },
  "validation": {
@@ -2193,5 +2288,757 @@
    "prev_pavagada_median_pct": 96.2,
    "note": "measured manually in the run before this one (LCOE ranking before access road, heat derate, flood exclusion); the script cannot recompute it once the report is overwritten"
   }
+ },
+ "a1_a2_link": {
+  "period": "2023-02-27 -> 2025-02-26 (Sentinel-2, 0% cloud both)",
+  "aoi_km2": 867.0,
+  "pv_area_ha": {
+   "t0": 8053,
+   "t1": 4313
+  },
+  "new_pv_ha": 64.1,
+  "construction_ha_excl_pv": 5406.7,
+  "cells_in_aoi": 754,
+  "cells_converted": 143,
+  "top50_solar_cells_in_aoi": 10,
+  "top50_converted": 1,
+  "top50_converted_newpv_only": 0,
+  "cells_converted_newpv_only": 1,
+  "newpv_cells": 2,
+  "newpv_cells_percentile_in_ranking": {
+   "n_cells": 2,
+   "n_ranked": 2,
+   "mean_pct": 76.2,
+   "median_pct": 76.2,
+   "share_top_decile": 0.0
+  },
+  "converted_cells_percentile_in_ranking": {
+   "n_cells": 143,
+   "n_ranked": 138,
+   "mean_pct": 58.5,
+   "median_pct": 58.9,
+   "share_top_decile": 0.058
+  },
+  "converted_cells_top_decile_share": 0.058,
+  "precision_note": "QA (reports/qa/pvg_solar.png, top 6 tiles by new-PV ha) looked at by eye: see qa_verdict. No ground truth beyond OSM footprints. construction_ha is dominated by seasonal/crop/burn change between two single dates and should NOT be read as built area; converted_2023_2025 (union) is therefore inflated, newpv_only variants are cleaner. Thresholds calibrated on OSM solar polygons vs nearby land: the rule fires on ~52-55% of polygon pixels and ~2-5% of surrounding land (which includes unmapped PV), so it undercounts PV area and picks up dark soil/rock/fallow as noise. A 10 m pixel cannot see panel rows; new_pv_ha is a lower-confidence estimate (seasonal dry-season pair, same month both years) and detections are leads, not a survey.",
+  "converted_mask_cells": [
+   [
+    0,
+    37,
+    0.13
+   ],
+   [
+    0,
+    38,
+    0.11
+   ],
+   [
+    0,
+    49,
+    0.13
+   ],
+   [
+    0,
+    51,
+    0.11
+   ],
+   [
+    0,
+    52,
+    0.17
+   ],
+   [
+    0,
+    53,
+    0.1
+   ],
+   [
+    1,
+    32,
+    0.13
+   ],
+   [
+    1,
+    33,
+    0.12
+   ],
+   [
+    1,
+    36,
+    0.12
+   ],
+   [
+    1,
+    37,
+    0.14
+   ],
+   [
+    1,
+    49,
+    0.1
+   ],
+   [
+    2,
+    32,
+    0.16
+   ],
+   [
+    2,
+    36,
+    0.11
+   ],
+   [
+    2,
+    52,
+    0.14
+   ],
+   [
+    2,
+    59,
+    0.18
+   ],
+   [
+    3,
+    31,
+    0.29
+   ],
+   [
+    3,
+    32,
+    0.16
+   ],
+   [
+    3,
+    36,
+    0.13
+   ],
+   [
+    3,
+    38,
+    0.16
+   ],
+   [
+    3,
+    41,
+    0.1
+   ],
+   [
+    3,
+    43,
+    0.1
+   ],
+   [
+    3,
+    46,
+    0.15
+   ],
+   [
+    3,
+    48,
+    0.16
+   ],
+   [
+    3,
+    57,
+    0.12
+   ],
+   [
+    3,
+    58,
+    0.22
+   ],
+   [
+    3,
+    59,
+    0.17
+   ],
+   [
+    4,
+    31,
+    0.21
+   ],
+   [
+    4,
+    38,
+    0.14
+   ],
+   [
+    4,
+    40,
+    0.12
+   ],
+   [
+    4,
+    45,
+    0.11
+   ],
+   [
+    4,
+    57,
+    0.15
+   ],
+   [
+    4,
+    59,
+    0.16
+   ],
+   [
+    5,
+    32,
+    0.12
+   ],
+   [
+    5,
+    33,
+    0.15
+   ],
+   [
+    5,
+    35,
+    0.11
+   ],
+   [
+    5,
+    38,
+    0.2
+   ],
+   [
+    5,
+    56,
+    0.12
+   ],
+   [
+    5,
+    57,
+    0.13
+   ],
+   [
+    5,
+    58,
+    0.12
+   ],
+   [
+    6,
+    33,
+    0.14
+   ],
+   [
+    6,
+    35,
+    0.18
+   ],
+   [
+    6,
+    38,
+    0.24
+   ],
+   [
+    6,
+    46,
+    0.1
+   ],
+   [
+    6,
+    49,
+    0.14
+   ],
+   [
+    6,
+    56,
+    0.11
+   ],
+   [
+    6,
+    57,
+    0.13
+   ],
+   [
+    6,
+    58,
+    0.12
+   ],
+   [
+    7,
+    32,
+    0.12
+   ],
+   [
+    7,
+    35,
+    0.12
+   ],
+   [
+    7,
+    45,
+    0.2
+   ],
+   [
+    7,
+    46,
+    0.25
+   ],
+   [
+    7,
+    57,
+    0.23
+   ],
+   [
+    7,
+    58,
+    0.19
+   ],
+   [
+    7,
+    59,
+    0.15
+   ],
+   [
+    8,
+    34,
+    0.1
+   ],
+   [
+    8,
+    36,
+    0.12
+   ],
+   [
+    8,
+    38,
+    0.15
+   ],
+   [
+    8,
+    45,
+    0.11
+   ],
+   [
+    8,
+    46,
+    0.26
+   ],
+   [
+    8,
+    53,
+    0.12
+   ],
+   [
+    8,
+    57,
+    0.16
+   ],
+   [
+    8,
+    58,
+    0.2
+   ],
+   [
+    8,
+    59,
+    0.14
+   ],
+   [
+    9,
+    35,
+    0.13
+   ],
+   [
+    9,
+    36,
+    0.16
+   ],
+   [
+    9,
+    38,
+    0.14
+   ],
+   [
+    9,
+    40,
+    0.18
+   ],
+   [
+    9,
+    46,
+    0.24
+   ],
+   [
+    9,
+    47,
+    0.13
+   ],
+   [
+    9,
+    50,
+    0.1
+   ],
+   [
+    9,
+    57,
+    0.16
+   ],
+   [
+    9,
+    58,
+    0.16
+   ],
+   [
+    9,
+    59,
+    0.14
+   ],
+   [
+    10,
+    31,
+    0.17
+   ],
+   [
+    10,
+    32,
+    0.14
+   ],
+   [
+    10,
+    33,
+    0.14
+   ],
+   [
+    10,
+    36,
+    0.11
+   ],
+   [
+    10,
+    58,
+    0.1
+   ],
+   [
+    11,
+    34,
+    0.11
+   ],
+   [
+    11,
+    35,
+    0.16
+   ],
+   [
+    11,
+    36,
+    0.18
+   ],
+   [
+    11,
+    47,
+    0.12
+   ],
+   [
+    12,
+    36,
+    0.14
+   ],
+   [
+    12,
+    40,
+    0.16
+   ],
+   [
+    12,
+    41,
+    0.14
+   ],
+   [
+    12,
+    42,
+    0.18
+   ],
+   [
+    12,
+    47,
+    0.1
+   ],
+   [
+    12,
+    59,
+    0.12
+   ],
+   [
+    13,
+    36,
+    0.16
+   ],
+   [
+    13,
+    40,
+    0.12
+   ],
+   [
+    13,
+    41,
+    0.16
+   ],
+   [
+    13,
+    42,
+    0.16
+   ],
+   [
+    13,
+    43,
+    0.16
+   ],
+   [
+    13,
+    46,
+    0.2
+   ],
+   [
+    14,
+    40,
+    0.25
+   ],
+   [
+    14,
+    41,
+    0.13
+   ],
+   [
+    14,
+    42,
+    0.17
+   ],
+   [
+    14,
+    56,
+    0.13
+   ],
+   [
+    14,
+    58,
+    0.12
+   ],
+   [
+    14,
+    59,
+    0.21
+   ],
+   [
+    15,
+    36,
+    0.15
+   ],
+   [
+    15,
+    42,
+    0.13
+   ],
+   [
+    15,
+    43,
+    0.15
+   ],
+   [
+    15,
+    55,
+    0.14
+   ],
+   [
+    15,
+    58,
+    0.2
+   ],
+   [
+    16,
+    32,
+    0.11
+   ],
+   [
+    16,
+    36,
+    0.1
+   ],
+   [
+    16,
+    41,
+    0.11
+   ],
+   [
+    16,
+    42,
+    0.21
+   ],
+   [
+    16,
+    43,
+    0.19
+   ],
+   [
+    16,
+    47,
+    0.12
+   ],
+   [
+    17,
+    31,
+    0.23
+   ],
+   [
+    17,
+    32,
+    0.11
+   ],
+   [
+    17,
+    36,
+    0.26
+   ],
+   [
+    17,
+    38,
+    0.11
+   ],
+   [
+    17,
+    42,
+    0.11
+   ],
+   [
+    17,
+    44,
+    0.1
+   ],
+   [
+    19,
+    42,
+    0.17
+   ],
+   [
+    19,
+    43,
+    0.19
+   ],
+   [
+    19,
+    44,
+    0.12
+   ],
+   [
+    19,
+    46,
+    0.14
+   ],
+   [
+    19,
+    49,
+    0.14
+   ],
+   [
+    20,
+    38,
+    0.14
+   ],
+   [
+    20,
+    39,
+    0.11
+   ],
+   [
+    20,
+    42,
+    0.11
+   ],
+   [
+    20,
+    43,
+    0.18
+   ],
+   [
+    20,
+    44,
+    0.14
+   ],
+   [
+    21,
+    41,
+    0.16
+   ],
+   [
+    21,
+    42,
+    0.16
+   ],
+   [
+    21,
+    43,
+    0.14
+   ],
+   [
+    21,
+    48,
+    0.16
+   ],
+   [
+    22,
+    36,
+    0.13
+   ],
+   [
+    22,
+    37,
+    0.12
+   ],
+   [
+    22,
+    40,
+    0.15
+   ],
+   [
+    22,
+    43,
+    0.15
+   ],
+   [
+    22,
+    44,
+    0.18
+   ],
+   [
+    22,
+    48,
+    0.11
+   ],
+   [
+    22,
+    52,
+    0.14
+   ],
+   [
+    23,
+    44,
+    0.11
+   ],
+   [
+    23,
+    59,
+    0.13
+   ],
+   [
+    24,
+    44,
+    0.12
+   ],
+   [
+    24,
+    45,
+    0.13
+   ],
+   [
+    24,
+    49,
+    0.13
+   ]
+  ],
+  "qa_verdict": "Looked at top-6 tiles: 2 of 6 (tiles 805, 804: farmland -> grey panel blocks with access roads and a substation yard) are real new PV; the other 4 (1425, 1471, 1424, 1609) are dark rock/burn-scar/shadowed hillside false positives. Precision on top tiles ~33%; the rule cannot separate dark terrain from panels at 10 m. Hand-written after viewing the image; re-check it if thresholds change.",
+  "qa_png": "reports/qa/pvg_solar.png"
  }
 }

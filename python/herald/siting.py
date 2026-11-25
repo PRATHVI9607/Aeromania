@@ -22,7 +22,7 @@ from shapely.geometry import LineString, MultiLineString, Point, Polygon
 from shapely.ops import polygonize, unary_union, transform as shp_transform
 
 from herald.labels import WC_URL, wc_tile_names
-from herald.paths import CONFIG, REPORTS, VAULT, WEB_DATA, ensure
+from herald.paths import CHIPS as CHIPS_, CONFIG, REPORTS, VAULT, WEB_DATA, ensure
 
 CACHE = VAULT / "siting"
 N, DEM_PX, WC_PX = 60, 25, 10          # cells per side; DEM and WorldCover pixel sizes (m)
@@ -303,6 +303,88 @@ def clusters(r, S, tariff):
     return np.where(ok, tot[lab], 0.0), lab
 
 
+def pv_mask(x, A):
+    """PV-like pixels (blue-grey: B02/B04 high, low NIR, low NDVI) -> smoothed PV-area mask. x: reflectance [5,H,W]."""
+    from scipy.ndimage import uniform_filter
+    from herald.change import indices
+    i = indices(x)
+    pv = (x[0] / np.maximum(x[2], 1e-6) > A["pv_blue_red_min"]["v"]) & (x[3] < A["pv_nir_max"]["v"]) & (i["ndvi"] < A["pv_ndvi_max"]["v"])
+    return uniform_filter(pv.astype(np.float32), A["pv_area_px"]["v"]) > .5
+
+
+def a1_a2_link(cfg, g, c, S, qa=True):
+    """Pavagada t0->t1 (2023->2025): new PV + construction in the pvg AOI, mapped to siting cells; forward-looking validation."""
+    from scipy import ndimage as ndi
+    from herald import change as ch
+    A = cfg["a1_a2_link"]
+    meta = json.loads((VAULT / "meta" / "pvg.json").read_text(encoding="utf-8"))
+    if not (VAULT / "chips" / "pvg_t1.npy").exists():
+        return None
+    ld = lambda d: ch.load_aoi("pvg", d)
+    x0, s0 = ld("t0"); x1, s1 = ld("t1")
+    valid = ch.valid_mask(s0, s1)
+    a0, a1 = pv_mask(x0, A), pv_mask(x1, A)
+    br0 = x0[0] / np.maximum(x0[2], 1e-6)
+    ndw1 = ch.indices(x1)["mndwi"]
+    newpv = ch.remove_small(a1 & ~ndi.binary_dilation(a0, iterations=2) & (br0 < A["new_t0_blue_red_max"]["v"]) & (ndw1 < -0.2) & valid, 50)
+    cons = ch.detect("construction", x0, x1, valid, ch.DEFAULTS["construction"])[0] & ~a0
+    chg = newpv | cons
+    ox, oy = meta["origin_xy"]
+    px = np.arange(ch.M)
+    gi = ((g["y1"] - (oy - (px + .5) * 10)) // 1000).astype(int)[:, None] * np.ones((1, ch.M), int)
+    gj = (((ox + (px + .5) * 10) - g["x0"]) // 1000).astype(int)[None, :] * np.ones((ch.M, 1), int)
+    inb = (gi >= 0) & (gi < N) & (gj >= 0) & (gj < N)
+    flat = np.where(inb, gi * N + gj, N * N)
+    cnt = lambda m: np.bincount(flat[m & valid], minlength=N * N + 1)[:N * N].reshape(N, N)
+    tot, npx, cpx, chpx = cnt(np.ones_like(valid)), cnt(newpv), cnt(cons), cnt(chg)
+    cover_ok = tot >= 5000                               # cell at least half inside the AOI
+    share = np.where(cover_ok, chpx / np.maximum(tot, 1), 0)
+    conv = share > A["converted_share"]["v"]
+    newpv_ha = npx / 100
+    newpv_cell = cover_ok & (newpv_ha >= A["newpv_cell_ha"]["v"])
+    top50 = np.zeros((N, N), bool)
+    top50.ravel()[top_idx(S["score"], 50)] = True
+    top50_in = top50 & cover_ok
+    ps = pct(S["score"], newpv_cell)
+    pp = pct(S["score"], conv & cover_ok)
+    convpv = cover_ok & (npx / np.maximum(tot, 1) > A["converted_share"]["v"])
+    tile_ha = ch.chipify(newpv).sum(axis=(1, 2)) / 100
+    out = dict(
+        period="2023-02-27 -> 2025-02-26 (Sentinel-2, 0% cloud both)", aoi_km2=round(float(valid.sum()) / 1e4, 0),
+        pv_area_ha=dict(t0=round(float(a0[valid].sum()) / 100), t1=round(float(a1[valid].sum()) / 100)),
+        new_pv_ha=round(float(newpv.sum()) / 100, 1), construction_ha_excl_pv=round(float((cons & ~newpv).sum()) / 100, 1),
+        cells_in_aoi=int(cover_ok.sum()), cells_converted=int((conv & cover_ok).sum()),
+        top50_solar_cells_in_aoi=int(top50_in.sum()), top50_converted=int((top50 & conv).sum()), top50_converted_newpv_only=int((top50 & convpv).sum()), cells_converted_newpv_only=int(convpv.sum()),
+        newpv_cells=int(newpv_cell.sum()), newpv_cells_percentile_in_ranking=ps, converted_cells_percentile_in_ranking=pp,
+        converted_cells_top_decile_share=pp.get("share_top_decile"),
+        precision_note=("QA (reports/qa/pvg_solar.png, top 6 tiles by new-PV ha) looked at by eye: see qa_verdict. No ground truth beyond OSM footprints. "
+                        "construction_ha is dominated by seasonal/crop/burn change between two single dates and should NOT be read as built area; converted_2023_2025 (union) is therefore inflated, newpv_only variants are cleaner. "
+                        "Thresholds calibrated on OSM solar polygons vs nearby land: the rule fires on ~52-55% of polygon pixels "
+                        "and ~2-5% of surrounding land (which includes unmapped PV), so it undercounts PV area and picks up dark soil/rock/fallow as noise. "
+                        "A 10 m pixel cannot see panel rows; new_pv_ha is a lower-confidence estimate (seasonal dry-season pair, same month both years) and detections are leads, not a survey."),
+        converted_mask_cells=[[int(i), int(j), round(float(share[i, j]), 2)] for i, j in zip(*np.where(conv & cover_ok))])
+    out["qa_verdict"] = ("Looked at top-6 tiles: 2 of 6 (tiles 805, 804: farmland -> grey panel blocks with access roads and a substation yard) are real new PV; "
+                         "the other 4 (1425, 1471, 1424, 1609) are dark rock/burn-scar/shadowed hillside false positives. Precision on top tiles ~33%; "
+                         "the rule cannot separate dark terrain from panels at 10 m. Hand-written after viewing the image; re-check it if thresholds change.")
+    if qa:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        t0c, t1c = np.load(CHIPS_ / "pvg_t0.npy", mmap_mode="r"), np.load(CHIPS_ / "pvg_t1.npy", mmap_mode="r")
+        mc = ch.chipify(newpv)
+        sel = np.argsort(-tile_ha)[:6]
+        rgb = lambda a: np.clip(a[[2, 1, 0]].astype(np.float32) / 1e4 / .25, 0, 1).transpose(1, 2, 0) ** (1 / 1.6)
+        fig, ax = plt.subplots(6, 3, figsize=(7.5, 15), squeeze=False)
+        for r_, t in enumerate(sel):
+            for k, im in enumerate((rgb(t0c[t]), rgb(t1c[t]), mc[t])):
+                ax[r_, k].imshow(im, cmap="gray"); ax[r_, k].axis("off")
+            ax[r_, 0].set_title(f"tile {t}  t0", fontsize=8); ax[r_, 1].set_title(f"t1  new PV {tile_ha[t]:.1f} ha", fontsize=8); ax[r_, 2].set_title("mask", fontsize=8)
+        ensure(REPORTS / "qa")
+        fig.tight_layout(); fig.savefig(REPORTS / "qa" / "pvg_solar.png", dpi=90); plt.close(fig)
+        out["qa_png"] = "reports/qa/pvg_solar.png"
+    return out
+
+
 def pct(score, mask):
     """Mean percentile (0-100) of masked cells among all ranked (non-NaN) cells; also share of them in the top decile."""
     ref = score[~np.isnan(score)]
@@ -337,7 +419,7 @@ def record(c, r, k, kind, rank, P_=None):
                 mwh_yr=round(float(r["mwh"][i, j])), revenue_rs_yr=round(float(r["rev"][i, j])), net_value_rs_yr=round(float(r["net"][i, j])), net_value_rs_per_mw_yr=round(float(r["net"][i, j] / max(r["mw"][i, j], 1e-9))), lcoe_rs_kwh=round(float(r["lcoe"][i, j]), 2),
                 grid_km_substation=round(float(c["d_sub"][i, j]), 1), grid_km_line33=round(float(c["d_l33"][i, j]), 1),
                 slope_mean_deg=round(float(c["slope"][i, j]), 1), road_km=round(float(rd), 1), water_km=round(float(c["d_water"][i, j]), 1), t2m=round(float(c["t2m"][i, j]), 1),
-                cluster_mw=round(float(r["cluster_mw"][i, j]), 1), block_ge_50mw=bool(r["cluster_mw"][i, j] >= (P_ or {}).get(kind, {}).get("block_mw", {}).get("v", 50)), land_mix=mix, reasons=reasons)
+                cluster_mw=round(float(r["cluster_mw"][i, j]), 1), block_mw_capped=round(float(min(r["cluster_mw"][i, j], (P_ or {}).get("a1_a2_link", {}).get("block_cap_mw", {}).get("v", 500))), 1), block_ge_50mw=bool(r["cluster_mw"][i, j] >= (P_ or {}).get(kind, {}).get("block_mw", {}).get("v", 50)), land_mix=mix, reasons=reasons)
 
 
 def heat(score, path):
@@ -409,22 +491,23 @@ def main(argv=None):
     blk_ok = np.where(S["cluster_mw"] >= cfg["solar"]["block_mw"]["v"], S["score"], np.nan)
     tb = top_idx(blk_ok)
     nb = lambda r, k: len({int(l) for l in r["lab"][r["cluster_mw"] >= cfg[k]["block_mw"]["v"]]})
-    val["vs_previous_run"] = None if not prev else dict(
+    link = a1_a2_link(cfg, g, c, S)
+    val["vs_previous_run"] = prev["validation"].get("vs_previous_run") if prev and "vs_previous_run" in prev["validation"] else None if not prev else dict(
         top20_overlap=len({(t["lat"], t["lon"]) for t in prev["top_solar"]} & {(round(float(c["lat"].ravel()[k]), 4), round(float(c["lon"].ravel()[k]), 4)) for k in ts}),
         prev_pavagada_mean_pct=prev["validation"]["pavagada_park"]["as_is"]["mean_pct"], prev_pavagada_median_pct=prev["validation"]["pavagada_park"]["as_is"]["median_pct"],
         note="previous run = LCOE ranking before access road, heat derate, flood exclusion")
     wv = W["lcoe"][~np.isnan(W["score"])]
     wind_note = dict(status=cfg["wind"]["status"], ranked=int(len(wv)), viable_lcoe_below_wind_tariff=int((wv < cfg["wind"]["tariff_rs_kwh"]["v"]).sum()))
-    params = {k: cfg[k] for k in ("solar", "wind", "exclusion", "sources")}
+    params = {k: cfg[k] for k in ("solar", "wind", "exclusion", "sources", "a1_a2_link")}
     rep = dict(
         bbox=[round(float(v), 4) for v in (c["lon"].min() - .0045, c["lat"].min() - .0045, c["lon"].max() + .0045, c["lat"].max() + .0045)],
         caveats=["NASA POWER irradiance/wind is native ~0.5-1 deg: only 16 sample points, cell values are smooth interpolation, ridge-top wind NOT resolved (Global Wind Atlas would be the upgrade).",
                  "Slope-share and land-use share are multiplied as if independent.", "All Rs numbers are assumptions (config/siting.json).",
-                 "Substation distance is a straight-line proxy; no capacity, voltage-level or land-ownership data."],
+                 "Clusters chain adjacent 1 km cells, so cluster_mw can reach GW scale; block_mw_capped = min(cluster_mw, 500) is the realistic reporting size.", "Substation distance is a straight-line proxy; no capacity, voltage-level or land-ownership data."],
         region_totals=dict(solar_blocks_ge_50mw=nb(S, "solar"), wind_blocks_ge_50mw=nb(W, "wind"), cells_flood_excluded=int((c["flood"] > .5).sum()), solar_viable_cells=int((S["lcoe"][~np.isnan(S["score"])] < cfg["solar"]["tariff_rs_kwh"]["v"]).sum()), wind_status=wind_note, solar=tot(S), wind=tot(W), n_substations=c["n_sub"], n_lines_ge33kv=c["n_line33"], n_cells_excluded=int(excluded(c, cfg).sum())),
         top_solar=[record(c, S, k, "solar", n + 1, cfg) for n, k in enumerate(ts)], top_solar_blocks=[record(c, S, k, "solar", n + 1, cfg) for n, k in enumerate(tb)],
         top_wind=[record(c, W, k, "wind", n + 1, cfg) for n, k in enumerate(tw)],
-        params=params, validation=val)
+        params=params, validation=val, a1_a2_link=link)
     ensure(REPORTS, WEB_DATA / "img")
     (REPORTS / "siting.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
 
@@ -437,9 +520,9 @@ def main(argv=None):
     web = dict(bbox=rep["bbox"], n=N, cell_km=1, params=dict(solar=dict(tariff=cfg["solar"]["tariff_rs_kwh"]["v"], ha_per_mw=cfg["solar"]["ha_per_mw"]["v"]),
                wind=dict(min_ws50=cfg["wind"]["min_ws50"]["v"], mw_per_km2=cfg["wind"]["mw_per_km2"]["v"]), note="all Rs values are assumptions, see reports/siting.json"),
                cells=[dict(lat=round(float(c["lat"][i, j]), 3), lon=round(float(c["lon"][i, j]), 3), solar_score=int(ps[i, j]), wind_score=int(pw[i, j]),
-                           ghi=round(float(c["ghi"][i, j]), 2), t2m=round(float(c["t2m"][i, j]), 1), road_km=round(float(c["road_km"][i, j]), 1), cluster_mw=round(float(S["cluster_mw"][i, j])), **({"flood_excluded": True} if c["flood"][i, j] > .5 else {}), ws50=round(float(c["ws50"][i, j]), 2))
+                           t2m=round(float(c["t2m"][i, j]), 1), road_km=round(float(c["road_km"][i, j]), 1), **({"cluster_mw": round(float(S["cluster_mw"][i, j])), "block_mw_capped": round(float(min(S["cluster_mw"][i, j], 500)))} if S["cluster_mw"][i, j] else {}), **({"flood_excluded": True} if c["flood"][i, j] > .5 else {}), ws50=round(float(c["ws50"][i, j]), 2))
                       for i in range(N) for j in range(N)],
-               top_solar=rep["top_solar"], top_solar_blocks=rep["top_solar_blocks"], top_wind=rep["top_wind"], validation=val,
+               top_solar=rep["top_solar"], top_solar_blocks=rep["top_solar_blocks"], top_wind=rep["top_wind"], validation=val, a1_a2_link=link,
                images=dict(solar="img/siting_solar.png", wind="img/siting_wind.png"), caveats=rep["caveats"])
     (WEB_DATA / "siting.json").write_text(json.dumps(web, separators=(",", ":")), encoding="utf-8")
     heat(S["score"], WEB_DATA / "img" / "siting_solar.png")
