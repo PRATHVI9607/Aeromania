@@ -79,7 +79,8 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
   const out = precomputed ? { ...live, results: pre } : live;
   const f = out.results.B1.metrics, h = out.results.H2.metrics;
   const sim = data.reports.sim, rob = sim?.robustness;
-  const rr = (r: number) => sim?.by_rho?.[r]?.ratio_vs_fifo?.H2;
+  // % of upper bound, not ratios: FIFO can approach 0 at high rho, which makes a ratio explode and mislead
+  const pu = (r: number, p: string) => { const v = data.results?.by_rho?.[String(r)]?.[p]?.metrics?.pct_ub; return typeof v === "number" ? `${(v * 100).toFixed(1)}%` : "n/a"; };
   const sr = sim?.by_rho?.[rho];
   const match = { h: (sr?.minutes_to_match_fifo?.H2 ?? null) as number | null, f: (sr?.fifo_minutes_used ?? null) as number | null };
   const saved = match.h !== null && match.f !== null ? match.f - match.h : null;
@@ -89,7 +90,7 @@ export function Fifo({ data, out: live, rho, setRho, queries }: ViewProps & { se
       <div className="span2">
         <div className="kicker">Track B</div>
         <h2 className="headline">Same antenna, same minutes, far more value</h2>
-        <p className="muted">HERALD vs FIFO value at rho 1 / 2 / 5 / 10: {[1, 2, 5, 10].map((r) => rr(r) != null ? `${rr(r).toFixed(1)}x` : "n/a").join(" / ")}. First insight after capture (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></p>
+        <p className="muted">Share of the best possible value (upper bound) delivered at rho 1 / 2 / 5 / 10: HERALD {[1, 2, 5, 10].map((r) => pu(r, "H2")).join(" / ")} vs FIFO {[1, 2, 5, 10].map((r) => pu(r, "B1")).join(" / ")} vs cloud filter {[1, 2, 5, 10].map((r) => pu(r, "B2")).join(" / ")}. First insight after capture (rho {rho}): {sim?.by_rho?.[rho]?.ttfi_min?.H2?.toFixed(0) ?? "n/a"} min vs FIFO {sim?.by_rho?.[rho]?.ttfi_min?.B1?.toFixed(0) ?? "n/a"} min. <span className="badge">{precomputed ? "results.json (python run)" : "live recompute, edited queries"}</span></p>
       </div>
       <section className="span2 bar">
         <label>Oversubscription rho
