@@ -23,7 +23,7 @@ def test_conv1_slice():
 
 def test_forward_and_onnx_roundtrip(tmp_path):
     torch = pytest.importorskip("torch")
-    ort = pytest.importorskip("onnxruntime")
+    pytest.importorskip("onnxruntime")
     m = M.make_model(trunk=(M.small_cnn(), "small")).eval()
     x = torch.randn(3, 5, 64, 64)
     lg, cl, emb, wc = m(x)

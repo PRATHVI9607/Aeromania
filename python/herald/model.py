@@ -35,7 +35,7 @@ def ece(probs, labels, bins=15):
     probs, labels = np.asarray(probs), np.asarray(labels)
     conf, pred = probs.max(1), probs.argmax(1)
     edges, e = np.linspace(0, 1, bins + 1), 0.0
-    for lo, hi in zip(edges[:-1], edges[1:]):
+    for lo, hi in zip(edges[:-1], edges[1:], strict=True):
         m = (conf > lo) & (conf <= hi)
         if m.any():
             e += m.mean() * abs((pred[m] == labels[m]).mean() - conf[m].mean())
@@ -91,7 +91,6 @@ def slice_conv1(w13):
 
 def build_trunk(pretrained=True):
     """Returns (trunk module -> [B,512], backbone name). Ladder: SSL4EO -> timm ImageNet -> small CNN."""
-    import torch
     from torch import nn
     if pretrained:
         try:
@@ -139,11 +138,32 @@ def make_model(pretrained=True, trunk=None):
             self.cloud = cloud_head()
             self.wc = nn.Sequential(nn.Linear(512, 128), nn.ReLU(), nn.Linear(128, 11))
             self.proj = nn.Linear(512, 64)
+            # per-pixel spectral cloud combiner (6 -> 4 -> 1, 33 params) + learned blend with the chip head
+            self.pix = nn.Sequential(nn.Conv2d(6, 4, 1), nn.ReLU(), nn.Conv2d(4, 1, 1))
+            self.pix_on = False
+            self.blend = nn.Parameter(torch.zeros(1))  # w = sigmoid(blend): cloud = w*mean_pixel + (1-w)*head
+            mean, std = (torch.tensor(v.reshape(1, 5, 1, 1)) for v in (get_norm() if NORM.exists() else (np.zeros((1, 5, 1, 1), np.float32), np.ones((1, 5, 1, 1), np.float32))))
+            self.register_buffer("nmean", mean)
+            self.register_buffer("nstd", std)
+
+        def pix_logit(self, x):
+            """x normalized [B,5,H,W] -> per-pixel cloud logit [B,1,H,W] from spectral features (norm undone in-graph)."""
+            r = x * self.nstd + self.nmean  # reflectance
+            b2, b3, b4, b8, b11 = r[:, 0:1], r[:, 1:2], r[:, 2:3], r[:, 3:4], r[:, 4:5]
+            bright = (b2 + b3 + b4) / 3
+            white = (torch.maximum(torch.maximum(b2, b3), b4) - torch.minimum(torch.minimum(b2, b3), b4)) / (bright + 0.01)
+            hot = b2 - 0.5 * b4 - 0.08
+            ndsi = (b3 - b11) / (b3 + b11 + 0.01)
+            ndvi = (b8 - b4) / (b8 + b4 + 0.01)
+            return self.pix(torch.cat([bright * 5, white, hot * 10, ndsi, b11 * 5, ndvi], 1))
 
         def forward(self, x):
             f = self.trunk(x)
-            return (self.cls(f), torch.sigmoid(self.cloud(f)), nn.functional.normalize(self.proj(f), dim=1),
-                    torch.softmax(self.wc(f), 1))
+            cloud = torch.sigmoid(self.cloud(f))
+            if self.pix_on:  # pixel path only exported when the learned blend uses it (it costs CPU latency)
+                w = torch.sigmoid(self.blend)
+                cloud = w * torch.sigmoid(self.pix_logit(x)).mean((1, 2, 3)).unsqueeze(1) + (1 - w) * cloud
+            return (self.cls(f), cloud, nn.functional.normalize(self.proj(f), dim=1), torch.softmax(self.wc(f), 1))
 
     return Herald(*(trunk if trunk else build_trunk(pretrained)))
 
@@ -153,6 +173,7 @@ def load_model(device="cpu"):
     ck = torch.load(PT, map_location="cpu", weights_only=False)
     m = make_model(trunk=(_trunk_like(ck), ck["backbone"]))
     m.load_state_dict(ck["state"], strict=False)  # old checkpoints lack the wc head
+    m.pix_on = bool(torch.sigmoid(m.blend) > 0.02 and "pix.0.weight" in ck["state"])
     return m.to(device).eval()
 
 
@@ -333,53 +354,113 @@ def scene_feats(model, dev):
     return out
 
 
+def pix_samples(keys, n_chips=150, seed=0):
+    """Random chips from scenes -> (normalized pixels [P,5,1,1], SCL-cloud label [P])."""
+    import torch
+    rng = np.random.default_rng(seed)
+    xs, ys = [], []
+    for aoi, d in keys:
+        x = np.load(paths.CHIPS / f"{aoi}_{d}.npy", mmap_mode="r")
+        scl = np.load(paths.CHIPS / f"{aoi}_{d}_scl.npy", mmap_mode="r")
+        i = np.sort(rng.choice(len(x), n_chips, replace=False))
+        xs.append(prep(np.asarray(x[i])).transpose(0, 2, 3, 1).reshape(-1, 5))
+        ys.append(np.isin(np.asarray(scl[i]), (3, 8, 9, 10)).reshape(-1))
+    return torch.from_numpy(np.concatenate(xs))[:, :, None, None], torch.from_numpy(np.concatenate(ys).astype(np.float32))
+
+
+def fit_pix(model, keys, dev, steps=1500):
+    """Train ONLY model.pix with per-pixel BCE vs SCL (3,8,9,10) on sampled training pixels."""
+    import torch
+    X, Y = pix_samples(keys)
+    X, Y = X.to(dev), Y.to(dev)
+    for q in model.pix.parameters():
+        q.data = q.data.to(dev)
+    model.pix.apply(lambda m: m.reset_parameters() if hasattr(m, "reset_parameters") else None)
+    opt = torch.optim.Adam(model.pix.parameters(), lr=1e-2)
+    for _ in range(steps):
+        i = torch.randint(0, len(Y), (65536,), device=dev)
+        loss = torch.nn.functional.binary_cross_entropy_with_logits(model.pix_logit(X[i]).flatten(), Y[i])
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+
+
+def pix_means(model, key, dev, bs=128):
+    """Chip-level mean per-pixel cloud prob [N] for one scene."""
+    import torch
+    x = np.load(paths.CHIPS / f"{key[0]}_{key[1]}.npy", mmap_mode="r")
+    out = []
+    with torch.no_grad():
+        for i in range(0, len(x), bs):
+            out.append(torch.sigmoid(model.pix_logit(torch.from_numpy(prep(np.asarray(x[i:i + bs]))).to(dev))).mean((1, 2, 3)).cpu())
+    return torch.cat(out)
+
+
 def cloud_stage(model, dev, a):
-    """Cloud head on frozen trunk. Headline: train blr+sone (all scenes incl. x1/x2) -> test hasdeo; plus leave-one-AOI-out folds."""
+    """2x2 leave-one-AOI-out: variant A (original dates) / B (+x1,x2 of training AOIs), tested on (i) original dates, (ii) x1+x2,
+    for head-only, pixel-only and learned blend. Final = best mean combined MAE; saved head/pix/blend from the hasdeo fold."""
     import torch
     sf = scene_feats(model, dev)
     aois = sorted({k[0] for k in sf})
     if aois != ["blr", "hasdeo", "sone"]:
         print("cloud stage PENDING: vault chips for blr,sone,hasdeo not all present", file=sys.stderr)
         return 1
-    for p in model.parameters():
-        p.requires_grad = False
-
-    def cat(keys):
-        return torch.cat([sf[k][0] for k in keys]), torch.cat([sf[k][1] for k in keys])
-    for p in model.cloud.parameters():
-        p.requires_grad = True
+    for q in model.parameters():
+        q.requires_grad = False
+    for m in (model.cloud, model.pix):
+        for q in m.parameters():
+            q.requires_grad = True
     isx = lambda k: k[1].startswith("x")  # noqa: E731
-    out = {v: {} for v in ("A_without_x", "B_with_x")}
-    states = {}
+    cat = lambda keys: (torch.cat([sf[k][0] for k in keys]), torch.cat([sf[k][1] for k in keys]))  # noqa: E731
+    head = lambda f: torch.sigmoid(model.cloud(f.to(dev))).squeeze(1).detach().cpu()  # noqa: E731
+    out, states = {v: {} for v in ("A_without_x", "B_with_x")}, {}
     for ho in aois:
-        te_i = [k for k in sf if k[0] == ho and not isx(k)]
-        te_x = [k for k in sf if k[0] == ho and isx(k)]
+        te = {"original_dates": [k for k in sf if k[0] == ho and not isx(k)], "x1_x2_cirrus": [k for k in sf if k[0] == ho and isx(k)]}
+        te["combined"] = te["original_dates"] + te["x1_x2_cirrus"]
         for var in out:
             tr = [k for k in sf if k[0] != ho and (var == "B_with_x" or not isx(k))]
-            ftr, ytr = cat(tr)
-            fit_cloud(model, ftr, ytr, *cat(te_i[:1]))  # trains head; MAE below is computed per test set
-            states[var, ho] = {k: v.clone() for k, v in model.cloud.state_dict().items()}
-            dev_ = next(model.parameters()).device
-            r = {}
-            for name, ks in (("original_dates", te_i), ("x1_x2_cirrus", te_x), ("combined", te_i + te_x)):
-                f, y = cat(ks)
-                with torch.no_grad():
-                    r[name] = float((torch.sigmoid(model.cloud(f.to(dev_))).squeeze(1).cpu() - y).abs().mean())
-            r["mean_baseline_combined"] = float((cat(te_i + te_x)[1] - ytr.mean()).abs().mean())
+            fit_pix(model, tr, dev)
+            pm = {k: pix_means(model, k, dev) for k in sf if k[0] == ho or k in tr}
+            # honest head predictions on training scenes: inner leave-one-training-AOI-out
+            tr_aois = sorted({k[0] for k in tr})
+            hp = {}
+            for ia in tr_aois:
+                itr = [k for k in tr if k[0] != ia]
+                fit_cloud(model, *cat(itr), *cat([k for k in tr if k[0] == ia][:1]))
+                for k in tr:
+                    if k[0] == ia:
+                        hp[k] = head(sf[k][0])
+            ytr = torch.cat([sf[k][1] for k in tr])
+            hv, pv = torch.cat([hp[k] for k in tr]), torch.cat([pm[k] for k in tr])
+            grid = np.linspace(0, 1, 21)
+            w = float(grid[int(np.argmin([float((x * pv + (1 - x) * hv - ytr).abs().mean()) for x in grid]))])
+            fit_cloud(model, *cat(tr), *cat(te["original_dates"][:1]))  # final head on all training scenes
+            r = {"w_pixel": w}
+            for name, ks in te.items():
+                y = torch.cat([sf[k][1] for k in ks])
+                h, p = torch.cat([head(sf[k][0]) for k in ks]), torch.cat([pm[k] for k in ks])
+                r[name] = {"blend": float((w * p + (1 - w) * h - y).abs().mean()), "head_only": float((h - y).abs().mean()),
+                           "pixel_only": float((p - y).abs().mean())}
+            r["mean_baseline_combined"] = float((cat(te["combined"])[1] - cat(tr)[1].mean()).abs().mean())
             out[var][ho] = r
-            print("cloud", var, ho, {k: round(v, 3) for k, v in r.items()}, flush=True)
-    score_ = {v: float(np.mean([out[v][h]["combined"] for h in aois])) for v in out}
+            states[var, ho] = ({k: v.clone() for k, v in model.cloud.state_dict().items()}, {k: v.clone() for k, v in model.pix.state_dict().items()}, w)
+            print("cloud", var, ho, json.dumps({k: (round(v, 3) if not isinstance(v, dict) else {a_: round(b_, 3) for a_, b_ in v.items()}) for k, v in r.items()}), flush=True)
+    score_ = {v: float(np.mean([out[v][h]["combined"]["blend"] for h in aois])) for v in out}
     best = min(score_, key=score_.get)
-    model.cloud.load_state_dict(states[best, "hasdeo"])  # head trained on blr+sone, held-out hasdeo
+    hs, ps, w = states[best, "hasdeo"]
+    model.cloud.load_state_dict(hs)
+    model.pix.load_state_dict(ps)
+    model.blend.data = torch.tensor([float(np.log(max(w, 1e-4) / max(1 - w, 1e-4)))], device=dev)
     ck = torch.load(PT, map_location="cpu", weights_only=False)
     ck["state"] = {k: v.cpu() for k, v in model.state_dict().items()}
     torch.save(ck, PT)
     h = out[best]["hasdeo"]
-    update_report({"cloud": {"mae": h["combined"], "mae_original_dates": h["original_dates"], "mae_x1_x2_cirrus": h["x1_x2_cirrus"],
-                             "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"], "kept_variant": best,
-                             "mean_fold_combined_mae": score_, "loao": out,
+    update_report({"cloud": {"mae": h["combined"]["blend"], "mae_original_dates": h["original_dates"]["blend"],
+                             "mae_x1_x2_cirrus": h["x1_x2_cirrus"]["blend"], "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"],
+                             "kept_variant": best, "blend_w_pixel": w, "mean_fold_combined_mae": score_, "loao": out,
+                             "head": "w*mean(per-pixel spectral MLP, 33 params, in-graph) + (1-w)*chip head on trunk",
                              "scenes_used": sorted(f"{k[0]}_{k[1]}" for k in sf), "labels": "SCL classes 3,8,9,10 fraction"}})
-    print("cloud kept", best, h)
+    print("cloud kept", best, json.dumps(h))
     return 0
 
 
@@ -396,19 +477,19 @@ def wc_stage(model, dev, a):
     col = np.arange(46 * 46) % 46
     X = {"tr": [], "te": []}
     meta = {"tr": [], "te": []}
-    for (aoi, d), (f, cl, wc) in sf.items():
+    for (aoi, _d), (f, cl, wc) in sf.items():
         clear = (cl.numpy() < 0.1)
         for name, m in (("tr", clear & (col < 29)), ("te", clear & (col >= 31))):  # cols 29-30 = buffer
             X[name].append((f[m], torch.from_numpy(wc[m])))
             meta[name] += [aoi] * int(m.sum())
-    ftr, ytr = (torch.cat(z) for z in zip(*X["tr"]))
-    fte, yte = (torch.cat(z) for z in zip(*X["te"]))
+    ftr, ytr = (torch.cat(z) for z in zip(*X["tr"], strict=True))
+    fte, yte = (torch.cat(z) for z in zip(*X["te"], strict=True))
     aoi_te = np.array(meta["te"])
     for p in model.wc.parameters():
         p.requires_grad = True
     opt = torch.optim.AdamW(model.wc.parameters(), lr=2e-3, weight_decay=1e-2)
 
-    for ep in range(60):
+    for _ in range(60):
         for idx in torch.randperm(len(ytr)).split(512):
             lp = F.log_softmax(model.wc(ftr[idx].to(dev)), 1)
             loss = -(ytr[idx].to(dev) * lp).sum(1).mean()
@@ -459,12 +540,15 @@ class Calib:
 def export_onnx(model, path):
     import torch
     model = model.cpu().eval()
-    torch.onnx.export(model, torch.zeros(1, 5, 64, 64), str(path), opset_version=17, dynamo=False,
+    torch.onnx.export(model, (torch.zeros(1, 5, 64, 64),), str(path), opset_version=18, dynamo=True,
                       input_names=["x"], output_names=["logits", "cloud", "emb", "wc"],
-                      dynamic_axes={k: {0: "b"} for k in ("x", "logits", "cloud", "emb", "wc")})
+                      dynamic_shapes={"x": {0: torch.export.Dim("b")}})
+    import onnx  # dynamo export writes weights to a sidecar .data file; inline them so models/ has one file per model
+    onnx.save(onnx.load(str(path)), str(path))
+    Path(str(path) + ".data").unlink(missing_ok=True)
 
 
-def quantize(fp32, int8, calib):
+def quantize(fp32, int8, calib, qdq=False):
     from onnxruntime.quantization import (CalibrationDataReader, QuantFormat, QuantType, quantize_static,
                                           quant_pre_process)
     pre = Path(str(fp32) + ".pre")
@@ -476,24 +560,26 @@ def quantize(fp32, int8, calib):
 
     class R(Calib, CalibrationDataReader):
         pass
-    quantize_static(str(src), str(int8), R(calib), quant_format=QuantFormat.QOperator, per_channel=True,
+    quantize_static(str(src), str(int8), R(calib), quant_format=QuantFormat.QDQ if qdq else QuantFormat.QOperator, per_channel=True,
                     activation_type=QuantType.QUInt8, weight_type=QuantType.QInt8,
                     extra_options={"ActivationSymmetric": False})  # QOperator not QDQ: ~2x faster on ORT CPU, same accuracy
     pre.unlink(missing_ok=True)
 
 
-def ort_session(path, threads=None):
+def ort_session(path, threads=None, spin=None):
     import onnxruntime as ort
     so = ort.SessionOptions()
     so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
     if threads:
         so.intra_op_num_threads = threads
+    if spin is not None:
+        so.add_session_config_entry("session.intra_op.allow_spinning", "1" if spin else "0")
     return ort.InferenceSession(str(path), so, providers=["CPUExecutionProvider"])
 
 
 def ort_run(sess, x, bs=64):
     outs = [sess.run(None, {"x": x[i:i + bs]}) for i in range(0, len(x), bs)]
-    return [np.concatenate(o) for o in zip(*outs)]
+    return [np.concatenate(o) for o in zip(*outs, strict=True)]
 
 
 def cmd_export(a):
@@ -557,7 +643,6 @@ def cmd_change(a):
            "ref_bytes_per_tile": 128, "ref_kb_per_aoi": 128 * 2116 / 1024}
     # injected patches: real built/bare pixels (as in change.injected_test) painted into 200 unchanged valid t1 chips
     rng = np.random.default_rng(11)
-    x0 = np.load(paths.CHIPS / "blr_t0.npy")
     x1 = np.load(paths.CHIPS / "blr_t1.npy")
     r1 = x1.transpose(1, 0, 2, 3).reshape(5, -1).astype(np.float32) / 1e4
     ix = ch.indices(r1)

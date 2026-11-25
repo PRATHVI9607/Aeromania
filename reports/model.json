@@ -26,48 +26,72 @@
   ],
   "onnx": {
     "calib_chips": 704,
-    "int8_mb": 11.39
+    "int8_mb": 11.41
   },
   "latency": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "method": "median of 30 runs after 5 warmup, ms/chip amortized",
-    "ms_per_chip_int8_cpu_b1": 3.923748999113741,
-    "ms_per_chip_int8_cpu_b64": 1.4697447656288887,
-    "ms_per_chip_fp32_cpu_b1": 6.43377199958195,
-    "ms_per_chip_fp32_cpu_b64": 2.7518961171892897,
-    "ms_per_chip_torch_gpu_b64": 1.121412390631349,
+    "ms_per_chip_int8_cpu_b1": 4.48522050101019,
+    "ms_per_chip_int8_cpu_b64": 1.4243897734331767,
+    "ms_per_chip_fp32_cpu_b1": 5.980296000416274,
+    "ms_per_chip_fp32_cpu_b64": 2.6128625234207448,
+    "ms_per_chip_torch_gpu_b64": 1.1192960937478347,
     "gpu": "NVIDIA GeForce RTX 2050",
     "device": "13th Gen Intel(R) Core(TM) i5-13420H",
     "ms_per_chip_int8_cpu_b64_t2": 1.3698214609405568,
     "ms_per_chip_int8_cpu_b64_t4": 1.5595529609271352,
-    "ms_per_chip_int8_cpu_b64_best": 1.3619059375002962,
-    "load_avg_1m": 5.3623046875,
+    "ms_per_chip_int8_cpu_b64_best": 0.9995148124630759,
+    "load_avg_1m": 4.470703125,
     "int8_sweep_ms_per_chip": {
-      "threads=default,batch=64": 1.3842047812318015,
-      "threads=default,batch=128": 1.3344649687496712,
-      "threads=default,batch=256": 1.3074074218693,
-      "threads=2,batch=64": 1.3619059375002962,
-      "threads=2,batch=128": 1.36622143750742,
-      "threads=2,batch=256": 1.3248056914036965,
-      "threads=4,batch=64": 1.657061531261661,
-      "threads=4,batch=128": 1.644943679693256,
-      "threads=4,batch=256": 1.7955039960995123,
-      "threads=6,batch=64": 1.5297232968691787,
-      "threads=6,batch=128": 1.50466464062049,
-      "threads=6,batch=256": 1.4776263046840654
+      "aff=all,threads=2,spin=0,batch=64": 1.1530973437174907,
+      "aff=all,threads=2,spin=0,batch=128": 2.3044006093755343,
+      "aff=all,threads=4,spin=0,batch=64": 1.2959577812239331,
+      "aff=all,threads=4,spin=0,batch=128": 1.243437414075288,
+      "aff=all,threads=4,spin=1,batch=64": 1.2808118281100178,
+      "aff=all,threads=4,spin=1,batch=128": 1.267781156258252,
+      "aff=all,threads=8,spin=1,batch=64": 1.2947481562832763,
+      "aff=all,threads=8,spin=1,batch=128": 1.2452060624923433,
+      "aff=P-logical0-7,threads=2,spin=0,batch=64": 1.1185859531224196,
+      "aff=P-logical0-7,threads=2,spin=0,batch=128": 1.9744270468891045,
+      "aff=P-logical0-7,threads=4,spin=0,batch=64": 2.0555145000002994,
+      "aff=P-logical0-7,threads=4,spin=0,batch=128": 1.9392835078235748,
+      "aff=P-logical0-7,threads=4,spin=1,batch=64": 1.3112957499856748,
+      "aff=P-logical0-7,threads=4,spin=1,batch=128": 1.2788742812404053,
+      "aff=P-logical0-7,threads=8,spin=1,batch=64": 0.9995148124630759,
+      "aff=P-logical0-7,threads=8,spin=1,batch=128": 1.065197734362755,
+      "aff=P-physical0,2,4,6,threads=2,spin=0,batch=64": 1.1538241406015004,
+      "aff=P-physical0,2,4,6,threads=2,spin=0,batch=128": 1.1540487109300557,
+      "aff=P-physical0,2,4,6,threads=4,spin=0,batch=64": 1.342124500013142,
+      "aff=P-physical0,2,4,6,threads=4,spin=0,batch=128": 1.2841223749830988,
+      "aff=P-physical0,2,4,6,threads=4,spin=1,batch=64": 1.2377022968621532,
+      "aff=P-physical0,2,4,6,threads=4,spin=1,batch=128": 1.337244320325226
     },
-    "best_int8_setting": "threads=default,batch=256",
-    "ms_per_chip_int8_cpu_best": 1.3074074218693
+    "best_int8_setting": "aff=P-logical0-7,threads=8,spin=1,batch=64",
+    "ms_per_chip_int8_cpu_best": 0.9995148124630759,
+    "load_avg_start": 2.30029296875,
+    "repeat_runs_best_int8_b64": {
+      "run1": {
+        "ms_per_chip": 0.881,
+        "load_start": 7.6,
+        "load_end": 8.95
+      },
+      "run2_recorded_above": {
+        "ms_per_chip": 0.9995148124630759,
+        "load_start": 2.30029296875,
+        "load_end": 4.470703125
+      },
+      "note": "gate is borderline: 0.88 and ~1.00 ms/chip on two runs, setting aff=P-logical0-7,threads=8,spin=1,batch=64; load never fell below 1.5 (other agents)"
+    }
   },
   "cloud": {
-    "mae": 0.19393528997898102,
+    "mae": 0.204594686627388,
     "heldout_aoi": "hasdeo",
     "train_aois": [
       "blr",
       "sone"
     ],
     "mean_baseline_mae": 0.2959119975566864,
-    "head": "chip-level MLP on frozen trunk features (512->64->1, sigmoid)",
+    "head": "w*mean(per-pixel spectral MLP, 33 params, in-graph) + (1-w)*chip head on trunk",
     "pixel_head_experiment": {
       "mae": 0.1315,
       "pixel_precision": 0.859,
@@ -77,41 +101,119 @@
     "loao": {
       "A_without_x": {
         "blr": {
-          "original_dates": 0.07353600114583969,
-          "x1_x2_cirrus": 0.3101169466972351,
-          "combined": 0.1523963212966919,
+          "w_pixel": 0.55,
+          "original_dates": {
+            "blend": 0.09529142826795578,
+            "head_only": 0.09161277860403061,
+            "pixel_only": 0.11470817029476166
+          },
+          "x1_x2_cirrus": {
+            "blend": 0.3096963167190552,
+            "head_only": 0.2892304062843323,
+            "pixel_only": 0.3322562873363495
+          },
+          "combined": {
+            "blend": 0.16675971448421478,
+            "head_only": 0.15748532116413116,
+            "pixel_only": 0.18722423911094666
+          },
           "mean_baseline_combined": 0.3348015546798706
         },
         "hasdeo": {
-          "original_dates": 0.08868234604597092,
-          "x1_x2_cirrus": 0.49079638719558716,
-          "combined": 0.22272035479545593,
+          "w_pixel": 0.1,
+          "original_dates": {
+            "blend": 0.09463879466056824,
+            "head_only": 0.08963048458099365,
+            "pixel_only": 0.1536441594362259
+          },
+          "x1_x2_cirrus": {
+            "blend": 0.4832135736942291,
+            "head_only": 0.4855180084705353,
+            "pixel_only": 0.4643796980381012
+          },
+          "combined": {
+            "blend": 0.22416368126869202,
+            "head_only": 0.221592977643013,
+            "pixel_only": 0.2572226822376251
+          },
           "mean_baseline_combined": 0.3543659746646881
         },
         "sone": {
-          "original_dates": 0.08122731000185013,
-          "x1_x2_cirrus": 0.39008215069770813,
-          "combined": 0.1841789036989212,
+          "w_pixel": 0.45,
+          "original_dates": {
+            "blend": 0.10299349576234818,
+            "head_only": 0.09123452752828598,
+            "pixel_only": 0.14010977745056152
+          },
+          "x1_x2_cirrus": {
+            "blend": 0.38824260234832764,
+            "head_only": 0.39364540576934814,
+            "pixel_only": 0.3828805685043335
+          },
+          "combined": {
+            "blend": 0.1980765163898468,
+            "head_only": 0.1920381635427475,
+            "pixel_only": 0.22103337943553925
+          },
           "mean_baseline_combined": 0.3326181471347809
         }
       },
       "B_with_x": {
         "blr": {
-          "original_dates": 0.10495642572641373,
-          "x1_x2_cirrus": 0.2246924638748169,
-          "combined": 0.14486844837665558,
+          "w_pixel": 0.2,
+          "original_dates": {
+            "blend": 0.11064555495977402,
+            "head_only": 0.09813646972179413,
+            "pixel_only": 0.17893880605697632
+          },
+          "x1_x2_cirrus": {
+            "blend": 0.22187556326389313,
+            "head_only": 0.21641330420970917,
+            "pixel_only": 0.26383838057518005
+          },
+          "combined": {
+            "blend": 0.14772222936153412,
+            "head_only": 0.13756206631660461,
+            "pixel_only": 0.20723865926265717
+          },
           "mean_baseline_combined": 0.3606027066707611
         },
         "hasdeo": {
-          "original_dates": 0.14084625244140625,
-          "x1_x2_cirrus": 0.3001134395599365,
-          "combined": 0.19393528997898102,
+          "w_pixel": 0.0,
+          "original_dates": {
+            "blend": 0.14987778663635254,
+            "head_only": 0.14987778663635254,
+            "pixel_only": 0.17673879861831665
+          },
+          "x1_x2_cirrus": {
+            "blend": 0.3140285015106201,
+            "head_only": 0.3140285015106201,
+            "pixel_only": 0.37029916048049927
+          },
+          "combined": {
+            "blend": 0.204594686627388,
+            "head_only": 0.204594686627388,
+            "pixel_only": 0.2412589192390442
+          },
           "mean_baseline_combined": 0.3748219609260559
         },
         "sone": {
-          "original_dates": 0.19898192584514618,
-          "x1_x2_cirrus": 0.2436167448759079,
-          "combined": 0.2138601839542389,
+          "w_pixel": 0.2,
+          "original_dates": {
+            "blend": 0.1670009344816208,
+            "head_only": 0.17446660995483398,
+            "pixel_only": 0.1605757772922516
+          },
+          "x1_x2_cirrus": {
+            "blend": 0.2710975408554077,
+            "head_only": 0.24895071983337402,
+            "pixel_only": 0.3672204315662384
+          },
+          "combined": {
+            "blend": 0.20169980823993683,
+            "head_only": 0.19929465651512146,
+            "pixel_only": 0.22945734858512878
+          },
           "mean_baseline_combined": 0.35953906178474426
         }
       }
@@ -138,12 +240,14 @@
     ],
     "labels": "SCL classes 3,8,9,10 fraction",
     "kept_variant": "B_with_x",
-    "mae_original_dates": 0.14084625244140625,
-    "mae_x1_x2_cirrus": 0.3001134395599365,
+    "mae_original_dates": 0.14987778663635254,
+    "mae_x1_x2_cirrus": 0.3140285015106201,
     "mean_fold_combined_mae": {
-      "A_without_x": 0.18643185993035635,
-      "B_with_x": 0.18422130743662515
-    }
+      "A_without_x": 0.19633330404758453,
+      "B_with_x": 0.18467224140961966
+    },
+    "blend_w_pixel": 0.0,
+    "spectral_pixel_head_experiment": "in-graph per-pixel spectral combiner (33 params) + learned blend, trained per-pixel BCE vs SCL: blend weight on pixel path 0.0-0.55 across folds, no combined-MAE gain over chip head (see loao); not exported (pix_on=False) because it only costs latency"
   },
   "embedding_change": {
     "auc_vs_rules": 0.5612698608964453,
