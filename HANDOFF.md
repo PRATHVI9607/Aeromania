@@ -1,3 +1,30 @@
+# HANDOFF — HERALD (FINAL STATE, 2026-11-26 ~02:40)
+
+**Live:** https://herald-dusky.vercel.app (Vercel prod, static) · **Repo:** github.com/PRATHVI9607/Aeromania (main) · **Offline demo:** `cd web && npm ci && npm run build && npm run preview`
+**Pitch:** docs/pitch.md · **Judge Q&A:** docs/judge_qa.md · **Spec + gates:** PRD.md ("Headlines (v5)", "Targets v5") · **Run:** README.md
+
+## Final status
+| Area | State | Headline numbers (all from reports/*.json) |
+|---|---|---|
+| A1 Bengaluru construction ledger | done | 488 construction leads; reviewer-audit precision 0.89 excl. unsure (0.69 incl.); injected recall 0.95 @1 ha; 10 lake leads, 0 confirmed filling (honest); ward + growth-vs-roads tables |
+| A2 renewable siting (Pavagada) | done | LCOE ranking; real park cells median 96th percentile; best cell ₹2.98/kWh vs ₹2.6 tariff; A1-A2 PV check inconclusive (stated) |
+| B orbit + scheduler | done | % of upper bound ρ=1/2/5: HERALD 99.3/99.0/98.4 vs FIFO 53.5/15.2/1.2 vs cloud filter 69.6/33.1/6.1; match FIFO in 2.85 min; first insight 1.8 min (same-pass downlink) |
+| C mining into forest + evidence | done | Hasdeo mine expansion audit precision 0.88, S1 VH −3.5…−7.5 dB corroboration; 14 hash-chained cards verify (Python + browser); sand pits 0.12 → labelled experimental |
+| Onboard model | done | EuroSAT int8 98.02% (fp32 98.11), ECE 0.0065, India WorldCover head 83.1%; cloud MAE 0.205 (miss, no B10 band); int8 CPU 0.88–1.17 ms/chip (borderline) |
+| Web | done | 9 views, 3D mission + 3D ledger, race animation, error boundaries (WebGL failure never blanks the app), licence footer |
+| Quality gate | pass | ruff clean; pytest 42/42 with -W error, 0 skips; vitest 26/26; tsc clean; pipeline reproducible; 0 console errors, 0 external requests, 0 404 on the live site |
+
+## Before going on stage
+1. Open the dashboard in Chrome on the demo laptop; confirm the 3D globe is smooth (GPU fps could not be measured headless).
+2. Prefer `npm run preview` on the laptop; the Vercel URL is the backup. Open each tab once so assets are cached.
+3. Speak numbers from the Gates panel (About / Limits), not from memory.
+
+## Gates still not met (shown honestly in the UI)
+- G2 cloud MAE 0.205 vs 0.05 — 5-band input lacks the cirrus band (B10).
+- G4 int8 latency 0.88–1.17 ms vs < 1 ms — borderline, laptop thermals.
+
+---
+
 # HANDOFF — HERALD live build state
 
 Read this + CLAUDE.md before touching code. Do NOT re-read PRD.md end to end; the sections you need are cited by number.
