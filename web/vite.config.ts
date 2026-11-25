@@ -12,6 +12,9 @@ export default defineConfig({
         { src: `${cs}/ThirdParty`, dest: "cesium", rename: { stripBase: 4 } },
         { src: `${cs}/Assets/approximateTerrainHeights.json`, dest: "cesium/Assets", rename: { stripBase: 5 } },
         { src: `${cs}/Assets/Textures/NaturalEarthII`, dest: "cesium", rename: { stripBase: 4 } },
+        // earth-orientation tables (sun lighting / ICRF) and widget images; vite preview hid their 404s by serving index.html
+        { src: `${cs}/Assets/IAU2006_XYS`, dest: "cesium", rename: { stripBase: 4 } },
+        { src: `${cs}/Assets/Images`, dest: "cesium", rename: { stripBase: 4 } },
       ],
     }),
   ],
