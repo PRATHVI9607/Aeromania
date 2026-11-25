@@ -1,6 +1,6 @@
 /* App shell + analysis components. Neutral graphite ramp, one amber accent, 4px grid. Loaded after styles.css, so it wins ties. */
 :root{--bg:#0d0f12;--side:#0a0c0e;--panel:#13161a;--panel2:#1a1e23;--line:#23282e;--line2:#313840;--tx:#e4e7ea;--mut:#98a1ab;--acc:#f2a93b;--r:10px;--r2:6px;
---sans:"Inter","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--sidew:248px}
+--sans:Geist,system-ui,-apple-system,"Segoe UI",sans-serif;--sidew:248px}
 body{font-size:14px}
 .skip{position:absolute;left:-999px;top:8px;background:var(--acc);color:var(--bg);padding:4px 12px;border-radius:var(--r2);z-index:100}.skip:focus{left:8px}
 .shell{display:grid;grid-template-columns:var(--sidew) minmax(0,1fr);height:100%;transition:grid-template-columns .2s var(--ease)}

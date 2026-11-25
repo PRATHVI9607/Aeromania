@@ -1,6 +1,6 @@
 /* HERALD mission control. One warm accent (amber), tabular mono numbers, 4/8/12/16/24 spacing, animations on transform/opacity only. */
 :root{--bg:#0b0e12;--panel:#11161c;--panel2:#171d25;--line:#222a33;--line2:#2d3742;--tx:#dde3ea;--mut:#8e9ba8;--acc:#f2a93b;--ok:#6fd3c0;--bad:#e5694f;
---mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:"IBM Plex Sans",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+--mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:Geist,system-ui,-apple-system,"Segoe UI",sans-serif;
 --ease:cubic-bezier(.2,.8,.2,1);--r:6px}
 *{box-sizing:border-box}html,body,#root{height:100%;margin:0}
 body{background:var(--bg);color:var(--tx);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
