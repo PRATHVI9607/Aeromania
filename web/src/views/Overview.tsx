@@ -9,7 +9,7 @@ const pc = (x: unknown, d = 0) => (typeof x === "number" ? `${(x * 100).toFixed(
 const n1 = (x: unknown, d = 1) => (typeof x === "number" ? x.toFixed(d) : "n/a");
 
 const STEPS: { n: string; t: string; d: string; track: string; to: string }[] = [
-  { n: "Capture", t: "Sentinel-2 replay", d: "10 m scenes, 46 x 46 tiles per AOI", track: "Input", to: "mission" },
+  { n: "Capture", t: "Sentinel-2 replay", d: "10 m scenes, 46 x 46 tiles per AOI", track: "Input", to: "command" },
   { n: "Onboard AI", t: "Classify and detect change", d: "int8 ResNet-18 plus index rules", track: "Track A and C", to: "model" },
   { n: "Value", t: "Rupees per tile", d: "ha x priority x rate, cloud-aware", track: "Track A and C", to: "econ" },
   { n: "Scheduler", t: "Pick what to send", d: "value per byte, per contact window", track: "Track B", to: "queries" },

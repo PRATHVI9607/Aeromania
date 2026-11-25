@@ -71,7 +71,7 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
     // stars: offline point field instead of the SkyBox image set
     const stars = v.scene.primitives.add(new PointPrimitiveCollection());
     for (let i = 0; i < 700; i++) { const u = Math.random() * 2 - 1, a = Math.random() * 6.2832, r = Math.sqrt(1 - u * u); stars.add({ position: new Cartesian3(r * Math.cos(a) * 3e8, r * Math.sin(a) * 3e8, u * 3e8), pixelSize: 1 + Math.random() * 1.2, color: Color.WHITE.withAlpha(0.25 + Math.random() * 0.6) }); }
-    v.scene.backgroundColor = Color.fromCssColorString("#0b0e12");
+    v.scene.backgroundColor = Color.fromCssColorString("#0A0E14");
     v.scene.globe.baseColor = Color.fromCssColorString("#10151c");
     v.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
     // AOI boxes + points; labels alternate side (sorted north to south) so sone/hasdeo and blr/pavagada never overlap
@@ -104,11 +104,11 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
     v.camera.setView({ destination: P(lon0, lat0 * 0.8, reduced() ? 1.6e7 : 4.5e7) });
     if (reduced()) rd.intro = true;
     v.scene.globe.tileLoadProgressEvent.addEventListener((n: number) => {
-      if (n !== 0) return; rd.ok = true;
+      if (n !== 0) return; rd.ok = true; (window as any).__herald = { ...(window as any).__herald, globeReady: true };
       if (!rd.flown && !reduced()) { rd.flown = true; v.camera.flyTo({ destination: P(lon0, lat0 * 0.8, 1.6e7), duration: 3, easingFunction: EasingFunction.CUBIC_IN_OUT, complete: () => { rd.intro = true; } }); }
     });
     scene.current = { rd, sat, halo, foot, packets, stPts, trail, swath, nadir, arcs };
-    viewer.current = v;
+    viewer.current = v; (window as any).__herald = { globeReady: false, layers: {} };
     const off = () => { followRef.current = false; setFollow(false); };
     const el = v.canvas; el.addEventListener("pointerdown", off);
     return () => { el.removeEventListener("pointerdown", off); v.useDefaultRenderLoop = false; v.camera.cancelFlight(); v.destroy(); viewer.current = null; scene.current = {}; };

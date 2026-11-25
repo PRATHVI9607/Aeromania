@@ -86,7 +86,7 @@ function Curves({ cum, ub, data, p, hid }: { cum: number[][]; ub: number; data: 
         {POL.map((q, k) => <path key={q.id} d={paths[k]} fill="none" stroke={q.color} strokeWidth={q.id === hid ? 2.8 : q.id === "B1" ? 1.8 : 1.2} opacity={q.id === hid || q.id === "B1" ? 1 : 0.55} />)}
       </g>
       <line x1={hx} x2={hx} y1={m.t} y2={H - m.b} className="cursor" />
-      {POL.filter((q) => q.id === hid || q.id === "B1").map((q) => <circle key={q.id} cx={hx} cy={y(at(cum[POL.indexOf(q)], p))} r={4} fill={q.color} stroke="#0b0e12" strokeWidth={1.5} />)}
+      {POL.filter((q) => q.id === hid || q.id === "B1").map((q) => <circle key={q.id} cx={hx} cy={y(at(cum[POL.indexOf(q)], p))} r={4} fill={q.color} stroke="#0A0E14" strokeWidth={1.5} />)}
     </svg>
   );
 }

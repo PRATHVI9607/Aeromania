@@ -1,0 +1,19 @@
+/* Single source of truth for colour and type. Loaded last. Dark only. */
+@font-face{font-family:Inter;font-weight:400;font-style:normal;font-display:swap;src:url(/fonts/inter-400.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:500;font-style:normal;font-display:swap;src:url(/fonts/inter-500.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:600;font-style:normal;font-display:swap;src:url(/fonts/inter-600.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:swap;src:url(/fonts/jbmono-400.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:500;font-style:normal;font-display:swap;src:url(/fonts/jbmono-500.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:600;font-style:normal;font-display:swap;src:url(/fonts/jbmono-600.woff2) format("woff2")}
+:root{color-scheme:dark;
+--bg:#0A0E14;--side:#0A0E14;--panel:#0F1621;--panel2:#152030;--line:#22304A;--line2:#2F4163;--tx:#E6EDF3;--mut:#8A97A8;
+--a:#F5A524;--b:#22D3EE;--c:#34D399;--acc:var(--a);--ok:var(--c);--bad:#F87171;--danger:#F87171;
+--sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+body{font-family:var(--sans)}
+.skeleton,.sk::after{background-image:none}
+.sk::after{background:rgba(255,255,255,.04)}
+/* track accents */
+.navs a .mk.tA{color:var(--a);border-color:var(--a)}.navs a .mk.tB{color:var(--b);border-color:var(--b)}.navs a .mk.tC{color:var(--c);border-color:var(--c)}
+.navs a.on .mk.tA{background:var(--a);color:var(--bg)}.navs a.on .mk.tB{background:var(--b);color:var(--bg)}.navs a.on .mk.tC{background:var(--c);color:var(--bg)}
+.gtl.tA b{color:var(--a)}.gtl.tB b{color:var(--b)}.gtl.tC b{color:var(--c)}
+.gtl b{font-weight:600}
