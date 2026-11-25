@@ -8,7 +8,15 @@
     "ndvi1_max": 0.35,
     "bsi_bare": 0.15,
     "osm_frac": 0.02,
-    "tuned": true
+    "tuned": true,
+    "road_r": 0.03,
+    "road_r0": 0.015,
+    "layout_density": 0.03,
+    "layout_min_road_px": 15,
+    "layout_orient_share": 0.15,
+    "building_frac": 0.4,
+    "wet_chip": 0.1,
+    "wet_mndwi": -0.3
   },
   "sand": {
     "c_dbsi": 0.1,

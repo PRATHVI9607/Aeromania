@@ -50,3 +50,11 @@ def test_invalid_chip_not_scored():
     big[:64, :64], vb[:64, :64] = m, v
     sev, vf, ok, _ = ch.chip_stats(big, vb, {})
     assert not ok[0] and sev[0] == 0
+
+
+def test_roadness_thin_line_vs_blob():
+    x = np.full((5, 40, 40), 0.2, np.float32)
+    x[:3, 20, 5:35] = 0.35        # thin 1 px bright line
+    x[:3, 5:12, 5:12] = 0.35      # 7x7 blob (survives a 3x3 opening)
+    r, _ = ch.roadness(x)
+    assert r[20, 10:30].min() > 0.1 and r[8, 8] < 1e-6
