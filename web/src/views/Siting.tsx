@@ -2,6 +2,8 @@ import { Skeleton, ViewHead } from "../ui";
 import { useState } from "react";
 import { useJson } from "../useJson";
 import { Rupee } from "../Assume";
+import { Shortlist } from "./Shortlist";
+import { explain } from "../explain";
 import type { ViewProps } from "./props";
 
 const SZ = 600;
@@ -32,8 +34,9 @@ export function Siting({ data }: ViewProps) {
   };
   return (
     <div className="ins">
-      <ViewHead kicker="Track A, objective 2" title="Where the next gigawatt should go" sub="Solar and wind sites ranked by irradiance, slope, land use and grid distance, validated against the real Pavagada park. 60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source)." />
+      <ViewHead explain={explain("siting", data)} kicker="Track A, renewable developer" title="Siting shortlist: where the next solar or wind project should go" sub="Solar and wind sites ranked by irradiance, slope, land use and grid distance, validated against the real Pavagada park. 60 x 60 km box around Pavagada, Karnataka. Screening ranks, not site surveys. Rupee values are assumptions (hover for the parameter and source)." />
       <div className="grid2">
+        <Shortlist s={s} rep={data.reports.siting} kind={kind} setKind={setKind} />
         <section className="panel">
           <h3>Heatmap
             <span className="controls">
@@ -60,17 +63,7 @@ export function Siting({ data }: ViewProps) {
           <h3 style={{ marginTop: 12 }}>Caveats</h3>
           <ul className="limits">{(s.caveats ?? []).map((c: string) => <li key={c}>{c}</li>)}</ul>
         </section>
-        <section className="panel span2x">
-          <h3>Top 20 {kind} cells <small>{kind === "solar" ? "MW = usable ha / ha per MW" : "MW = developable km2 x MW per km2"}</small></h3>
-          <table className="tbl">
-            <thead><tr><th>#</th><th>MW</th><th>MWh/yr</th><th>Revenue Rs/yr</th><th>Net margin Rs/yr (all costs)</th><th>Grid km (sub / 33 kV)</th><th>Reasons</th></tr></thead>
-            <tbody>{top.slice(0, 20).map((t) => (
-              <tr key={t.rank}><td className="mono">{t.rank}</td><td className="mono">{t.mw}</td><td className="mono">{f0(t.mwh_yr)}</td>
-                <td className="mono"><Rupee v={t.revenue_rs_yr} name={`${kind}.${rsKey}`} meta={meta(rsKey)} value={sp[rsKey]?.v} /></td>
-                <td className="mono"><Rupee v={t.net_value_rs_yr} name={`${kind}.net_value`} meta={meta(rsKey)} /></td>
-                <td className="mono">{t.grid_km_substation} / {t.grid_km_line33}</td><td className="reasons">{t.reasons.join("; ")}</td></tr>))}</tbody>
-          </table>
-        </section>
+        
       </div>
     </div>
   );

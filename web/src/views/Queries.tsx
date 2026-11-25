@@ -8,7 +8,7 @@ import { Chip, ViewHead } from "../ui";
 
 const LV = ["packet", "thumb", "full chip"];
 
-export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & { setQueries: (q: Query[]) => void; ms: number | null }) {
+export function QueriesView({ data, out, queries, setQueries, ms, bare }: ViewProps & { setQueries: (q: Query[]) => void; ms: number | null; bare?: boolean }) {
   const [d, setD] = useState<Query>({ id: "", pack: "A", aois: [data.tiles[0]?.aoi ?? "blr"], min_sev: 0.05, priority: 1 });
   const [leaving, setLeaving] = useState<string | null>(null);
   const aois = [...new Set(data.tiles.map((t) => t.aoi))];
@@ -24,8 +24,8 @@ export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & 
   useEffect(() => { queries.forEach((q) => seen.current.add(q.id)); }, [queries]);
   return (
     <div className="grid2">
-      <div className="span2"><ViewHead kicker="Track B, live scheduler" title="Change a customer's priority, and the downlink order reshuffles in milliseconds"
-        sub="Add or remove queries, or drag a priority slider. A tile's value sums over every query that matches it, so list order does not matter. The scheduler re-runs in a Web Worker on every edit." /></div>
+      {!bare && <div className="span2"><ViewHead kicker="Track B, live scheduler" title="Change a customer's priority, and the downlink order reshuffles in milliseconds"
+        sub="Add or remove queries, or drag a priority slider. A tile's value sums over every query that matches it, so list order does not matter. The scheduler re-runs in a Web Worker on every edit." /></div>}
       <section className="panel">
         <h3>Customer queries <small>{queries.length}, tile value sums over matching queries</small></h3>
         <ol className="qlist" ref={qRef}>
@@ -61,7 +61,7 @@ export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & 
           <dt>Capacity (rho {out.rho})</dt><dd className="mono">{bytes(out.results.H2.metrics.capacity_bytes)}</dd>
         </dl>}
       </section>
-      <section className="panel span2">
+      {!bare && <section className="panel span2">
         <h3>Downlink order <small>first 10 items HERALD sends, in contact order</small></h3>
         <ol className="dlist" ref={dRef}>
           {top.map(([ti, L, w], k) => { const t = data.tiles[ti], win = data.wins[w]; return (
@@ -70,7 +70,7 @@ export function QueriesView({ data, out, queries, setQueries, ms }: ViewProps & 
               <span className="mono r">{fha(t.ha, 1)}</span><Chip tone={L === 2 ? "acc" : undefined}>{LV[L]}</Chip>
               <span className="mono r dim">T+{hm(win.start_min)} {win.station}</span></li>); })}
         </ol>
-      </section>
+      </section>}
     </div>
   );
 }

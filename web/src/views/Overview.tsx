@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import type { ViewProps } from "./props";
 import { Kpi, Explainer, type Explain } from "../kit";
 import { cardsFromText, verifyChainText } from "../canon";
-import { ha as fha } from "../fmt";
+import { ha as fha, inr, hm } from "../fmt";
+import { CASE_KEY, CASE_STATUS, countStatus, LEAD_KEY, LEAD_STATUS, readLocal, SHORT_KEY } from "../work";
 
 const pc = (x: unknown, d = 0) => (typeof x === "number" ? `${(x * 100).toFixed(d)}%` : "n/a");
 const n1 = (x: unknown, d = 1) => (typeof x === "number" ? x.toFixed(d) : "n/a");
@@ -16,7 +17,7 @@ const STEPS: { n: string; t: string; d: string; track: string; to: string }[] = 
   { n: "Insight", t: "Ledger, siting, evidence", d: "Leads and hash-chained cards", track: "Track A and C", to: "ledger" },
 ];
 
-export function Overview({ data, go }: ViewProps & { go: (id: string) => void }) {
+export function Overview({ data, out, go }: ViewProps & { go: (id: string) => void }) {
   const R = data.reports, sb = R.sites_blr, lead = R.audit_blr_lead, sim = R.sim, m = R.model, tc = R.audit_trackc;
   const r5 = sim?.by_rho?.[5];
   const [sit, setSit] = useState<any>(null);
@@ -40,6 +41,12 @@ export function Overview({ data, go }: ViewProps & { go: (id: string) => void })
     ],
     caveats: [<>All of it is a replay of archived imagery; precision numbers are reviewer audits, not field checks; rupee figures are assumptions.</>],
   };
+  const ls = readLocal(LEAD_KEY, {}), cs = readLocal(CASE_KEY, {}), pins = readLocal<string[]>(SHORT_KEY, []);
+  const leadIds = (sb?.sites ?? []).map((s: any) => (s.category === "lake_filling_lead" ? `blr_lake${s.osm_id}` : `blr_site${s.site}`));
+  const lc = countStatus(ls, leadIds, LEAD_STATUS), cc = countStatus(cs, (ev ? Array.from({ length: ev.n }, (_, i) => String(i)) : []), CASE_STATUS);
+  const openCases = Object.entries(cs as Record<string, { status: string }>).filter(([, w]) => w.status === "new" || w.status === "review" || w.status === "visit").length;
+  const nextW = out?.results.H2.sel[0]?.[2], nw = nextW != null ? data.wins[nextW] : null;
+  const nextVal = out ? out.results.H2.sel.filter((x) => x[2] === nextW).reduce((a, x) => a + 0, 0) : 0; void nextVal; void cc;
   return (
     <div className="ov">
       <header className="vh">
@@ -48,6 +55,21 @@ export function Overview({ data, go }: ViewProps & { go: (id: string) => void })
         <p className="sub">Real Sentinel-2 imagery of Bengaluru, Pavagada, Hasdeo Arand and the Sone river, replayed through an onboard classifier, a value scheduler and a tamper-evident evidence chain.</p>
         <Explainer e={ex} defaultOpen={false} />
       </header>
+
+      <p className="lede">HERALD is a satellite that decides onboard what is worth sending. It reads each 10 m tile, scores it in rupees for the customers who asked, and spends the few minutes of ground contact on the highest-value answers first. The same change detection gives city teams a construction work queue, developers a siting shortlist, and forest departments hash-chained evidence cases.</p>
+      <div className="kgrid k4">
+        <Kpi label="Example, Track A" value="One lead" onClick={() => go("ledger")} sub="Open a lead: 10 m before and after, the rule that fired, ward, and the decision it supports." />
+        <Kpi label="Example, Track B" value="One tile" onClick={() => go("queries")} sub="Downlink planner, How it works: follow a tile from capture to ground, HERALD against FIFO." />
+        <Kpi label="Example, Track C" value="One case" onClick={() => go("evidence")} sub="Open a card: detection, radar corroboration, hash, chain proof, evidence pack." />
+      </div>
+
+      <h3 className="grp">Your work today <small>saved in this browser</small></h3>
+      <div className="kgrid k4">
+        <Kpi label="Leads to inspect" value={lc.inspect} tone="acc" onClick={() => go("ledger")} sub={`${lc.new} new, ${lc.escalated} escalated, ${lc.dismissed} dismissed`} />
+        <Kpi label="Open evidence cases" value={openCases} onClick={() => go("evidence")} sub={`${ev?.n ?? "n/a"} cards in the chain`} />
+        <Kpi label="Next downlink pass" value={nw ? `T+${hm(nw.start_min)}` : "n/a"} onClick={() => go("queries")} sub={nw ? `${nw.station}, ${(nw.end_min - nw.start_min).toFixed(1)} min; plan value ${out ? inr(out.results.H2.metrics.value) : "n/a"} in total` : "computing"} />
+        <Kpi label="Siting shortlist" value={pins.length} onClick={() => go("siting")} sub="pinned cells" />
+      </div>
 
       <h3 className="grp">Pipeline <small>click a stage</small></h3>
       <ol className="pipe">

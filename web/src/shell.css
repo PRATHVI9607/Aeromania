@@ -146,3 +146,16 @@ input[type=text],input:not([type]),textarea{background:var(--panel2);color:var(-
 }
 .sr{position:absolute;left:-999px}
 h3 .btns{display:flex;gap:8px;font-weight:400}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:8px 16px;color:var(--mut);font-size:13px;margin-bottom:-1px}
+.tabs button:hover:not(:disabled){background:none;color:var(--tx)}.tabs button.on{background:none;color:var(--tx);border-bottom-color:var(--acc)}
+.mv{background:#251d10}.pill{font:11px var(--mono);padding:0 6px;border-radius:4px;border:1px solid #5a4220;color:var(--acc);margin-left:8px}
+.capbar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}.capbar b{display:block;height:100%;background:var(--acc)}
+.passes{display:flex;flex-direction:column;max-height:420px;overflow:auto;gap:2px}
+.passes button{display:grid;grid-template-columns:64px minmax(0,1fr) 56px;gap:8px;text-align:left;border:1px solid transparent;background:none;padding:8px 12px;font:12px var(--mono);border-radius:var(--r2)}
+.passes button.on{background:var(--panel2);border-color:var(--acc)}
+.split{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1100px){.split{grid-template-columns:1fr}}
+.walk{list-style:none;margin:0;padding:0}.walk li{display:grid;grid-template-columns:180px 110px minmax(0,1fr);gap:16px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.lede{max-width:880px;font-size:14px;line-height:1.6;color:#c3c9cf;margin:0 0 16px}
+.evgrid .ec{grid-template-columns:56px minmax(0,1fr) auto auto auto}

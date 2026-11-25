@@ -85,3 +85,16 @@ export function HBars({ rows, fmt, color = "var(--acc)" }: { rows: { label: stri
 export function Empty({ title, children }: { title: string; children?: React.ReactNode }) {
   return <div className="empty"><b>{title}</b>{children && <span>{children}</span>}</div>;
 }
+
+/** Section tabs: the tool first, then "How it works", then an optional lazy "Deep dive". */
+export function Tabs({ tabs, init = 0 }: { tabs: { id: string; label: string; node: () => React.ReactNode }[]; init?: number }) {
+  const [i, setI] = useState(init);
+  return (
+    <div>
+      <div className="tabs" role="tablist">
+        {tabs.map((t, k) => <button key={t.id} role="tab" aria-selected={i === k} className={i === k ? "on" : ""} onClick={() => setI(k)}>{t.label}</button>)}
+      </div>
+      <div role="tabpanel">{tabs[i].node()}</div>
+    </div>
+  );
+}

@@ -7,10 +7,12 @@ import { Overview } from "./views/Overview";
 import { Fifo } from "./views/Fifo";
 import { Insights } from "./views/Insights";
 import { Siting } from "./views/Siting";
-import { QueriesView } from "./views/Queries";
+import { Planner } from "./views/Planner";
 import { Evidence } from "./views/Evidence";
 import { Economics, Hardware, About } from "./views/Static";
 
+import { Tabs, Empty } from "./kit";
+const DeepC = lazy(() => import.meta.glob("./deep/TrackC.tsx")["./deep/TrackC.tsx"]?.() as Promise<any> ?? Promise.resolve({ default: () => <Empty title="Deep dive not installed">web/src/deep/TrackC.tsx is not present in this build.</Empty> }));
 const Mission = lazy(() => import("./views/Mission"));
 
 interface V { id: string; label: string; group: string; track?: string; title: string }
@@ -20,7 +22,7 @@ const VIEWS: V[] = [
   { id: "siting", label: "Renewable siting", group: "Track A", track: "A", title: "Renewable siting" },
   { id: "mission", label: "Mission", group: "Track B", track: "B", title: "Mission control" },
   { id: "fifo", label: "Downlink: FIFO vs HERALD", group: "Track B", track: "B", title: "Downlink: FIFO vs HERALD" },
-  { id: "queries", label: "Live queries", group: "Track B", track: "B", title: "Live queries" },
+  { id: "queries", label: "Downlink planner", group: "Track B", track: "B", title: "Downlink planner" },
   { id: "evidence", label: "Evidence", group: "Track C", track: "C", title: "Evidence chain" },
   { id: "model", label: "Model and hardware", group: "System", title: "Model and hardware" },
   { id: "econ", label: "Economics", group: "System", title: "Economics" },
@@ -101,8 +103,8 @@ function Shell({ data }: { data: Data }) {
               {cur.id === "ledger" && <Guard label="Construction ledger"><Insights {...common} /></Guard>}
               {cur.id === "siting" && <Guard label="Siting"><Siting {...common} /></Guard>}
               {cur.id === "fifo" && <Guard label="FIFO vs HERALD"><Fifo {...common} setRho={setRho} /></Guard>}
-              {cur.id === "queries" && <Guard label="Queries"><QueriesView {...common} setQueries={setQueries} ms={ms} /></Guard>}
-              {cur.id === "evidence" && <Guard label="Evidence"><Evidence {...common} /></Guard>}
+              {cur.id === "queries" && <Guard label="Planner"><Planner {...common} setQueries={setQueries} ms={ms} /></Guard>}
+              {cur.id === "evidence" && <Guard label="Evidence"><Tabs tabs={[{ id: "cases", label: "Cases", node: () => <Evidence {...common} /> }, { id: "deep", label: "Deep dive", node: () => <Guard label="Track C deep dive"><Suspense fallback={<Skeleton rows={4} />}><DeepC {...common} /></Suspense></Guard> }]} /></Guard>}
               {cur.id === "model" && <Guard label="Model and hardware"><Hardware data={data} /></Guard>}
               {cur.id === "econ" && <Guard label="Economics"><Economics data={data} /></Guard>}
               {cur.id === "gates" && <Guard label="Gates"><About data={data} ms={ms} runs={runs} /></Guard>}
