@@ -224,7 +224,7 @@ def pick_s2(aoi, log_):
                     continue
                 d = 0 if ref_doy is None else abs(it.datetime.timetuple().tm_yday - ref_doy)
                 sc.append((cl * 100 + 0.1 * d, cl, it))
-            sc = [s for s in sc if s[1] <= 0.30]
+            sc = [s for s in sc if s[1] <= aoi.get("max_cloud", 0.30)]
             return min(sc, key=lambda s: s[0]) if sc else None
         sel = {}
         for y1 in [aoi["years"][1]]:
@@ -241,6 +241,14 @@ def pick_s2(aoi, log_):
             continue
         t0, t1 = sel["t0"][2], sel["t1"][2]
         taken = {t0.id, t1.id}
+        if "c1" not in dates_for(aoi):
+            dates = {}
+            for k, (cl, it) in (("t0", sel["t0"][1:]), ("t1", sel["t1"][1:])):
+                dates[k] = dict(item_id=it.id, datetime=it.datetime.isoformat(), aoi_cloud_scl=round(cl, 4),
+                                boa_offset_applied=False)
+                log(f"  {aoi['id']} {k}: {it.id} {it.datetime.date()} SCL cloud {cl:.1%}")
+            return dict(epsg=epsg, origin_xy=list(origin), mgrs=str(key[0]).removeprefix("MGRS-"),
+                        rel_orbit=key[1], dates=dates, s1={}), f"group {key}; t0/t1 SCL cloud <= {aoi.get('max_cloud', 0.3):.0%}, DOY match"
         cands = [i for i in its if i.id not in taken and i.datetime > t0.datetime + timedelta(days=30)
                  and 8 <= i.properties.get("eo:cloud_cover", 0) <= 85]
         scored = []
@@ -346,8 +354,22 @@ def build_s1(aoi_id, scene, aoi):
 
 
 # ---------- orchestration ----------
-def load_aois():
-    return json.loads((CONFIG / "aois.json").read_text(encoding="utf-8"))["aois"]
+def load_aois(only=None):
+    """Main AOIs (what sim reads); an id from config/aois_extra.json is returned only when asked for by `only`."""
+    aois = json.loads((CONFIG / "aois.json").read_text(encoding="utf-8"))["aois"]
+    extra = CONFIG / "aois_extra.json"
+    if only and only not in [a["id"] for a in aois] and extra.exists():
+        aois = [a for a in json.loads(extra.read_text(encoding="utf-8"))["aois"] if a["id"] == only]
+    return aois
+
+
+def all_aois():
+    extra = CONFIG / "aois_extra.json"
+    return load_aois() + (json.loads(extra.read_text(encoding="utf-8"))["aois"] if extra.exists() else [])
+
+
+def dates_for(a):
+    return tuple(a.get("dates", DATES))
 
 
 def dir_bytes(aoi_id):
@@ -364,7 +386,7 @@ def write_report(aois):
         s = scenes.get(a["id"])
         if not s:
             continue
-        n = sum(1 for d in DATES if (CHIPS / f"{a['id']}_{d}.npy").exists()) * NCHIP
+        n = sum(1 for d in dates_for(a) if (CHIPS / f"{a['id']}_{d}.npy").exists()) * NCHIP
         b = dir_bytes(a["id"])
         total += b
         rep[a["id"]] = dict(mgrs=s["mgrs"], rel_orbit=s["rel_orbit"], epsg=s["epsg"], origin_xy=s["origin_xy"],
@@ -382,7 +404,7 @@ def cmd_build(args):
     scenes = json.loads(sp.read_text(encoding="utf-8")) if sp.exists() else {}
     why = json.loads(sel.read_text(encoding="utf-8")) if sel.exists() else {}
     ensure(REPORTS)
-    aois = [a for a in load_aois() if args.aoi in (None, a["id"])]
+    aois = [a for a in load_aois(args.aoi) if args.aoi in (None, a["id"])]
     for a in aois:
         aid = a["id"]
         if aid not in scenes:
@@ -392,9 +414,9 @@ def cmd_build(args):
         s = scenes[aid]
         (VAULT / "meta" / f"{aid}.json").write_text(
             json.dumps(tiles_meta(aid, s["epsg"], s["origin_xy"])), encoding="utf-8")
-        todo = [d for d in DATES if not (CHIPS / f"{aid}_{d}.npy").exists() or not (CHIPS / f"{aid}_{d}_scl.npy").exists()]
+        todo = [d for d in dates_for(a) if not (CHIPS / f"{aid}_{d}.npy").exists() or not (CHIPS / f"{aid}_{d}_scl.npy").exists()]
         items = fetch_items([s["dates"][d]["item_id"] for d in todo]) if todo else {}
-        for d in (("t0", "t1") if args.quick else DATES):
+        for d in (("t0", "t1") if args.quick else dates_for(a)):
             build_date(aid, d, s["dates"][d], s, items)
             sp.write_text(json.dumps(scenes, indent=1), encoding="utf-8")
         if aid == "sone" or (aid == "hasdeo" and not args.quick):
@@ -406,7 +428,7 @@ def cmd_build(args):
                     raise
             sp.write_text(json.dumps(scenes, indent=1), encoding="utf-8")
     write_manifest()
-    write_report(load_aois())
+    write_report(all_aois())
     log("build done")
     return 0
 

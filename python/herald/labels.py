@@ -20,7 +20,7 @@ from shapely.geometry import LineString, Polygon, shape
 from shapely.ops import linemerge, polygonize, transform as shp_transform
 
 from herald.paths import CHIPS, LABELS, REPORTS, VAULT, ensure
-from herald.vault import (CLOUD_CLASSES, CROP, DATES, ENV, NCHIP, SIDE, aoi_transform, load_aois, log, retry,
+from herald.vault import (CLOUD_CLASSES, CROP, DATES, ENV, NCHIP, SIDE, aoi_transform, all_aois, dates_for, load_aois, log, retry,
                           scl_fractions, tile_chips, write_manifest)
 
 WC_CLASSES = (10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100)
@@ -128,13 +128,13 @@ def main(argv=None):
     ap.add_argument("--aoi")
     a = ap.parse_args(argv)
     ensure(LABELS)
-    for aoi in load_aois():
+    for aoi in load_aois(a.aoi):
         aid = aoi["id"]
         if a.aoi not in (None, aid):
             continue
         meta = json.loads((VAULT / "meta" / f"{aid}.json").read_text(encoding="utf-8"))
         out = {}
-        for d in (*DATES, "x1", "x2"):
+        for d in (*dates_for(aoi), "x1", "x2"):
             p = CHIPS / f"{aid}_{d}_scl.npy"
             if p.exists():
                 out[f"cloud_{d}"], out[f"nodata_{d}"] = (v.astype(np.float32) for v in scl_fractions(np.load(p)))
@@ -148,7 +148,7 @@ def main(argv=None):
                REPORTS / "qa" / f"labels_{aid}.png")
     write_manifest()
     from herald.vault import write_report
-    write_report(load_aois())
+    write_report(all_aois())
     return 0
 
 

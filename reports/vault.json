@@ -32,10 +32,22 @@
      "date": "2026-06-28",
      "aoi_cloud_pct": 55.66,
      "boa_offset_applied": false
+    },
+    "x1": {
+     "item_id": "S2B_43PGQ_20240113_0_L2A",
+     "date": "2024-01-13",
+     "aoi_cloud_pct": 51.29,
+     "boa_offset_applied": false
+    },
+    "x2": {
+     "item_id": "S2C_43PGQ_20251218_0_L2A",
+     "date": "2025-12-18",
+     "aoi_cloud_pct": 35.82,
+     "boa_offset_applied": false
     }
    },
    "chips": 8464,
-   "bytes": 381395761,
+   "bytes": 572077845,
    "s1": {},
    "selection": "group ('MGRS-43PGQ', 19) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%"
   },
@@ -71,10 +83,22 @@
      "date": "2026-08-22",
      "aoi_cloud_pct": 55.07,
      "boa_offset_applied": false
+    },
+    "x1": {
+     "item_id": "S2B_44RRP_20240608_0_L2A",
+     "date": "2024-06-08",
+     "aoi_cloud_pct": 41.87,
+     "boa_offset_applied": false
+    },
+    "x2": {
+     "item_id": "S2B_44RRP_20251130_0_L2A",
+     "date": "2025-11-30",
+     "aoi_cloud_pct": 39.88,
+     "boa_offset_applied": false
     }
    },
    "chips": 8464,
-   "bytes": 485393128,
+   "bytes": 676073694,
    "s1": {
     "t0": "2023-04-08",
     "t1": "2025-03-28",
@@ -114,17 +138,56 @@
      "date": "2026-05-19",
      "aoi_cloud_pct": 55.6,
      "boa_offset_applied": false
+    },
+    "x1": {
+     "item_id": "S2C_44QPL_20250228_0_L2A",
+     "date": "2025-02-28",
+     "aoi_cloud_pct": 53.32,
+     "boa_offset_applied": false
+    },
+    "x2": {
+     "item_id": "S2B_44QPL_20240608_0_L2A",
+     "date": "2024-06-08",
+     "aoi_cloud_pct": 47.26,
+     "boa_offset_applied": false
     }
    },
    "chips": 8464,
-   "bytes": 485390909,
+   "bytes": 676071903,
    "s1": {
     "t0": "2023-02-10",
     "t1": "2025-01-30",
     "monsoon": "2023-08-09"
    },
    "selection": "group ('MGRS-44QPL', 119) (most items with a clear 2023/2025 pair, nodata<=1%); t0/t1 lowest SCL cloud with DOY match; c1/c2 SCL cloud nearest 30%/55% in [15,70]%"
+  },
+  "pvg": {
+   "mgrs": "43PGR",
+   "rel_orbit": 19,
+   "epsg": 32643,
+   "origin_xy": [
+    747500.0,
+    1593520.0
+   ],
+   "scenes": {
+    "t0": {
+     "item_id": "S2B_43PGR_20230227_1_L2A",
+     "date": "2023-02-27",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    },
+    "t1": {
+     "item_id": "S2B_43PGR_20250226_0_L2A",
+     "date": "2025-02-26",
+     "aoi_cloud_pct": 0.0,
+     "boa_offset_applied": false
+    }
+   },
+   "chips": 4232,
+   "bytes": 190701685,
+   "s1": {},
+   "selection": "group ('MGRS-43PGR', 19); t0/t1 SCL cloud <= 10%, DOY match"
   }
  },
- "total_bytes": 1352179798
+ "total_bytes": 2114925127
 }

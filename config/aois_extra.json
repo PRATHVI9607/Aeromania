@@ -1,0 +1,6 @@
+{
+  "_note": "Extra AOIs, NOT read by sim.py. Only t0/t1 (no c1/c2, no S1). Selected by `vault build --aoi <id>` / `labels --aoi <id>`. Center = area-weighted centroid of OSM solar footprints in vault/siting/osm_solar.json within 0.15 deg of the park.",
+  "aois": [
+    {"id": "pvg", "name": "Pavagada Solar Park, Tumakuru", "pack": "A2", "kind": "solar", "center": [14.266, 77.433], "season_months": [1, 2, 3], "years": [2023, 2025], "dates": ["t0", "t1"], "max_cloud": 0.10}
+  ]
+}

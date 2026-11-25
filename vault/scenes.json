@@ -180,5 +180,29 @@
     "datetime": "2023-08-09T00:21:36.135613+00:00"
    }
   }
+ },
+ "pvg": {
+  "epsg": 32643,
+  "origin_xy": [
+   747500.0,
+   1593520.0
+  ],
+  "mgrs": "43PGR",
+  "rel_orbit": 19,
+  "dates": {
+   "t0": {
+    "item_id": "S2B_43PGR_20230227_1_L2A",
+    "datetime": "2023-02-27T05:25:01.650000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   },
+   "t1": {
+    "item_id": "S2B_43PGR_20250226_0_L2A",
+    "datetime": "2025-02-26T05:25:08.657000+00:00",
+    "aoi_cloud_scl": 0.0,
+    "boa_offset_applied": false
+   }
+  },
+  "s1": {}
  }
 }
