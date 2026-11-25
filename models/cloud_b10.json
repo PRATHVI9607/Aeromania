@@ -1,0 +1,14 @@
+{
+  "mode": "head_b10_max",
+  "thr_idx": 1,
+  "thr": 0.008,
+  "lin": [
+    0.9468767046928406,
+    2.224047899246216,
+    4.8341064453125,
+    -0.08286944776773453
+  ],
+  "max_thr_idx": 1,
+  "max_thr": 0.008,
+  "note": "onboard input = 5 bands for land/change + L1C B10 for cirrus; cloud = lin: clip(w*head + a*frac(B10>thr) + b*10*p90(B10) + c) or max(head, frac(B10>max_thr))"
+}
