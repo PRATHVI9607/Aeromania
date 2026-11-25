@@ -67,6 +67,7 @@ Dates per AOI (all same MGRS tile + same relative orbit):
 - Static only. Reads `web/public/data/*.json` + `models/` report copies. Every ₹ number has an "assumption" tooltip.
 
 ## Lead decisions (latest first)
+- TRACK B PITCH FRAMING (lead-approved): never quote one ratio alone. Show the curve vs rho (1.55x at rho=1, 8.6x at 2, 27.7x at 5, 57.8x at 10) + why (26% of tiles carry value; most waste is no-change tiles, not cloud; B2 cloud filter still 20x behind at rho=5) + 'HERALD matches FIFO's 5-day value in ~2 contact minutes' + first insight 25.4 vs 81.7 min (rho=5) + H1 full-chips robustness.
 - ORDER (user): finish Track A fully (ledger v2, lakes edge cases, siting, Insights + Siting web views, review) -> then B (sim rerun, FIFO vs HERALD view) -> then C.
 - Track A objective 2 = renewable siting (builder-siting): siting.py, reports/siting.json, web/public/data/siting.json.
 - Embedding change (echg) REJECTED for pitch: AUC 0.56 vs rules, 0.51-0.63 on injected patches. Kept in model.json as an honest negative result. Onboard change = stored t0 index maps at 20 m (~3 KB/tile) + same rules. Backlog stretch: tiny siamese change CNN, only if A/B/C done.
