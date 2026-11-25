@@ -134,7 +134,7 @@ def main(argv=None):
             continue
         meta = json.loads((VAULT / "meta" / f"{aid}.json").read_text(encoding="utf-8"))
         out = {}
-        for d in DATES:
+        for d in (*DATES, "x1", "x2"):
             p = CHIPS / f"{aid}_{d}_scl.npy"
             if p.exists():
                 out[f"cloud_{d}"], out[f"nodata_{d}"] = (v.astype(np.float32) for v in scl_fractions(np.load(p)))

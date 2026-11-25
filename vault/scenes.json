@@ -31,6 +31,22 @@
     "datetime": "2026-06-28T05:25:36.311000+00:00",
     "aoi_cloud_scl": 0.5566,
     "boa_offset_applied": false
+   },
+   "x1": {
+    "item_id": "S2B_43PGQ_20240113_0_L2A",
+    "datetime": "2024-01-13T05:25:17.999000+00:00",
+    "aoi_cloud_scl": 0.5129,
+    "aoi_cirrus_scl": 0.3399,
+    "boa_offset_applied": false,
+    "training_only": true
+   },
+   "x2": {
+    "item_id": "S2C_43PGQ_20251218_0_L2A",
+    "datetime": "2025-12-18T05:25:27.739000+00:00",
+    "aoi_cloud_scl": 0.3582,
+    "aoi_cirrus_scl": 0.2961,
+    "boa_offset_applied": false,
+    "training_only": true
    }
   },
   "s1": {}
@@ -67,6 +83,22 @@
     "datetime": "2026-08-22T05:11:33.544000+00:00",
     "aoi_cloud_scl": 0.5507,
     "boa_offset_applied": false
+   },
+   "x1": {
+    "item_id": "S2B_44RRP_20240608_0_L2A",
+    "datetime": "2024-06-08T05:11:39.548000+00:00",
+    "aoi_cloud_scl": 0.4187,
+    "aoi_cirrus_scl": 0.3998,
+    "boa_offset_applied": false,
+    "training_only": true
+   },
+   "x2": {
+    "item_id": "S2B_44RRP_20251130_0_L2A",
+    "datetime": "2025-11-30T05:11:30.258000+00:00",
+    "aoi_cloud_scl": 0.3988,
+    "aoi_cirrus_scl": 0.3857,
+    "boa_offset_applied": false,
+    "training_only": true
    }
   },
   "s1": {
@@ -116,6 +148,22 @@
     "datetime": "2026-05-19T05:12:22.730000+00:00",
     "aoi_cloud_scl": 0.556,
     "boa_offset_applied": false
+   },
+   "x1": {
+    "item_id": "S2C_44QPL_20250228_0_L2A",
+    "datetime": "2025-02-28T05:12:50.875000+00:00",
+    "aoi_cloud_scl": 0.5332,
+    "aoi_cirrus_scl": 0.4638,
+    "boa_offset_applied": false,
+    "training_only": true
+   },
+   "x2": {
+    "item_id": "S2B_44QPL_20240608_0_L2A",
+    "datetime": "2024-06-08T05:12:29.504000+00:00",
+    "aoi_cloud_scl": 0.4726,
+    "aoi_cirrus_scl": 0.4403,
+    "boa_offset_applied": false,
+    "training_only": true
    }
   },
   "s1": {

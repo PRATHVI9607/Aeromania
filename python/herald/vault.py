@@ -57,7 +57,7 @@ def needs_boa_offset(props: dict, nir=None) -> bool:
     need = float(props.get("s2:processing_baseline", "0") or 0) >= 4.0 and not props.get("earthsearch:boa_offset_applied")
     if need and nir is not None:
         nz = nir[nir > 0]
-        need = bool(nz.size) and np.percentile(nz, 0.1) >= 900
+        need = bool(nz.size and np.percentile(nz, 0.1) >= 900)
     return need
 
 
@@ -411,6 +411,49 @@ def cmd_build(args):
     return 0
 
 
+def cmd_extra(args):
+    """Training-only captures x1,x2 (same tile+orbit+grid): cloud 20-80% in AOI, x1 = highest SCL-10 (thin cirrus)."""
+    from pystac_client import Client
+    cat = Client.open(S2_STAC)
+    sp = VAULT / "scenes.json"
+    scenes = json.loads(sp.read_text(encoding="utf-8"))
+    for a in [a for a in load_aois() if args.aoi in (None, a["id"])]:
+        aid, s = a["id"], scenes[a["id"]]
+        if "x1" not in s["dates"]:
+            cx = a["center"]
+            pt = {"type": "Point", "coordinates": [cx[1], cx[0]]}
+            its = retry(lambda: list(cat.search(collections=["sentinel-2-l2a"], intersects=pt,
+                                                datetime="2023-01-01/2025-12-31", max_items=1500).items()))
+            used = {v["item_id"] for v in s["dates"].values()}
+            its = [i for i in its if group_key(i)[0] == "MGRS-" + s["mgrs"] and group_key(i)[1] == s["rel_orbit"]
+                   and i.id not in used]
+            # prefilter by the tile-wide cirrus property, then score the AOI window from SCL
+            its = sorted(its, key=lambda i: -i.properties.get("s2:thin_cirrus_percentage", 0))[:25]
+            sc = []
+            for it in its:
+                scl = retry(lambda: read_scl_native(it, s["origin_xy"], s["epsg"]))
+                cl, nd = (float(v) for v in scl_fractions(scl))
+                if 0.20 <= cl <= 0.80 and nd <= 0.01:
+                    sc.append((float((scl == 10).mean()), cl, it))
+            sc.sort(key=lambda t: -t[0])
+            if len(sc) < 2:
+                raise RuntimeError(f"{aid}: <2 extra candidates")
+            x1 = sc[0]
+            x2 = next((t for t in sc[1:] if abs((t[2].datetime - x1[2].datetime).days) >= 20), sc[1])
+            for lab, (ci, cl, it) in (("x1", x1), ("x2", x2)):
+                s["dates"][lab] = dict(item_id=it.id, datetime=it.datetime.isoformat(), aoi_cloud_scl=round(cl, 4),
+                                       aoi_cirrus_scl=round(ci, 4), boa_offset_applied=False, training_only=True)
+            sp.write_text(json.dumps(scenes, indent=1), encoding="utf-8")
+        items = fetch_items([s["dates"][d]["item_id"] for d in ("x1", "x2")])
+        for d in ("x1", "x2"):
+            e = s["dates"][d]
+            log(f"{aid} {d}: {e['item_id']} cloud {e['aoi_cloud_scl']:.1%} cirrus {e['aoi_cirrus_scl']:.1%}")
+            build_date(aid, d, e, s, items)
+            sp.write_text(json.dumps(scenes, indent=1), encoding="utf-8")
+    write_manifest()
+    return 0
+
+
 def cmd_verify(_):
     bad = verify_manifest()
     print("vault verify:", "OK" if not bad else f"FAILED {bad[:10]}")
@@ -431,11 +474,11 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(prog="herald vault")
     ap.add_argument("cmd", choices=["vault"])
-    ap.add_argument("action", choices=["build", "verify", "pack", "manifest"])
+    ap.add_argument("action", choices=["build", "verify", "pack", "manifest", "extra"])
     ap.add_argument("--aoi")
     ap.add_argument("--quick", action="store_true", help="t0,t1 only; skip hasdeo S1")
     a = ap.parse_args(argv)
-    return {"build": cmd_build, "verify": cmd_verify, "pack": cmd_pack,
+    return {"build": cmd_build, "extra": cmd_extra, "verify": cmd_verify, "pack": cmd_pack,
             "manifest": lambda _: (write_manifest(), 0)[1]}[a.action](a)
 
 
