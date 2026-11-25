@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BillboardCollection, Cartesian2, Cartesian3, Color, HeadingPitchRange, LabelCollection, Matrix4, NearFarScalar, ConstantPositionProperty, EasingFunction, HorizontalOrigin, JulianDate, LabelStyle, Material, PointPrimitiveCollection, PolylineCollection,
+  BillboardCollection, BoundingSphere, Cartesian2, Cartesian3, Color, HeadingPitchRange, ImageryLayer, LabelCollection, SingleTileImageryProvider, SplitDirection, Math as CMath, Matrix4, NearFarScalar, ConstantPositionProperty, EasingFunction, HorizontalOrigin, JulianDate, LabelStyle, Material, PointPrimitiveCollection, PolylineCollection,
   Rectangle, VerticalOrigin, Viewer, ScreenSpaceEventType,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
@@ -9,6 +9,8 @@ import { bytes, hm, inr } from "../fmt";
 import { reduced } from "../anim";
 import { useJson } from "../useJson";
 import { makeEarth } from "../cz";
+import Flat2D from "./Flat2D";
+import { guard, diagOf, GlobeDiag, type Diag } from "../globeHealth";
 import { createSatellite, DISH_ICON } from "./satModel";
 import { buildInsights, type Insight } from "./insights";
 import "./command.css";
@@ -34,7 +36,7 @@ export const capRangeM = (h = ORBIT_KM, el = EL_MIN) => { const e = (el * Math.P
 const NPK = 10; // packet dots per live link
 const P = (lon: number, lat: number, h = 0) => Cartesian3.fromDegrees(lon, lat, h);
 
-function interp(track: ViewProps["data"]["track"], t: number): [number, number] {
+export function interp(track: ViewProps["data"]["track"], t: number): [number, number] {
   if (!track.length) return [0, 0];
   const t0 = track[0].t_min, span = track[track.length - 1].t_min - t0 || 1;
   const tt = t0 + ((t - t0) % span + span) % span;
@@ -62,6 +64,13 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   const [layers, setLayers] = useState<Record<string, boolean>>({ leads: true, solar: true, evidence: true, aoi: true, coverage: true });
   const [tab, setTab] = useState<"feed" | "wins">("feed");
   const [tour, setTour] = useState<number | null>(null);
+  const [mode, setMode] = useState<"3d" | "2d">("3d"), [safe, setSafe] = useState(false), [diag, setDiag] = useState<Diag | null>(null);
+  const failRef = useRef<(d: Diag) => void>(() => {});
+  failRef.current = (d) => { if (!safe) { setSafe(true); } else { setDiag(d); setMode("2d"); } };
+  const sidx = useJson<Record<string, any>>("sites_index.json");
+  const [ins, setIns] = useState<{ key: string | null; track: string; title: string; chips: [string, string][]; rec: any; lat: number; lon: number } | null>(null);
+  const [sview, setSview] = useState<string>("t1"), [smask, setSmask] = useState(false), [split, setSplit] = useState(0.5);
+  const siteLayers = useRef<Record<string, ImageryLayer>>({}), openRef = useRef<(o: any) => void>(() => {});
   const [follow, setFollow] = useState(true);
   const closeRef = useRef(false), tRef = useRef(t0), followRef = useRef(true), lis = useRef<HTMLUListElement>(null);
   const wj = useJson<any>("windows.json"), siting = useJson<any>("siting.json");
@@ -79,8 +88,11 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   }, [data.tiles]);
 
   useEffect(() => {
-    const v = makeEarth(box.current!);
+    if (mode !== "3d") return;
+    let v: Viewer;
+    try { v = makeEarth(box.current!, safe); } catch (e) { failRef.current(diagOf(`viewer constructor threw: ${String(e)}`, "-", "-", safe)); return; }
     v.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+    v.screenSpaceEventHandler.setInputAction((e: any) => { const p = v.scene.pick(e.position); if (p?.id?.t) openRef.current(p.id); }, ScreenSpaceEventType.LEFT_CLICK);
     // AOI boxes + points; labels alternate side (sorted north to south) so sone/hasdeo and blr/pavagada never overlap
     const sorted = [...aois].sort((a, b) => b[1][1] - a[1][1]);
     sorted.forEach(([id, b], k) => {
@@ -119,39 +131,79 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
     v.camera.setView({ destination: P(lon0, lat0 * 0.8, reduced() ? 1.15e7 : 4.5e7) });
     if (reduced()) rd.intro = true;
     v.scene.globe.tileLoadProgressEvent.addEventListener((n: number) => {
-      if (n !== 0) return; rd.ok = true; (window as any).__herald = { ...(window as any).__herald, globeReady: true };
+      if (n !== 0) return; rd.ok = true;
       if (!rd.flown && !reduced()) { rd.flown = true; v.camera.flyTo({ destination: P(lon0, lat0 * 0.8, 1.15e7), duration: 3, easingFunction: EasingFunction.CUBIC_IN_OUT, complete: () => { rd.intro = true; } }); }
     });
     scene.current = { sat3, caps, capOn: new Map<string, boolean>(), rd, sat, halo, foot, packets, stPts, trail, swath, nadir, arcs };
-    viewer.current = v; (window as any).__herald = { globeReady: false, layers: {} };
+    viewer.current = v; (window as any).__herald = { globeReady: false, layers: {}, mode: "3d", safe };
+    const stopGuard = guard(v, { safe, shown: () => shownRef.current, onReady: () => { (window as any).__herald = { ...(window as any).__herald, globeReady: true }; }, onFail: (d) => failRef.current(d) });
     const off = () => { followRef.current = false; setFollow(false); if (closeRef.current) { closeRef.current = false; v.camera.lookAtTransform(Matrix4.IDENTITY); } };
     const el = v.canvas; el.addEventListener("pointerdown", off);
-    return () => { el.removeEventListener("pointerdown", off); v.useDefaultRenderLoop = false; v.camera.cancelFlight(); v.destroy(); viewer.current = null; scene.current = {}; };
-  }, [data.track, data.stations, aois, t0]);
+    return () => { stopGuard(); el.removeEventListener("pointerdown", off); v.useDefaultRenderLoop = false; v.camera.cancelFlight(); v.destroy(); viewer.current = null; scene.current = {}; };
+  }, [data.track, data.stations, aois, t0, mode, safe]);
 
   // layer markers: Track A construction leads (sites_blr), Track A solar cells (siting), Track C evidence cases
   useEffect(() => {
     const v = viewer.current; if (!v || v.isDestroyed()) return;
     const S = scene.current, pc = v.scene.primitives, A = Color.fromCssColorString("#F5A524"), Cc = Color.fromCssColorString("#34D399");
-    const mkp = (list: { lat: number; lon: number }[], color: Color, px: number, ow: number) => { const c = pc.add(new PointPrimitiveCollection()); for (const p of list) c.add({ position: P(p.lon, p.lat, 3000), pixelSize: px, color, outlineColor: Color.fromCssColorString("#0A0E14"), outlineWidth: ow }); return c as PointPrimitiveCollection; };
+    const mkp = (list: { lat: number; lon: number }[], color: Color, px: number, ow: number, t: string) => { const c = pc.add(new PointPrimitiveCollection()); for (const p of list) c.add({ id: { t, d: p }, position: P(p.lon, p.lat, 3000), pixelSize: px, color, outlineColor: Color.fromCssColorString("#0A0E14"), outlineWidth: ow }); return c as PointPrimitiveCollection; };
     S.lay = {
-      leads: mkp((data.reports.sites_blr?.sites ?? []).filter((s: any) => s.category !== "agri_ambiguous"), A.withAlpha(0.85), 4, 1),
-      solar: mkp(siting?.top_solar ?? [], A, 11, 2),
-      evidence: mkp(data.reports.evidence?.cards ?? [], Cc, 8, 2),
+      leads: mkp((data.reports.sites_blr?.sites ?? []).filter((s: any) => s.category !== "agri_ambiguous"), A.withAlpha(0.85), 4, 1, "A"),
+      solar: mkp(siting?.top_solar ?? [], A, 11, 2, "S"),
+      evidence: mkp(data.reports.evidence?.cards ?? [], Cc, 8, 2, "C"),
     };
     return () => { if (!v.isDestroyed()) for (const c of Object.values(S.lay ?? {})) pc.remove(c as any); S.lay = null; };
-  }, [siting, data.reports, data.track, data.stations, aois, t0]);
+  }, [siting, data.reports, data.track, data.stations, aois, t0, mode, safe]);
   useEffect(() => {
-    const v = viewer.current, S = scene.current; if (!v || v.isDestroyed() || !S.lay) return;
-    const n: Record<string, number> = {};
-    for (const k of ["leads", "solar", "evidence"]) { S.lay[k].show = layers[k]; n[k] = layers[k] ? S.lay[k].length : 0; }
-    for (const id of aois.keys()) { const e = v.entities.getById(id); if (e) e.show = layers.aoi; }
-    S.caps.forEach((e: any) => { e.show = layers.coverage; });
-    n.aoi = layers.aoi ? aois.size : 0; n.coverage = layers.coverage ? S.caps.size : 0;
+    const v = viewer.current, S = scene.current;
+    const cnt: Record<string, number> = { leads: (data.reports.sites_blr?.sites ?? []).filter((s: any) => s.category !== "agri_ambiguous").length, solar: siting?.top_solar?.length ?? 0, evidence: data.reports.evidence?.cards?.length ?? 0, aoi: aois.size, coverage: data.stations.length };
+    const n: Record<string, number> = {}; for (const k of Object.keys(cnt)) n[k] = layers[k] ? cnt[k] : 0;
+    if (v && !v.isDestroyed() && S.lay) {
+      for (const k of ["leads", "solar", "evidence"]) S.lay[k].show = layers[k];
+      for (const id of aois.keys()) { const e = v.entities.getById(id); if (e) e.show = layers.aoi; }
+      S.caps.forEach((e: any) => { e.show = layers.coverage; });
+      v.scene.requestRender();
+    }
     (window as any).__herald = { ...(window as any).__herald, layers: n };
-    v.scene.requestRender();
-  }, [layers, siting, data.reports, data.track, data.stations, aois, t0]);
+  }, [layers, siting, data.reports, data.track, data.stations, aois, t0, mode, safe]);
 
+  // zoom in to check: fly to a lead or evidence case, drape its native 10 m chips at the true bbox
+  const openSite = (o: any) => {
+    const v = viewer.current; const d = o.d; let key: string | null = null, title = "", chips: [string, string][] = [];
+    if (o.t === "A") { key = `blr_site${d.site}`; title = `${d.ha.toFixed(1)} ha ${String(d.category).replace(/_/g, " ")}`; chips = [["ha", d.ha.toFixed(2)], ["category", String(d.category).replace(/_/g, " ")], ["confidence", d.confidence != null ? `${Math.round(d.confidence * 100)}%` : "n/a"], ["ward", d.ward ?? "outside BBMP"]]; if (d.buffer_flag) chips.push(["flag", "lake buffer"]); }
+    else if (o.t === "C") { key = `ev_${d.card_id}`; title = `${String(d.kind).replace(/_/g, " ")}, ${d.ha.toFixed(1)} ha`; chips = [["ha", d.ha.toFixed(2)], ["kind", String(d.kind).replace(/_/g, " ")], ["audit", String(d.audit_label)]]; if (d.s1?.dvv != null) chips.push(["S1 VV", `${d.s1.dvv.toFixed(1)} dB`]); if (d.s1?.dvh != null) chips.push(["S1 VH", `${d.s1.dvh.toFixed(1)} dB`]); }
+    else { title = `Solar site ${d.rank}, ${d.mw} MW`; chips = [["MW", String(d.mw)], ["MWh/yr", Math.round(d.mwh_yr).toLocaleString("en-IN")], ["LCOE", `${d.lcoe_rs_kwh} Rs/kWh`]]; }
+    const rec = key && sidx ? sidx[key] ?? null : null;
+    setIns({ key, track: o.t, title, chips, rec, lat: d.lat, lon: d.lon }); setSview("t1"); setSmask(false); setSplit(0.5);
+    followRef.current = false; setFollow(false); closeRef.current = false;
+    if (!v || v.isDestroyed()) return;
+    v.camera.lookAtTransform(Matrix4.IDENTITY);
+    const c = rec ? [(rec.bbox[0] + rec.bbox[2]) / 2, (rec.bbox[1] + rec.bbox[3]) / 2] : [d.lon, d.lat];
+    v.camera.flyToBoundingSphere(new BoundingSphere(P(c[0], c[1], 0), 700), { offset: new HeadingPitchRange(0, CMath.toRadians(-48), 4200), duration: reduced() ? 0 : 2.6, easingFunction: EasingFunction.CUBIC_IN_OUT });
+  };
+  openRef.current = openSite;
+  (window as any).__herald = Object.assign((window as any).__herald ?? {}, { inspect: (key: string) => { // test and deep-link hook: open a lead or case by sites_index key
+    const s = (data.reports.sites_blr?.sites ?? []).find((x: any) => `blr_site${x.site}` === key), c = (data.reports.evidence?.cards ?? []).find((x: any) => `ev_${x.card_id}` === key);
+    if (s) openSite({ t: "A", d: s }); else if (c) openSite({ t: "C", d: c }); } });
+  const backToOrbit = () => {
+    const v = viewer.current; setIns(null); if (!v || v.isDestroyed()) return;
+    const [la, lo] = interp(data.track, tRef.current);
+    v.camera.flyTo({ destination: P(lo, la * 0.8, 1.15e7), orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 }, duration: reduced() ? 0 : 2.2, easingFunction: EasingFunction.CUBIC_IN_OUT, complete: () => { followRef.current = true; setFollow(true); } });
+  };
+  useEffect(() => { if (!ins) return; const k = (e: KeyboardEvent) => { if (e.key === "Escape") backToOrbit(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }); // eslint-disable-line
+  useEffect(() => {
+    const v = viewer.current; if (!v || v.isDestroyed() || !ins?.rec) return;
+    const rec = ins.rec, rect = Rectangle.fromDegrees(...(rec.bbox as [number, number, number, number])), L: Record<string, ImageryLayer> = {};
+    for (const k of ["t0", "c1", "t1", "c2", "mask"]) if (rec.files[k]) { L[k] = ImageryLayer.fromProviderAsync(SingleTileImageryProvider.fromUrl(`/data/${rec.files[k]}`, { rectangle: rect }), { alpha: 0 }); v.imageryLayers.add(L[k]); }
+    siteLayers.current = L; v.scene.requestRender();
+    return () => { if (!v.isDestroyed()) { Object.values(L).forEach((l) => v.imageryLayers.remove(l)); v.scene.splitPosition = 0; v.scene.requestRender(); } siteLayers.current = {}; };
+  }, [ins?.key]); // eslint-disable-line
+  useEffect(() => {
+    const v = viewer.current, L = siteLayers.current; if (!v || v.isDestroyed()) return;
+    for (const k of ["t0", "c1", "t1", "c2"]) if (L[k]) { const sw = sview === "swipe"; L[k].alpha = sw ? (k === "t0" || k === "t1" ? 1 : 0) : k === sview ? 1 : 0; L[k].splitDirection = sw && k === "t0" ? SplitDirection.LEFT : sw && k === "t1" ? SplitDirection.RIGHT : SplitDirection.NONE; }
+    if (L.mask) L.mask.alpha = smask ? 0.8 : 0;
+    v.scene.splitPosition = split; v.scene.requestRender();
+  }, [sview, smask, split, ins?.key]);
   const bytesRef = useRef<{ b: number[]; max: number }>({ b: [], max: 1 });
   // hidden tab: stop Cesium's render loop entirely, resume when shown
   useEffect(() => { const v = viewer.current; if (v && !v.isDestroyed()) { v.useDefaultRenderLoop = shown; if (shown) v.scene.requestRender(); } }, [shown]);
@@ -164,8 +216,9 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
       const S = scene.current, v = viewer.current;
-      if (!S.sat || !v || !shownRef.current) return;
+      if (!shownRef.current) return;
       if (play) tRef.current = (tRef.current + (dt * SPEEDS[speed]) / 60) % tEnd;
+      if (!S.sat || !v) { if (now - ui > 100) { ui = now; setT(tRef.current); } return; } // 2D mode: the clock still runs
       const tt = tRef.current;
       const [lat, lon] = interp(data.track, tt);
       const sp = P(lon, lat, 786000); S.sat.position = sp; S.halo.position = sp;
@@ -269,6 +322,7 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
         <h1>Command center</h1>
         <span className="chip">{data.tiles.length.toLocaleString("en-IN")} tiles, {wins.length} windows</span>
         <span className="grow" />
+        <div className="seg vmode" role="group" aria-label="View mode"><button className={mode === "3d" ? "on" : ""} onClick={() => { setDiag(null); setSafe(false); setMode("3d"); }}>3D</button><button className={mode === "2d" ? "on" : ""} onClick={() => setMode("2d")}>2D</button></div>
         <label className="flyto">Fly to
           <select value="" onChange={(e) => { if (e.target.value) fly(e.target.value); e.target.value = ""; }} aria-label="Fly to">
             <option value="">Choose</option>{presets.map((p) => <option key={p} value={p}>{PRESET_NAMES[p] ?? p}</option>)}
@@ -288,10 +342,23 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
           <div className="capnote mono">Coverage cap: {(capRangeM() / 1000).toFixed(0)} km ground range at {EL_MIN} deg elevation, {ORBIT_KM} km orbit</div>
         </aside>
         <div className="globe" aria-label="Globe with satellite, recent ground track, stations and AOI boxes">
-          <div className="gl" ref={box} />
+          {mode === "3d" ? <div className="gl" ref={box} /> : <Flat2D data={data} t={t} layers={layers} solar={siting?.top_solar ?? []} aois={aois} active={new Set(wins.filter((w) => t >= w.start_min && t < w.end_min).map((w) => w.station))} interp={interp} capKm={capRangeM() / 1000} onPick={openSite} />}
+          {diag && <GlobeDiag d={diag} onRetry={() => { setDiag(null); setSafe(false); setMode("3d"); }} />}
           <div className={`hud ${active ? "live" : ""}`} aria-live="polite">
             {active ? <><i className="dot" />CONTACT <b>{stName.get(active.station) ?? active.station}</b>{cd != null && <span className="mono"> closes {(cd * 60).toFixed(0)} s</span>}</> : next ? <>NEXT <b>{stName.get(next.station) ?? next.station}</b> <span className="mono">in {Math.floor(cd!)} min</span></> : "no further passes"}
           </div>
+          {ins && <div className={`insp t${ins.track}`} role="dialog" aria-label="Site inspector">
+            <div className="ih"><b>{ins.title}</b><button onClick={backToOrbit} aria-label="Back to orbit">Back to orbit</button></div>
+            <div className="chips">{ins.chips.map(([k, x]) => <span key={k} className="chip"><span className="dim">{k}</span> {x}</span>)}</div>
+            {mode === "2d" && ins.rec && <img className="icrop" alt="" src={`/data/${ins.rec.files[sview === "swipe" ? "t1" : sview]}`} />}
+            {ins.rec ? <>
+              <div className="seg">{["t0", "c1", "t1", "c2"].filter((k) => ins.rec.files[k]).map((k) => <button key={k} className={sview === k ? "on" : ""} onClick={() => setSview(k)} title={`${ins.rec.dates[k]}, cloud ${Math.round((ins.rec.cloud?.[k] ?? 0) * 100)}%`}>{k}</button>)}<button className={sview === "swipe" ? "on" : ""} onClick={() => setSview("swipe")}>swipe</button></div>
+              <div className="mono dim">{sview === "swipe" ? `${ins.rec.dates.t0} | ${ins.rec.dates.t1}` : ins.rec.dates[sview]}</div>
+              {sview === "swipe" && <input type="range" min={0} max={1} step={0.01} value={split} onChange={(e) => setSplit(+e.target.value)} aria-label="Before and after split" />}
+              {ins.rec.files.mask && <label className="lyr"><input type="checkbox" checked={smask} onChange={() => setSmask(!smask)} /><span>Change mask</span></label>}
+            </> : <span className="chip">no native crop for this site</span>}
+            <div className="row"><button onClick={() => { location.hash = ins.track === "C" ? "/evidence" : ins.track === "S" ? "/siting" : "/ledger"; }}>{ins.track === "C" ? "Verify evidence" : ins.track === "S" ? "Open siting" : "Open in work queue"}</button></div>
+          </div>}
           {tour != null && <div className="tour"><span className="mono dim">{tour + 1} / {TOUR.length}</span><p>{TOUR[tour][0]}</p>
             <div className="row"><button onClick={() => tourGo(null)}>Skip</button><button className="primary" onClick={() => tourGo(tour + 1 < TOUR.length ? tour + 1 : null)}>{tour + 1 < TOUR.length ? "Next" : "Done"}</button></div></div>}
         </div>

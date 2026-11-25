@@ -4,6 +4,7 @@ import type { ViewProps } from "./props";
 import { makeEarth } from "../cz";
 import { BarChart } from "../charts";
 import { reduced } from "../anim";
+import { guard, diagOf, GlobeDiag, type Diag } from "../globeHealth";
 import "./command.css";
 import "./simulation.css";
 
@@ -28,6 +29,9 @@ export default function Simulation({ data, active: shown }: ViewProps & { active
   const box = useRef<HTMLDivElement>(null), vr = useRef<Viewer | null>(null);
   const lay = useRef<{ key: string; layer: ImageryLayer }[]>([]), chg = useRef<ImageryLayer | null>(null), alphas = useRef<number[]>([]);
   const [aoi, setAoi] = useState<string>("blr"), [i, setI] = useState(0), [play, setPlay] = useState(false), [overlay, setOverlay] = useState(false);
+  const [mode, setMode] = useState<"3d" | "2d">("3d"), [safe, setSafe] = useState(false), [diag, setDiag] = useState<Diag | null>(null);
+  const failRef = useRef<(d: Diag) => void>(() => {}), shownRef = useRef(shown); shownRef.current = shown;
+  failRef.current = (d) => { if (!safe) setSafe(true); else { setDiag(d); setMode("2d"); } };
   const R = data.reports;
   const scenes = useMemo(() => {
     const sc = R.vault?.aois?.[aoi]?.scenes ?? {};
@@ -37,12 +41,15 @@ export default function Simulation({ data, active: shown }: ViewProps & { active
   const cur = scenes[Math.min(i, scenes.length - 1)];
 
   useEffect(() => {
-    const v = makeEarth(box.current!); vr.current = v;
+    if (mode !== "3d") return;
+    let v: Viewer;
+    try { v = makeEarth(box.current!, safe); } catch (e) { failRef.current(diagOf(`viewer constructor threw: ${String(e)}`, "-", "-", safe)); return; }
+    vr.current = v;
     v.camera.setView({ destination: Cartesian3.fromDegrees(80, 20, reduced() ? 1.2e7 : 2.6e7) });
-    (window as any).__herald = { globeReady: false, layers: {}, sim: {} };
-    v.scene.globe.tileLoadProgressEvent.addEventListener((n: number) => { if (n === 0) (window as any).__herald = { ...(window as any).__herald, globeReady: true }; });
-    return () => { v.camera.cancelFlight(); v.useDefaultRenderLoop = false; v.destroy(); vr.current = null; };
-  }, []);
+    (window as any).__herald = { ...(window as any).__herald, globeReady: false, layers: {}, mode: "3d", safe };
+    const stop = guard(v, { safe, shown: () => shownRef.current, onReady: () => { (window as any).__herald = { ...(window as any).__herald, globeReady: true }; }, onFail: (d) => failRef.current(d) });
+    return () => { stop(); v.camera.cancelFlight(); v.useDefaultRenderLoop = false; v.destroy(); vr.current = null; };
+  }, [mode, safe]);
   useEffect(() => { const v = vr.current; if (v && !v.isDestroyed()) { v.useDefaultRenderLoop = shown; if (shown) v.scene.requestRender(); } }, [shown]);
 
   // scenario: one draped single-tile layer per acquisition (alpha 0 until selected), plus the change overlay
@@ -57,7 +64,7 @@ export default function Simulation({ data, active: shown }: ViewProps & { active
     v.camera.flyTo({ destination: Rectangle.fromDegrees(b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad), duration: reduced() ? 0 : 2.2, easingFunction: EasingFunction.CUBIC_IN_OUT });
     setI(0); setPlay(false); setOverlay(false);
     return () => { if (!v.isDestroyed()) { lay.current.forEach((x) => v.imageryLayers.remove(x.layer)); if (chg.current) v.imageryLayers.remove(chg.current); } lay.current = []; chg.current = null; };
-  }, [aoi, b, scenes]);
+  }, [aoi, b, scenes, mode, safe]);
 
   // date: crossfade to the chosen layer, light the scene at 10:30 local solar time on that date
   useEffect(() => {
@@ -72,9 +79,9 @@ export default function Simulation({ data, active: shown }: ViewProps & { active
     raf = requestAnimationFrame(step);
     const lonc = (b[0] + b[2]) / 2, utc = new Date(`${cur.date}T00:00:00Z`).getTime() + (10.5 - lonc / 15) * 3600e3;
     v.clock.currentTime = JulianDate.fromDate(new Date(utc));
-    (window as any).__herald = { ...(window as any).__herald, sim: { aoi, date: cur.date, imagery: `/data/img/${aoi}_${cur.key}.jpg` } };
     return () => cancelAnimationFrame(raf);
-  }, [cur?.key, scenes, b, aoi]);
+  }, [cur?.key, scenes, b, aoi, mode, safe]);
+  useEffect(() => { if (cur) (window as any).__herald = { ...(window as any).__herald, sim: { aoi, date: cur.date, imagery: `/data/img/${aoi}_${cur.key}.jpg` } }; }, [cur?.key, aoi]);
   useEffect(() => { const v = vr.current; if (chg.current) { chg.current.show = overlay; v?.scene.requestRender(); } }, [overlay, aoi]);
   useEffect(() => {
     if (!play) return; const h = setInterval(() => setI((k) => (k + 1) % scenes.length), 2600); return () => clearInterval(h);
@@ -95,10 +102,17 @@ export default function Simulation({ data, active: shown }: ViewProps & { active
         </div>
         <span className="chip">{SCEN.find((s) => s.id === aoi)?.sub}</span>
         <span className="grow" />
+        <div className="seg vmode" role="group" aria-label="View mode"><button className={mode === "3d" ? "on" : ""} onClick={() => { setDiag(null); setSafe(false); setMode("3d"); }}>3D</button><button className={mode === "2d" ? "on" : ""} onClick={() => setMode("2d")}>2D</button></div>
         <span className="chip ok" title="Sentinel-2 L2A scenes served from this origin">Real Sentinel-2 imagery replayed; dates are real acquisitions</span>
       </div>
       <div className="simgrid">
-        <div className="globe"><div className="gl" ref={box} aria-label="Globe with Sentinel-2 imagery draped over the study area" />
+        <div className="globe">
+          {mode === "3d" ? <div className="gl" ref={box} aria-label="Globe with Sentinel-2 imagery draped over the study area" /> : (
+            <div className="simflat" aria-label="Sentinel-2 imagery of the study area">
+              {scenes.map((x, k) => <img key={aoi + x.key} className="sf" style={{ opacity: k === Math.min(i, scenes.length - 1) ? 1 : 0 }} src={`/data/img/${aoi}_${x.key}.jpg`} alt="" />)}
+              <img className="sf" style={{ opacity: overlay ? 0.85 : 0 }} src={`/data/img/${aoi}_change.png`} alt="" />
+            </div>)}
+          {diag && <GlobeDiag d={diag} onRetry={() => { setDiag(null); setSafe(false); setMode("3d"); }} />}
           {cur && <div className="hud"><b data-sim-date>{cur.date}</b><span className="chip">{TAG[cur.key]}</span><span className="mono dim">cloud {cur.cloud.toFixed(0)}%</span></div>}
         </div>
         <aside className="panel charts">

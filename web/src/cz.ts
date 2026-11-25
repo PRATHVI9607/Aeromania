@@ -1,4 +1,4 @@
-import { Cartesian3, Color, Ion, ImageryLayer, PointPrimitiveCollection, Rectangle, SingleTileImageryProvider, SkyAtmosphere, Viewer } from "cesium";
+import { buildModuleUrl, TileMapServiceImageryProvider, Cartesian3, Color, Ion, ImageryLayer, PointPrimitiveCollection, Rectangle, SingleTileImageryProvider, SkyAtmosphere, Viewer } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 Ion.defaultAccessToken = "";
@@ -10,7 +10,7 @@ export function makeViewer(el: HTMLElement, baseLayer?: ImageryLayer | false): V
   const v = new Viewer(el, {
     baseLayer: baseLayer === undefined ? dayLayer() : baseLayer,
     geocoder: false, baseLayerPicker: false, animation: false, timeline: false, homeButton: false, sceneModePicker: false,
-    navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, requestRenderMode: true,
+    navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, requestRenderMode: true, msaaSamples: 1, showRenderLoopErrors: false,
     maximumRenderTimeChange: Infinity, shouldAnimate: false, skyBox: false, skyAtmosphere: false, creditContainer: document.createElement("div"),
   });
   v.useBrowserRecommendedResolution = false; v.resolutionScale = Math.min(window.devicePixelRatio || 1, 2); v.scene.postProcessStages.fxaa.enabled = true;
@@ -20,9 +20,13 @@ export function makeViewer(el: HTMLElement, baseLayer?: ImageryLayer | false): V
   return v;
 }
 
-/** Lit Earth: day texture, city lights on the dark side, sky and ground atmosphere, star field. Shared by Command center and Simulation. */
-export function makeEarth(el: HTMLElement): Viewer {
+/** Bundled Natural Earth II tiles (copied by vite.config.ts): the fallback when the local textures fail. */
+export const naturalLayer = () => ImageryLayer.fromProviderAsync(TileMapServiceImageryProvider.fromUrl(buildModuleUrl("Assets/Textures/NaturalEarthII")));
+/** Lit Earth: day texture, city lights on the dark side, sky and ground atmosphere, star field. Shared by Command center and Simulation.
+ *  safe = plain day texture only (no lighting, atmosphere, FXAA): the retry when the full shader set fails on a GPU. */
+export function makeEarth(el: HTMLElement, safe = false): Viewer {
   const v = makeViewer(el);
+  if (safe) { v.scene.postProcessStages.fxaa.enabled = false; return v; }
   const day = v.imageryLayers.get(0); day.nightAlpha = 0;
   const night = whole("/earth/earth_night_4096.jpg"); v.imageryLayers.add(night); night.dayAlpha = 0; night.nightAlpha = 1; night.brightness = 1.7;
   const g = v.scene.globe; g.enableLighting = true; g.showGroundAtmosphere = true; g.dynamicAtmosphereLighting = true; g.dynamicAtmosphereLightingFromSun = false;

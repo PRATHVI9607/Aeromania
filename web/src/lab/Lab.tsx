@@ -1,27 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Data } from "../data";
-import { infer, type Sample } from "../deep/onnx";
+import { classify } from "./model";
+import { worker } from "./tiff";
 import { C, P, chipValue, deflateLen, plan, pRel, rgba, tile } from "./lib";
+import Pair from "./Pair";
+import Point from "./Point";
 import "./lab.css";
 
 const SAMPLES = [["blr_construction.tif", "Bengaluru construction lead"], ["hasdeo_mine.tif", "Hasdeo mine expansion"], ["blr_cloudy.tif", "Bengaluru cloudy"]];
 const COLORS = ["#c9b458", "#3f9e5a", "#8fbf6a", "#e5694f", "#b07be0", "#d9944a", "#9c7a4a", "#f2a93b", "#4a8fe0", "#6fd3c0"];
-const RHO = 5, BATCH = 16, TOP = 10;
+const RHO = 5, TOP = 10;
 const inr = (v: number) => "Rs " + Math.round(v).toLocaleString("en-IN");
 const kb = (b: number) => (b / 1024).toFixed(1) + " KB";
 
 interface Res {
   W: number; H: number; cols: number; rows: number; classes: string[]; probs: number[][]; cloud: number[]; bytes: number[];
   value: number[]; msChip: number; img: HTMLCanvasElement; rate: number;
-}
-
-function worker(buf: ArrayBuffer) {
-  return new Promise<{ W: number; H: number; planar: Uint16Array }>((res, rej) => {
-    const w = new Worker(new URL("./tiffWorker.ts", import.meta.url), { type: "module" });
-    w.onmessage = (e) => { w.terminate(); e.data.error ? rej(new Error(e.data.error)) : res(e.data); };
-    w.onerror = (e) => { w.terminate(); rej(new Error(e.message || "tiff worker failed")); };
-    w.postMessage(buf, [buf]);
-  });
 }
 
 async function analyse(buf: ArrayBuffer, rate: number, progress: (s: string) => void): Promise<Res> {
@@ -32,20 +26,11 @@ async function analyse(buf: ArrayBuffer, rate: number, progress: (s: string) => 
   if (!n) throw new Error(`${W}x${H} px is smaller than one 64x64 chip.`);
   const img = document.createElement("canvas"); img.width = W; img.height = H;
   img.getContext("2d")!.putImageData(new ImageData(rgba(planar, W, H) as unknown as ImageData["data"], W, H), 0, 0);
-  const j = await (await fetch("/data/onboard_sample.json")).json();
-  const dummy = { ground: { probs: new Array(j.classes.length).fill(0), cloud: 0 } };
-  const s = { shape: [n, 5, C, C], scale: j.scale, bands: j.bands, mean: j.mean, std: j.std, temperature: j.temperature, classes: j.classes, chips: new Array(n).fill(dummy), raw: chips } as unknown as Sample;
-  const probs: number[][] = [], cloud: number[] = []; let ms = 0;
-  for (let i = 0; i < n; i += BATCH) {
-    progress(`onboard model ${i}/${n}`);
-    const idx = Array.from({ length: Math.min(BATCH, n - i) }, (_, k) => i + k);
-    const { outs, totalMs } = await infer(s, idx);
-    ms += totalMs; outs.forEach((o) => { probs.push(o.probs); cloud.push(o.cloud); });
-  }
+  const { probs, cloud, ms, classes } = await classify(chips, n, progress);
   progress("compressing chips");
   const bytes = await Promise.all(Array.from({ length: n }, (_, i) => deflateLen(new Uint8Array(chips.buffer, i * 5 * P * 2, 5 * P * 2))));
-  const value = probs.map((p, i) => chipValue(cloud[i], pRel(p, j.classes), rate));
-  return { W, H, cols, rows, classes: j.classes, probs, cloud, bytes, value, msChip: ms / n, img, rate };
+  const value = probs.map((p, i) => chipValue(cloud[i], pRel(p, classes), rate));
+  return { W, H, cols, rows, classes, probs, cloud, bytes, value, msChip: ms / n, img, rate };
 }
 
 const top = (p: number[]) => p.indexOf(Math.max(...p));
@@ -141,7 +126,7 @@ function Results({ r }: { r: Res }) {
   );
 }
 
-export default function Lab({ data }: { data: Data }) {
+function Single({ data }: { data: Data }) {
   const [res, setRes] = useState<Res | null>(null), [msg, setMsg] = useState(""), [err, setErr] = useState(""), [busy, setBusy] = useState(false), [name, setName] = useState("");
   const rate = (data.params as any).rupees_per_ha?.A ?? 84000;
   const go = async (get: () => Promise<ArrayBuffer>, nm: string) => {
@@ -152,8 +137,7 @@ export default function Lab({ data }: { data: Data }) {
   const sample = (f: string) => go(async () => { const r = await fetch(`/samples/${f}`); if (!r.ok) throw new Error(`${f} missing`); return r.arrayBuffer(); }, f);
   const file = (f?: File) => f && go(() => f.arrayBuffer(), f.name);
   return (
-    <div className="lab view">
-      <h1>Lab: run the onboard model on your imagery</h1>
+    <>
       <div className="lab-in">
         <label className="lab-drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); file(e.dataTransfer.files[0]); }}>
           <input type="file" accept=".tif,.tiff" data-testid="file" onChange={(e) => file(e.target.files?.[0])} />
@@ -164,6 +148,18 @@ export default function Lab({ data }: { data: Data }) {
       {busy && <div className="lab-msg num">{name}: {msg}</div>}
       {err && <div className="lab-err" role="alert">{err}</div>}
       {res && <Results r={res} />}
+    </>
+  );
+}
+
+const TABS = [["upload", "Upload"], ["pair", "Change check (2 files)"], ["point", "Point check"]] as const;
+export default function Lab({ data }: { data: Data }) {
+  const [tab, setTab] = useState<(typeof TABS)[number][0]>("upload");
+  return (
+    <div className="lab view">
+      <h1>Lab: run the onboard AI on real imagery</h1>
+      <div className="lab-tabs" role="tablist">{TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
+      {tab === "upload" ? <Single data={data} /> : tab === "pair" ? <Pair data={data} /> : <Point data={data} />}
     </div>
   );
 }

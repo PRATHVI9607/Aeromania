@@ -1,0 +1,33 @@
+{
+ "_src": "config/change_thresholds.json (construction, clearing subset)",
+ "construction": {
+  "a_dndvi": 0.25,
+  "b_dndbi": 0.0,
+  "c_dbsi": 0.1,
+  "min_px": 25,
+  "chip_ha": 1.0,
+  "ndvi1_max": 0.35,
+  "bsi_bare": 0.15,
+  "osm_frac": 0.02,
+  "tuned": true,
+  "road_r": 0.03,
+  "road_r0": 0.015,
+  "layout_density": 0.03,
+  "layout_min_road_px": 15,
+  "layout_orient_share": 0.15,
+  "building_frac": 0.4,
+  "wet_chip": 0.1,
+  "wet_mndwi": -0.3
+ },
+ "clearing": {
+  "forest_ndvi": 0.5,
+  "d_ndvi": 0.25,
+  "min_px": 45,
+  "wc10_chip": 0.5,
+  "wc_ndvi": 0.35,
+  "water_margin_px": 3,
+  "mine_bare_ndvi": 0.2,
+  "mine_min_px": 1000,
+  "mine_touch_px": 2
+ }
+}
