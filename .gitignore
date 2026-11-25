@@ -18,3 +18,5 @@ vault/scores/
 vault/siting/
 vault/labels/osm_roads_*.json
 models/herald_teacher_fp32.onnx
+web/e2e/node_modules/
+web/e2e/out/
