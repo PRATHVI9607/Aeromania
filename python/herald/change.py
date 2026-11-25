@@ -958,6 +958,17 @@ def audit_grids(aoi, sample, mask, per_png=15, half=32):
         plt.close(fig)
 
 
+def site_confidence(r, base):
+    """Per-site evidence score anchored to the merged construction audit precision (see confidence_def)."""
+    if r["category"] not in ("new_layout", "building_construction"):
+        return 0.0 if r["category"] == "lake_filling_lead" else round(min(base, 0.5) * 0.5, 3)
+    ha = r.get("ha") or 0
+    size = 0.75 if ha < 0.5 else 0.88 if ha < 1 else 1.0
+    crop = 1 - 0.3 * (r.get("cropland_chip") or 0)
+    grid = 0.05 if (r.get("n_orientations") or 0) >= 2 else 0.0
+    return round(min(0.95, max(0.20, base * size * crop + grid)), 3)
+
+
 def apply_audit(aoi):
     """Write per-category audit precision into sites_{aoi}.json as `confidence` (if reports/audit_{aoi}.json exists)."""
     ap, sp = paths.REPORTS / f"audit_{aoi}.json", paths.REPORTS / f"sites_{aoi}.json"
@@ -965,13 +976,21 @@ def apply_audit(aoi):
         return
     prec = {c: v["precision"] for c, v in json.loads(ap.read_text(encoding="utf-8"))["per_category"].items()}
     d = json.loads(sp.read_text(encoding="utf-8"))
+    lead_p = paths.REPORTS / f"audit_{aoi}_lead.json"
+    base = json.loads(lead_p.read_text(encoding="utf-8")).get("precision_excl_unsure") if lead_p.exists() else None
     for r in d["sites"]:
-        r["confidence"] = prec.get(r["category"])
+        r["audit_precision_category"] = prec.get(r["category"])
+        r["confidence"] = site_confidence(r, base) if base is not None else prec.get(r["category"])
     # a category with audit precision < 0.1 is demoted to the end of the ranked list
     d["sites"].sort(key=lambda r: ((r["confidence"] or 0) < 0.1, r["rank"]))
     for k, r in enumerate(d["sites"]):
         r["rank"] = k + 1
     d["demoted_categories"] = [c for c, p_ in prec.items() if p_ < 0.1]
+    if base is not None:
+        d["confidence_def"] = ("per-site evidence score: merged construction audit precision (%.2f, excl. unsure; reviewer visual audit, "
+                               "not field-verified) x size factor (<0.5 ha 0.75, <1 ha 0.88, else 1) x (1 - 0.3 x cropland share of the chip) "
+                               "+ 0.05 if a road grid crosses in >= 2 orientations; clipped to 0.20-0.95. Heuristic, anchored to the audit; "
+                               "category-level audit precision kept as audit_precision_category." % base)
     sp.write_text(json.dumps(d, separators=(",", ":")), encoding="utf-8")
 
 
