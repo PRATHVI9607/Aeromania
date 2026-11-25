@@ -14,6 +14,7 @@ import { Economics, Hardware, About } from "./views/Static";
 import { Tabs, Empty } from "./kit";
 const DeepC = lazy(() => import.meta.glob("./deep/TrackC.tsx")["./deep/TrackC.tsx"]?.() as Promise<any> ?? Promise.resolve({ default: () => <Empty title="Deep dive not installed">web/src/deep/TrackC.tsx is not present in this build.</Empty> }));
 const Mission = lazy(() => import("./views/Mission"));
+const Simulation = lazy(() => import("./views/Simulation"));
 
 interface V { id: string; label: string; group: string; track?: string; title: string }
 const VIEWS: V[] = [
@@ -24,11 +25,12 @@ const VIEWS: V[] = [
   { id: "fifo", label: "Downlink: FIFO vs HERALD", group: "Track B: Build the orbit", track: "B", title: "Downlink: FIFO vs HERALD" },
   { id: "queries", label: "Downlink planner", group: "Track B: Build the orbit", track: "B", title: "Downlink planner" },
   { id: "evidence", label: "Evidence", group: "Track C: Guard the nation", track: "C", title: "Evidence chain" },
+  { id: "simulation", label: "Simulation", group: "Simulation", title: "Simulation" },
   { id: "model", label: "Model and hardware", group: "System", title: "Model and hardware" },
   { id: "econ", label: "Economics", group: "System", title: "Economics" },
   { id: "gates", label: "Gates and limits", group: "System", title: "Gates and limits" },
 ];
-const GROUPS = ["", "Track A: Read the planet", "Track B: Build the orbit", "Track C: Guard the nation", "System"];
+const GROUPS = ["", "Track A: Read the planet", "Track B: Build the orbit", "Track C: Guard the nation", "Simulation", "System"];
 const GROUP_NOTE: Record<string, string> = {};
 const hashId = () => { const h = location.hash.replace(/^#\/?/, ""); return h === "mission" ? "command" : h; };
 const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === hashId()));
@@ -45,9 +47,11 @@ export function App() {
 function Shell({ data }: { data: Data }) {
   const [i, setI] = useState(fromHash);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("herald.side") === "0");
-  const [seen0, setSeen0] = useState(VIEWS[i].id === "command"); // Mission stays mounted once opened: one Cesium viewer, paused while hidden
+  const [seen0, setSeen0] = useState(VIEWS[i].id === "command"), [seenS, setSeenS] = useState(VIEWS[i].id === "simulation"); // Mission stays mounted once opened: one Cesium viewer, paused while hidden
   const cur = VIEWS[i], isMission = cur.id === "command";
   useEffect(() => { if (isMission) setSeen0(true); }, [isMission]);
+  const isSim = cur.id === "simulation";
+  useEffect(() => { if (isSim) setSeenS(true); }, [isSim]);
   useEffect(() => { const h = () => setI(fromHash()); window.addEventListener("hashchange", h); return () => window.removeEventListener("hashchange", h); }, []);
   const go = useCallback((id: string) => { location.hash = `/${id}`; mainRef.current?.scrollTo(0, 0); }, []);
   const mainRef = useRef<HTMLElement>(null), navRef = useRef<HTMLDivElement>(null);
@@ -74,7 +78,7 @@ function Shell({ data }: { data: Data }) {
         <div className="navs" ref={navRef} onKeyDown={onKey}>
           {GROUPS.map((g) => (
             <div className="grp" key={g || "top"} role="group" aria-label={g || "Overview"}>
-              {g && <span className={`gtl t${g[6]}`}><b>{g.split(": ")[0]}</b>{g.includes(": ") ? <small>{g.split(": ")[1]}</small> : null}</span>}
+              {g && g !== "Simulation" && <span className={`gtl t${g[6]}`}><b>{g.split(": ")[0]}</b>{g.includes(": ") ? <small>{g.split(": ")[1]}</small> : null}</span>}
               {VIEWS.map((v, k) => v.group === g && (
                 <a key={v.id} href={`#/${v.id}`} className={k === i ? "on" : ""} aria-current={k === i ? "page" : undefined} title={v.label}
                   onClick={(e) => { e.preventDefault(); go(v.id); }}>
@@ -99,7 +103,8 @@ function Shell({ data }: { data: Data }) {
         <main id="panel" ref={mainRef} tabIndex={-1}>
           <Suspense fallback={<Skeleton rows={5} label="loading globe" />}>
             {seen0 && <div className="view" style={isMission ? undefined : { display: "none" }}><Guard label="Command center globe"><Mission {...common} active={isMission} /></Guard></div>}
-            {!isMission && <div className="view" key={cur.id}>
+            {seenS && <div className="view" style={isSim ? undefined : { display: "none" }}><Guard label="Simulation globe"><Simulation {...common} active={isSim} /></Guard></div>}
+            {!isMission && !isSim && <div className="view" key={cur.id}>
               {cur.id === "overview" && <Guard label="Overview"><Overview {...common} go={go} /></Guard>}
               {cur.id === "ledger" && <Guard label="Construction ledger"><Insights {...common} /></Guard>}
               {cur.id === "siting" && <Guard label="Siting"><Siting {...common} /></Guard>}

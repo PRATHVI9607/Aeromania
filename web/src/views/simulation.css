@@ -1,0 +1,7 @@
+.simgrid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;flex:1;min-height:0}
+.sim .charts{overflow:auto;gap:8px;scrollbar-width:thin}.sim .charts h3{margin-top:8px}
+.sim .hud{gap:10px}.sim .hud b{font:600 14px var(--mono);color:var(--tx)}
+.scrub.dates{padding-bottom:22px}.dlab{position:absolute;left:0;right:0;bottom:0;height:20px}
+.dlab button{white-space:nowrap;position:absolute;transform:translateX(-50%);background:none;border:0;padding:0 4px;font:11px var(--mono);color:var(--mut)}.dlab button.on{color:var(--a);background:none}
+.dlab button:first-child{transform:none}.dlab button:last-child{transform:translateX(-100%)}
+.cbar .lyr{white-space:nowrap}
