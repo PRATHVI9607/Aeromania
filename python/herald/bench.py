@@ -38,10 +38,15 @@ def main(argv):
         for b in (1, 64):
             x = rng.standard_normal((b, 5, 64, 64), dtype=np.float32)
             lat[f"ms_per_chip_{name}_cpu_b{b}"] = ms_per_chip(lambda: s.run(None, {"x": x}), b)
-    x = rng.standard_normal((64, 5, 64, 64), dtype=np.float32)
-    for th in (2, 4):  # fewer threads often wins when the box is shared
-        s = M.ort_session(M.INT8, th)
-        lat[f"ms_per_chip_int8_cpu_b64_t{th}"] = ms_per_chip(lambda: s.run(None, {"x": x}), 64)
+    sweep = {}  # int8, graph_optimization_level=ORT_ENABLE_ALL, intra_op threads x batch
+    for th in (None, 2, 4, 6):
+        s_ = M.ort_session(M.INT8, th)
+        for b in (64, 128, 256):
+            x = rng.standard_normal((b, 5, 64, 64), dtype=np.float32)
+            sweep[f"threads={th or 'default'},batch={b}"] = ms_per_chip(lambda: s_.run(None, {"x": x}), b, n=15)
+    lat["int8_sweep_ms_per_chip"] = sweep
+    lat["best_int8_setting"] = min(sweep, key=sweep.get)
+    lat["ms_per_chip_int8_cpu_best"] = sweep[lat["best_int8_setting"]]
     try:
         import torch
         if torch.cuda.is_available():
@@ -57,9 +62,10 @@ def main(argv):
     except Exception as e:  # noqa: BLE001
         print("gpu bench skipped:", e, file=sys.stderr)
     lat["device"] = lat["cpu"]
-    lat["ms_per_chip_int8_cpu_b64_best"] = min(v for k, v in lat.items() if k.startswith("ms_per_chip_int8_cpu_b64"))
+    lat["ms_per_chip_int8_cpu_b64_best"] = min(v for k, v in sweep.items() if k.endswith("batch=64"))
     lat["load_avg_1m"] = __import__("os").getloadavg()[0] if hasattr(__import__("os"), "getloadavg") else None
     r = M.update_report({"latency": lat})
     print(lat)
+    print("best overall:", lat["best_int8_setting"], round(lat["ms_per_chip_int8_cpu_best"], 3), "load", lat["load_avg_1m"])
     print("G4 (<1 ms/chip int8 b64):", "PASS" if lat["ms_per_chip_int8_cpu_b64_best"] < 1 else "FAIL")
     return 0

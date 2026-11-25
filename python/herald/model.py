@@ -325,7 +325,7 @@ def scene_feats(model, dev):
     out = {}
     for f in sorted(paths.CHIPS.glob("*_scl.npy")):
         aoi, d = f.stem[:-4].split("_")
-        if not (paths.CHIPS / f"{aoi}_{d}.npy").exists():
+        if aoi not in ("blr", "sone", "hasdeo") or not (paths.CHIPS / f"{aoi}_{d}.npy").exists():
             continue
         cl = np.isin(np.load(f), (3, 8, 9, 10)).mean((1, 2)).astype(np.float32)
         wc = np.load(paths.LABELS / f"{aoi}.npz")["wc"] if (paths.LABELS / f"{aoi}.npz").exists() else None
@@ -348,29 +348,38 @@ def cloud_stage(model, dev, a):
         return torch.cat([sf[k][0] for k in keys]), torch.cat([sf[k][1] for k in keys])
     for p in model.cloud.parameters():
         p.requires_grad = True
-    out, best = {}, None
-    for variant, keep in (("with_x1x2", lambda k: True), ("without_x1x2", lambda k: not k[1].startswith("x"))):
-        sv = {k: v for k, v in sf.items() if keep(k)}
-        loao = {}
-        for ho in aois:
-            tr = [k for k in sv if k[0] != ho]
-            (ftr, ytr), (fte, yte) = cat(tr), cat([k for k in sv if k[0] == ho])
-            loao[ho] = {"mae": fit_cloud(model, ftr, ytr, fte, yte), "mean_baseline_mae": float((yte - ytr.mean()).abs().mean()),
-                        "train_scenes": sorted(f"{k[0]}_{k[1]}" for k in tr)}
-            print("cloud", variant, ho, loao[ho]["mae"], flush=True)
-            if ho == "hasdeo":  # fit_cloud leaves the blr+sone-trained head in model.cloud
-                state = {k: v.clone() for k, v in model.cloud.state_dict().items()}
-        out[variant] = loao
-        if best is None or loao["hasdeo"]["mae"] < out[best]["hasdeo"]["mae"]:
-            best, best_state = variant, state
-    model.cloud.load_state_dict(best_state)
+    isx = lambda k: k[1].startswith("x")  # noqa: E731
+    out = {v: {} for v in ("A_without_x", "B_with_x")}
+    states = {}
+    for ho in aois:
+        te_i = [k for k in sf if k[0] == ho and not isx(k)]
+        te_x = [k for k in sf if k[0] == ho and isx(k)]
+        for var in out:
+            tr = [k for k in sf if k[0] != ho and (var == "B_with_x" or not isx(k))]
+            ftr, ytr = cat(tr)
+            fit_cloud(model, ftr, ytr, *cat(te_i[:1]))  # trains head; MAE below is computed per test set
+            states[var, ho] = {k: v.clone() for k, v in model.cloud.state_dict().items()}
+            dev_ = next(model.parameters()).device
+            r = {}
+            for name, ks in (("original_dates", te_i), ("x1_x2_cirrus", te_x), ("combined", te_i + te_x)):
+                f, y = cat(ks)
+                with torch.no_grad():
+                    r[name] = float((torch.sigmoid(model.cloud(f.to(dev_))).squeeze(1).cpu() - y).abs().mean())
+            r["mean_baseline_combined"] = float((cat(te_i + te_x)[1] - ytr.mean()).abs().mean())
+            out[var][ho] = r
+            print("cloud", var, ho, {k: round(v, 3) for k, v in r.items()}, flush=True)
+    score_ = {v: float(np.mean([out[v][h]["combined"] for h in aois])) for v in out}
+    best = min(score_, key=score_.get)
+    model.cloud.load_state_dict(states[best, "hasdeo"])  # head trained on blr+sone, held-out hasdeo
     ck = torch.load(PT, map_location="cpu", weights_only=False)
     ck["state"] = {k: v.cpu() for k, v in model.state_dict().items()}
     torch.save(ck, PT)
-    update_report({"cloud": {"mae": out[best]["hasdeo"]["mae"], "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"],
-                             "mean_baseline_mae": out[best]["hasdeo"]["mean_baseline_mae"], "kept_variant": best, "loao": out,
+    h = out[best]["hasdeo"]
+    update_report({"cloud": {"mae": h["combined"], "mae_original_dates": h["original_dates"], "mae_x1_x2_cirrus": h["x1_x2_cirrus"],
+                             "heldout_aoi": "hasdeo", "train_aois": ["blr", "sone"], "kept_variant": best,
+                             "mean_fold_combined_mae": score_, "loao": out,
                              "scenes_used": sorted(f"{k[0]}_{k[1]}" for k in sf), "labels": "SCL classes 3,8,9,10 fraction"}})
-    print("cloud kept", best, out[best]["hasdeo"]["mae"])
+    print("cloud kept", best, h)
     return 0
 
 
@@ -476,6 +485,7 @@ def quantize(fp32, int8, calib):
 def ort_session(path, threads=None):
     import onnxruntime as ort
     so = ort.SessionOptions()
+    so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
     if threads:
         so.intra_op_num_threads = threads
     return ort.InferenceSession(str(path), so, providers=["CPUExecutionProvider"])

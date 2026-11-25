@@ -25,26 +25,42 @@
     "SeaLake"
   ],
   "onnx": {
-    "calib_chips": 672,
+    "calib_chips": 704,
     "int8_mb": 11.39
   },
   "latency": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "method": "median of 30 runs after 5 warmup, ms/chip amortized",
-    "ms_per_chip_int8_cpu_b1": 4.203310500088264,
-    "ms_per_chip_int8_cpu_b64": 1.4292370937596388,
-    "ms_per_chip_fp32_cpu_b1": 6.77332849954837,
-    "ms_per_chip_fp32_cpu_b64": 2.6984402421845743,
-    "ms_per_chip_torch_gpu_b64": 1.1184074296863855,
+    "ms_per_chip_int8_cpu_b1": 3.8266885012490093,
+    "ms_per_chip_int8_cpu_b64": 1.4344372109320602,
+    "ms_per_chip_fp32_cpu_b1": 6.941575499695318,
+    "ms_per_chip_fp32_cpu_b64": 2.9911432109344105,
+    "ms_per_chip_torch_gpu_b64": 1.1190752656347058,
     "gpu": "NVIDIA GeForce RTX 2050",
     "device": "13th Gen Intel(R) Core(TM) i5-13420H",
     "ms_per_chip_int8_cpu_b64_t2": 1.3698214609405568,
     "ms_per_chip_int8_cpu_b64_t4": 1.5595529609271352,
-    "ms_per_chip_int8_cpu_b64_best": 1.3698214609405568,
-    "load_avg_1m": 3.69482421875
+    "ms_per_chip_int8_cpu_b64_best": 1.0827072656240944,
+    "load_avg_1m": 8.9814453125,
+    "int8_sweep_ms_per_chip": {
+      "threads=default,batch=64": 1.508453203115323,
+      "threads=default,batch=128": 1.2911021562587166,
+      "threads=default,batch=256": 1.269559980471513,
+      "threads=2,batch=64": 1.0827072656240944,
+      "threads=2,batch=128": 1.2993098906264322,
+      "threads=2,batch=256": 1.4542517656224163,
+      "threads=4,batch=64": 2.311507718758321,
+      "threads=4,batch=128": 1.9180425468761086,
+      "threads=4,batch=256": 2.3897325898474264,
+      "threads=6,batch=64": 2.0783284531091795,
+      "threads=6,batch=128": 1.9734287656234528,
+      "threads=6,batch=256": 1.7096376796814639
+    },
+    "best_int8_setting": "threads=2,batch=64",
+    "ms_per_chip_int8_cpu_best": 1.0827072656240944
   },
   "cloud": {
-    "mae": 0.08708459883928299,
+    "mae": 0.19393528997898102,
     "heldout_aoi": "hasdeo",
     "train_aois": [
       "blr",
@@ -59,102 +75,44 @@
       "verdict": "worse than chip head (0.087), discarded; hasdeo has 9.2% SCL class 10 thin cirrus, ~0% in blr/sone, so recall is low"
     },
     "loao": {
-      "with_x1x2": {
+      "A_without_x": {
         "blr": {
-          "mae": 0.13427741825580597,
-          "mean_baseline_mae": 0.35558563470840454,
-          "train_scenes": [
-            "hasdeo_c1",
-            "hasdeo_c2",
-            "hasdeo_t0",
-            "hasdeo_t1",
-            "hasdeo_x1",
-            "sone_c1",
-            "sone_c2",
-            "sone_t0",
-            "sone_t1",
-            "sone_x1",
-            "sone_x2"
-          ]
+          "original_dates": 0.07353600114583969,
+          "x1_x2_cirrus": 0.3101169466972351,
+          "combined": 0.1523963212966919,
+          "mean_baseline_combined": 0.3348015546798706
         },
         "hasdeo": {
-          "mae": 0.15141844749450684,
-          "mean_baseline_mae": 0.35497763752937317,
-          "train_scenes": [
-            "blr_c1",
-            "blr_c2",
-            "blr_t0",
-            "blr_t1",
-            "blr_x1",
-            "blr_x2",
-            "sone_c1",
-            "sone_c2",
-            "sone_t0",
-            "sone_t1",
-            "sone_x1",
-            "sone_x2"
-          ]
+          "original_dates": 0.08868234604597092,
+          "x1_x2_cirrus": 0.49079638719558716,
+          "combined": 0.22272035479545593,
+          "mean_baseline_combined": 0.3543659746646881
         },
         "sone": {
-          "mae": 0.17588290572166443,
-          "mean_baseline_mae": 0.3544865846633911,
-          "train_scenes": [
-            "blr_c1",
-            "blr_c2",
-            "blr_t0",
-            "blr_t1",
-            "blr_x1",
-            "blr_x2",
-            "hasdeo_c1",
-            "hasdeo_c2",
-            "hasdeo_t0",
-            "hasdeo_t1",
-            "hasdeo_x1"
-          ]
+          "original_dates": 0.08122731000185013,
+          "x1_x2_cirrus": 0.39008215069770813,
+          "combined": 0.1841789036989212,
+          "mean_baseline_combined": 0.3326181471347809
         }
       },
-      "without_x1x2": {
+      "B_with_x": {
         "blr": {
-          "mae": 0.08628429472446442,
-          "mean_baseline_mae": 0.2869757413864136,
-          "train_scenes": [
-            "hasdeo_c1",
-            "hasdeo_c2",
-            "hasdeo_t0",
-            "hasdeo_t1",
-            "sone_c1",
-            "sone_c2",
-            "sone_t0",
-            "sone_t1"
-          ]
+          "original_dates": 0.10495642572641373,
+          "x1_x2_cirrus": 0.2246924638748169,
+          "combined": 0.14486844837665558,
+          "mean_baseline_combined": 0.3606027066707611
         },
         "hasdeo": {
-          "mae": 0.08708459883928299,
-          "mean_baseline_mae": 0.2959119975566864,
-          "train_scenes": [
-            "blr_c1",
-            "blr_c2",
-            "blr_t0",
-            "blr_t1",
-            "sone_c1",
-            "sone_c2",
-            "sone_t0",
-            "sone_t1"
-          ]
+          "original_dates": 0.14084625244140625,
+          "x1_x2_cirrus": 0.3001134395599365,
+          "combined": 0.19393528997898102,
+          "mean_baseline_combined": 0.3748219609260559
         },
         "sone": {
-          "mae": 0.08119034022092819,
-          "mean_baseline_mae": 0.28200966119766235,
-          "train_scenes": [
-            "blr_c1",
-            "blr_c2",
-            "blr_t0",
-            "blr_t1",
-            "hasdeo_c1",
-            "hasdeo_c2",
-            "hasdeo_t0",
-            "hasdeo_t1"
-          ]
+          "original_dates": 0.19898192584514618,
+          "x1_x2_cirrus": 0.2436167448759079,
+          "combined": 0.2138601839542389,
+          "mean_baseline_combined": 0.35953906178474426
         }
       }
     },
@@ -170,6 +128,7 @@
       "hasdeo_t0",
       "hasdeo_t1",
       "hasdeo_x1",
+      "hasdeo_x2",
       "sone_c1",
       "sone_c2",
       "sone_t0",
@@ -178,7 +137,13 @@
       "sone_x2"
     ],
     "labels": "SCL classes 3,8,9,10 fraction",
-    "kept_variant": "without_x1x2"
+    "kept_variant": "B_with_x",
+    "mae_original_dates": 0.14084625244140625,
+    "mae_x1_x2_cirrus": 0.3001134395599365,
+    "mean_fold_combined_mae": {
+      "A_without_x": 0.18643185993035635,
+      "B_with_x": 0.18422130743662515
+    }
   },
   "embedding_change": {
     "auc_vs_rules": 0.5612698608964453,
