@@ -17,6 +17,7 @@ different stations are treated as independent (limitation). Unused capacity in a
 """
 import argparse
 import json
+import os
 import time
 import zlib
 
@@ -87,7 +88,7 @@ def real(phases):
                 chips = np.load(VAULT / "chips" / f"{k}_{d}.npy", mmap_mode="r")
                 for m in meta:
                     i, p, c = m["i"], sc["probs"][m["i"]], ch[m["i"]]
-                    gate = c["sev"] > 0
+                    gate = c["sev"] > 0 and c.get("valid", True)
                     pA = (p[3] + p[4] + p[7]) * gate if a["pack"] == "A" else 0.0
                     pC = 0.0
                     if a["kind"] == "sand":
@@ -146,21 +147,49 @@ def main(argv=None):
     t5 = []
     for _ in range(5):
         s = time.perf_counter(); sched.run("H2", sub, uw, params, queries, 5); t5.append(time.perf_counter() - s)
-    # headline
+    # headline. Minutes to reach a realized-value target, linear inside the window it is crossed.
+    dur = [w["end_min"] - w["start_min"] for w in uw]
+
+    def mins_to(tl, target):
+        if target <= 0:
+            return 0.0
+        used, prev = 0.0, 0.0
+        for d, c in zip(dur, tl["cum_value"]):
+            if c >= target:
+                return used + d * (target - prev) / (c - prev)
+            used, prev = used + d, c
+        return None
+
     h = {}
     for rho in RHOS:
-        m = {p: res[str(rho)][p]["metrics"] for p in sched.POLICIES}
-        f = m["B1"]["value"]
-        mins = {p: m[p]["minutes_to_90"] for p in sched.POLICIES}
-        sv = {p: (mins["B1"] - mins[p] if mins["B1"] is not None and mins[p] is not None else None) for p in ("H1", "H2")}
-        h[str(rho)] = {"ratio_vs_fifo": {p: (_r(m[p]["value"] / f, 3) if f else None) for p in ("H1", "H2")},
-                       "minutes_to_90": mins, "minutes_saved_vs_fifo": sv, "pct_ub": {p: m[p]["pct_ub"] for p in sched.POLICIES}}
+        R = res[str(rho)]
+        m = {p: R[p]["metrics"] for p in sched.POLICIES}
+        fifo = m["B1"]["value"]
+        tm = {p: _r(mins_to(R[p]["timeline"], fifo)) for p in sched.POLICIES}   # to match FIFO's final value
+        h[str(rho)] = {"ratio_vs_fifo": {p: _r(m[p]["value"] / fifo, 3) if fifo else None for p in ("H1", "H2")},
+                       "ratio_vs_b2": {p: _r(m[p]["value"] / m["B2"]["value"], 3) if m["B2"]["value"] else None for p in ("H1", "H2")},
+                       "minutes_to_90": {p: m[p]["minutes_to_90"] for p in sched.POLICIES},
+                       "minutes_to_match_fifo": tm,
+                       "fifo_minutes_used": tm["B1"],
+                       "minutes_saved_vs_fifo": {p: _r(tm["B1"] - tm[p]) if tm["B1"] is not None and tm[p] is not None else None for p in ("H1", "H2")},
+                       "ttfi_min": {p: m[p]["ttfi_min"] for p in sched.POLICIES},
+                       "pct_ub": {p: m[p]["pct_ub"] for p in sched.POLICIES}}
+    sens = {}
+    for f in (0.3, 0.5, 0.7):
+        pp = {**params, "level_fraction": [f, *params["level_fraction"][1:]]}
+        o = sched.run("H2", tiles, uw, pp, queries, 5)["metrics"]
+        sens[str(f)] = {"H2_value": _r(o["value"]), "H2_vs_B1": _r(o["value"] / res["5"]["B1"]["metrics"]["value"], 3) if res["5"]["B1"]["metrics"]["value"] else None,
+                        "H2_vs_B2": _r(o["value"] / res["5"]["B2"]["metrics"]["value"], 3) if res["5"]["B2"]["metrics"]["value"] else None}
+    r5 = res["5"]
+    robust = {"note": "H1 sends full chips only: no packet-fraction assumption involved.",
+              "H1_vs_B1": h["5"]["ratio_vs_fifo"]["H1"], "H1_vs_B2": h["5"]["ratio_vs_b2"]["H1"],
+              "H2_packet_fraction_sensitivity_rho5": sens}
     phys = orbit.physics(wins)
     checks = {"period_ok": 100.4 <= phys["period_tle_min"] <= 100.8, "inclination_ok": abs(phys["inclination_deg"] - 98.62) < 0.01,
               "max_pass_ok": 9.5 <= phys["max_pass_min"] <= 11.5, "min_el_ok": all(w["max_el"] >= orbit.MIN_EL for w in wins),
               "windows_nonempty": len(wins) > 0}
     assert all(checks.values()), (checks, phys)
-    rep = {"synthetic": syn, "physics": phys, "checks": checks, "headline_rho5": h["5"], "by_rho": h,
+    rep = {"synthetic": syn, "physics": phys, "checks": checks, "headline_rho5": h["5"], "by_rho": h, "robustness": robust, "load_avg": os.getloadavg() if hasattr(os, "getloadavg") else None,
            "g5_ms_per_1000_tiles_H2": round(min(t5) * 1000, 2),
            "capture_overpasses_10d_cycle": caps, "capture_phase_min_utc": phases,
            "n_tiles": len(tiles), "n_windows": len(wins), "n_windows_used": len(uw),
