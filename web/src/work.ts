@@ -30,7 +30,7 @@ export const statusOf = (s: WorkStore, id: string) => s[id]?.status ?? "new";
 /** Pure update used by the UI and the tests: set fields on many ids at once. */
 export function applyPatch(s: WorkStore, ids: string[], patch: Partial<Work>, now = new Date().toISOString()): WorkStore {
   const o = { ...s };
-  for (const id of ids) o[id] = { status: "new", note: "", assignee: "", ...o[id], ...patch, updated: now };
+  for (const id of ids) o[id] = { ...({ status: "new", note: "", assignee: "" } as Work), ...o[id], ...patch, updated: now };
   return o;
 }
 export function countStatus(s: WorkStore, ids: string[], all: readonly { id: string }[]): Record<string, number> {

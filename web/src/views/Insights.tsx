@@ -8,6 +8,9 @@ import { explain } from "../explain";
 import { aoiGeo } from "../geo";
 import { SiteDrawer, type SiteRef } from "../SiteDetail";
 import { useJson } from "../useJson";
+import { createPortal } from "react-dom";
+import { WorkPanel } from "../WorkPanel";
+import { applyPatch, countStatus, download, LEAD_KEY, LEAD_STATUS, statusOf, toCSV, toGeoJSON, toKML, useLocal, type WorkStore } from "../work";
 
 const Ledger3D = lazy(() => import("./Ledger3D"));
 
@@ -25,7 +28,7 @@ const EDGES = [0.25, 0.5, 1, 2, 5, 10, 25, Infinity];
 interface Site { site?: number; osm_id?: number; category: string; ha: number; ward: string | null; lat: number; lon: number; buffer_flag: boolean; near_drain?: boolean;
   confidence: number | null; rank: number; built_frac?: number; road_density?: number; n_orientations?: number; lake?: string; lake_acres?: number;
   stage_info?: Record<string, string>; water_t0_ha?: number; water_t1_ha?: number; lost_to_bare_ha?: number; lost_to_veg_ha?: number; lost_to_built_ha?: number; cropland_chip?: number }
-type Row = Site & { id: string; cname: string; wardn: string; crop: boolean };
+type Row = Site & { id: string; cname: string; wardn: string; crop: boolean; prio: number; status: string };
 const sid = (s: Site) => (s.category === "lake_filling_lead" ? `blr_lake${s.osm_id}` : `blr_site${s.site}`);
 
 export function Insights({ data }: ViewProps) {
@@ -37,6 +40,8 @@ export function Insights({ data }: ViewProps) {
   const [sel, setSel] = useState<Row | null>(null);
   const [onlyFlag, setOnlyFlag] = useState(false), [ward, setWard] = useState(""), [minHa, setMinHa] = useState(0), [minConf, setMinConf] = useState(0), [cropOnly, setCropOnly] = useState(false);
   const [bin, setBin] = useState<number | null>(null), [limit, setLimit] = useState(25);
+  const [work, setWork] = useLocal<WorkStore>(LEAD_KEY, {});
+  const [stF, setStF] = useState(""), [picked, setPicked] = useState<Set<string>>(new Set()), [printing, setPrinting] = useState(false);
   const [d3, setD3] = useState(false);
   useEffect(() => { const id = setTimeout(() => { new Image().src = "/data/img/blr_t1.jpg"; }, 400); return () => clearTimeout(id); }, []);
   const geo = useMemo(() => aoiGeo(data.tiles, "blr"), [data.tiles]);
@@ -46,11 +51,12 @@ export function Insights({ data }: ViewProps) {
     const a = t[0], b = t[N * N - 1], dl = (b.lon - a.lon) / (N - 1), dt = (b.lat - a.lat) / (N - 1);
     return [a.lon - dl / 2, Math.min(a.lat - dt / 2, b.lat + dt / 2), b.lon + dl / 2, Math.max(a.lat - dt / 2, b.lat + dt / 2)];
   }, [data.tiles]);
-  const all: Row[] = useMemo(() => (sites ?? []).map((s) => ({ ...s, id: sid(s), cname: CAT[cat(s.category)].label, wardn: s.ward ?? "Outside BBMP / none", crop: !!idx?.[sid(s)] })), [sites, idx]);
+  const all: Row[] = useMemo(() => (sites ?? []).map((s) => ({ ...s, id: sid(s), cname: CAT[cat(s.category)].label, wardn: s.ward ?? "Outside BBMP / none", crop: !!idx?.[sid(s)], prio: s.ha * (s.confidence ?? 0), status: "new" })), [sites, idx]);
   const wards = useMemo(() => [...new Set(all.map((s) => s.wardn))].sort(), [all]);
-  const list = useMemo(() => all.filter((s) => show[cat(s.category)] && (!onlyFlag || s.buffer_flag) && (!ward || s.wardn === ward) && s.ha >= minHa && (s.confidence ?? 0) >= minConf
-    && (!cropOnly || s.crop) && (bin == null || (s.ha >= EDGES[bin] && s.ha < EDGES[bin + 1]))), [all, show, onlyFlag, ward, minHa, minConf, cropOnly, bin]);
-  const { sorted, th } = useSort(list, "ha");
+  const allW = useMemo(() => all.map((s) => ({ ...s, status: statusOf(work, s.id) })), [all, work]);
+  const list = useMemo(() => allW.filter((s) => show[cat(s.category)] && (!onlyFlag || s.buffer_flag) && (!ward || s.wardn === ward) && s.ha >= minHa && (s.confidence ?? 0) >= minConf
+    && (!cropOnly || s.crop) && (!stF || s.status === stF) && (bin == null || (s.ha >= EDGES[bin] && s.ha < EDGES[bin + 1]))), [allW, show, onlyFlag, ward, minHa, minConf, cropOnly, bin, stF]);
+  const { sorted, th } = useSort(list, "prio");
   useEffect(() => setLimit(25), [list]);
   const items3 = useMemo(() => list.slice(0, 150).map((x) => ({ rank: x.rank, lat: x.lat, lon: x.lon, ha: x.ha, color: CAT[cat(x.category)].color })), [list]);
   const byWard = useMemo(() => { const m = new Map<string, number>(); for (const s of list) m.set(s.wardn, (m.get(s.wardn) ?? 0) + s.ha); return [...m].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, v]) => ({ label, v })); }, [list]);
@@ -62,8 +68,20 @@ export function Insights({ data }: ViewProps) {
   const ncHa = counts.new_layout.ha + counts.building_construction.ha;
   const rm = { assumption: true, source: survey.rupees_source + " " + survey.rupees_note };
   const wardRows = survey.wards_ranked.filter((w: any) => w.new_built_ha > 0).slice(0, 12);
-  const reset = () => { setWard(""); setMinHa(0); setMinConf(0); setOnlyFlag(false); setCropOnly(false); setBin(null); setShow({ new_construction: true, agri_ambiguous: false, lake_filling_lead: true }); };
-  const filtered = ward || minHa || minConf || onlyFlag || cropOnly || bin != null;
+  const stCount = countStatus(work, all.filter((s) => show[cat(s.category)]).map((s) => s.id), LEAD_STATUS);
+  const ids = [...picked].filter((i) => list.some((r) => r.id === i));
+  const setMany = (idl: string[], patch: Partial<{ status: string; note: string; assignee: string }>) => setWork((w) => applyPatch(w, idl, patch));
+  const togglePick = (id: string) => setPicked((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const rowsOut = () => sorted.map((r) => ({ id: r.id, rank: r.rank, status: statusOf(work, r.id), assignee: work[r.id]?.assignee ?? "", note: work[r.id]?.note ?? "", ward: r.wardn, category: r.category, ha: r.ha, confidence: r.confidence ?? "", priority: +r.prio.toFixed(2),
+    lat: r.lat, lon: r.lon, lake_buffer: r.buffer_flag, near_drain: !!r.near_drain, crop_before: idx?.[r.id]?.files?.t0 ?? "", crop_after: idx?.[r.id]?.files?.t1 ?? "" }));
+  const pts = () => rowsOut().map((r) => ({ lat: r.lat, lon: r.lon, name: `${r.id} ${r.category} ${r.ha} ha`, props: { status: r.status, assignee: r.assignee, ward: r.ward, ha: r.ha, confidence: r.confidence, lake_buffer: r.lake_buffer, note: r.note } }));
+  const exCSV = () => download("herald_lead_queue.csv", "text/csv", toCSV(rowsOut(), ["id", "rank", "status", "assignee", "note", "ward", "category", "ha", "confidence", "priority", "lat", "lon", "lake_buffer", "near_drain", "crop_before", "crop_after"]));
+  const exGeo = () => download("herald_lead_queue.geojson", "application/geo+json", JSON.stringify(toGeoJSON(pts()), null, 1));
+  const exKml = () => download("herald_lead_queue.kml", "application/vnd.google-earth.kml+xml", toKML(pts(), "HERALD lead queue"));
+  const doPrint = () => { setPrinting(true); document.body.classList.add("printing"); const done = () => { document.body.classList.remove("printing"); setPrinting(false); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); setTimeout(() => window.print(), 300); };
+  const reset = () => { setStF("");  setWard(""); setMinHa(0); setMinConf(0); setOnlyFlag(false); setCropOnly(false); setBin(null); setShow({ new_construction: true, agri_ambiguous: false, lake_filling_lead: true }); };
+  const filtered = stF || ward || minHa || minConf || onlyFlag || cropOnly || bin != null;
   const ref: SiteRef | null = sel && {
     id: sel.id, aoi: "blr", lat: sel.lat, lon: sel.lon, title: `${sel.cname}, ${fha(sel.ha, 1)}${sel.ward ? `, ${sel.ward}` : ""}`,
     facts: [
@@ -79,6 +97,7 @@ export function Insights({ data }: ViewProps) {
       ...(sel.stage_info ? [{ k: "Stage by date", v: <span className="mono small">{Object.entries(sel.stage_info).map(([k, v]) => `${k}: ${v}`).join(", ")}</span>, why: <>Land stage per scene: cleared, built or no_data (cloud). It tells you whether the clearing at t1 is followed by construction.</> }] : []),
       { k: "Decision", v: <>Send to the ward revenue officer or lake authority for a ground check; if the plot is not on the roll, add it to the assessment survey.</>, why: <>Expected value for the city: area x {inr(survey.rupees_per_ha_A)}/ha x confidence (assumption).</> },
     ],
+    actions: <WorkPanel w={work[sel.id]} options={LEAD_STATUS} who="Lead" onChange={(p) => setMany([sel.id], p)} />,
     fallback: sel.crop ? undefined : ["Native-resolution crops are generated for the 120 largest construction leads and the lake leads. This lead is not in that set."],
   };
   return (
@@ -90,6 +109,12 @@ export function Insights({ data }: ViewProps) {
         <Kpi label="Area changed" value={fha(ncHa, 0)} sub="new construction, two years" info={<>Sum of site areas for the two construction categories. Each 10 m pixel is 0.01 ha.</>} />
         <Kpi label="Near lake buffers" value={R.sites_blr.n_buffer_flagged_sites} sub="KTCDA no-build tiers" info={<>Construction sites inside the buffer tier for the lake's size (Supreme Court 5 Mar 2019 restored the 30 m RMP-2015 buffer; KTCDA 2025 tiers by lake size). Possible encroachment, verify on ground.</>} />
         <Kpi label="Near drains" value={R.sites_blr.n_near_drain_sites} sub="OSM drains" info={<>Construction sites near a mapped storm-water drain (flood-risk flag). OSM drains are incomplete.</>} />
+      </div>
+
+      <div className="stcards" role="group" aria-label="Queue by status">
+        {LEAD_STATUS.map((o) => (
+          <button key={o.id} className={`stcard ${stF === o.id ? "on" : ""}`} aria-pressed={stF === o.id} onClick={() => setStF(stF === o.id ? "" : o.id)}>
+            <b>{stCount[o.id]}</b><span>{o.label}</span></button>))}
       </div>
 
       <section className="panel filters" aria-label="Filters">
@@ -140,14 +165,19 @@ export function Insights({ data }: ViewProps) {
       </div>
 
       <section className="panel">
-        <h3>Leads <small>sortable; click a row to open the location detail</small></h3>
+        <h3>Work queue <small>priority = area x confidence; click a row for the detail and actions</small>
+          <span className="btns"><button onClick={exCSV} disabled={!list.length}>CSV</button><button onClick={exGeo} disabled={!list.length}>GeoJSON</button><button onClick={exKml} disabled={!list.length}>KML</button><button onClick={doPrint} disabled={!list.length}>Print inspection sheet</button></span></h3>
+        <div className="bulk" aria-live="polite"><span>{ids.length} selected</span>
+          <button onClick={() => setPicked(new Set(sorted.slice(0, limit).map((r) => r.id)))} disabled={!list.length}>Select shown</button>
+          <button onClick={() => setPicked(new Set())} disabled={!picked.size}>Clear</button><span className="sp" />
+          <span className="dim">Set selected to</span>{LEAD_STATUS.map((o) => <button key={o.id} disabled={!ids.length} onClick={() => setMany(ids, { status: o.id })}>{o.label}</button>)}</div>
         {list.length === 0 ? <Empty title="No leads match these filters">Widen the size or confidence filters, or press Reset.</Empty> : <>
           <div className="tblwrap"><table className="tbl rows">
-            <thead><tr>{th("rank", "#")}{th("cname", "Category", false)}{th("ha", "Area (ha)")}{th("wardn", "Ward", false)}{th("confidence", "Confidence")}{th("buffer_flag", "Lake buffer", false)}{th("crop", "10 m crop", false)}</tr></thead>
+            <thead><tr><th><span className="sr">Select</span></th>{th("rank", "#")}{th("status", "Status", false)}{th("cname", "Category", false)}{th("ha", "Area (ha)")}{th("wardn", "Ward", false)}{th("prio", "Priority")}{th("confidence", "Conf.")}{th("buffer_flag", "Lake buffer", false)}{th("crop", "10 m crop", false)}</tr></thead>
             <tbody>{sorted.slice(0, limit).map((s) => (
               <tr key={s.id + s.rank} tabIndex={0} className={sel === s ? "on" : ""} onClick={() => setSel(s)} onKeyDown={(e) => e.key === "Enter" && setSel(s)}>
-                <td className="mono r">{s.rank}</td><td><i className="dot" style={{ background: CAT[cat(s.category)].color }} />{s.cname}</td><td className="mono r">{s.ha.toFixed(1)}</td>
-                <td className="trunc">{s.wardn}</td><td className="mono r">{pct(s.confidence)}</td><td>{s.buffer_flag ? <Chip tone="bad">lake buffer</Chip> : ""}</td><td className="dim">{s.crop ? "yes" : "no"}</td></tr>))}</tbody>
+                <td onClick={(e) => e.stopPropagation()}><input type="checkbox" aria-label={`Select ${s.id}`} checked={picked.has(s.id)} onChange={() => togglePick(s.id)} /></td><td className="mono r">{s.rank}</td><td><span className={`stl ${s.status}`}>{LEAD_STATUS.find((o) => o.id === s.status)?.label.split(" (")[0]}</span></td><td><i className="dot" style={{ background: CAT[cat(s.category)].color }} />{s.cname}</td><td className="mono r">{s.ha.toFixed(1)}</td>
+                <td className="trunc">{s.wardn}</td><td className="mono r">{s.prio.toFixed(1)}</td><td className="mono r">{pct(s.confidence)}</td><td>{s.buffer_flag ? <Chip tone="bad">lake buffer</Chip> : ""}</td><td className="dim">{s.crop ? "yes" : "no"}</td></tr>))}</tbody>
           </table></div>
           {limit < sorted.length && <button className="more" onClick={() => setLimit(limit + 50)}>Show 50 more ({sorted.length - limit} left)</button>}
         </>}
@@ -178,6 +208,13 @@ export function Insights({ data }: ViewProps) {
           <p className="muted small">Expected = new built ha x {inr(survey.rupees_per_ha_A)}/ha x confidence (assumption). {survey.aoi_summary.growth_caveat}</p>
         </section>
       </div>
+      {printing && createPortal(<div className="printsheet"><h2 className="ps-h">Inspection sheet: {sorted.length > 40 ? "first 40 of " + sorted.length : sorted.length} leads, printed {new Date().toLocaleDateString()}</h2>
+        {sorted.slice(0, 40).map((r) => (<div className="ps-item" key={r.id}>
+          {idx?.[r.id] ? <><img src={`/data/${idx[r.id].files.t0}`} alt="before" /><img src={`/data/${idx[r.id].files.t1}`} alt="after" /></> : <><span /><span /></>}
+          <div><h4>{r.id}, {r.cname}, {r.ha.toFixed(1)} ha</h4><p>Ward: {r.wardn}. Lat/lon {r.lat.toFixed(5)}, {r.lon.toFixed(5)}. Confidence {pct(r.confidence)}. {r.buffer_flag ? "Inside lake buffer. " : ""}Status: {r.status}.</p>
+            <p>Left: {idx?.[r.id]?.dates?.t0 ?? "t0"}. Right: {idx?.[r.id]?.dates?.t1 ?? "t1"}. 10 m pixels, one square = 10 m.</p>
+            <p>Visited<span className="ps-box" />Construction present<span className="ps-box" />Approved plan seen<span className="ps-box" />Notice issued<span className="ps-box" /></p>
+            <p>Inspector: ______________ Date: __________ Remarks: ______________________________</p></div></div>))}</div>, document.body)}
       {ref && <SiteDrawer key={ref.id + sel!.rank} site={ref} data={data} onClose={() => setSel(null)} />}
     </div>
   );

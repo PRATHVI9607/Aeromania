@@ -6,7 +6,7 @@ import { aoiGeo } from "./geo";
 import type { Data } from "./data";
 
 export interface Fact { k: string; v: React.ReactNode; why?: React.ReactNode }
-export interface SiteRef { id: string; aoi: string; lat: number; lon: number; title: string; facts: Fact[]; onFlyTo?: () => void; fallback?: string[] }
+export interface SiteRef { actions?: React.ReactNode; id: string; aoi: string; lat: number; lon: number; title: string; facts: Fact[]; onFlyTo?: () => void; fallback?: string[] }
 const STAGES = ["t0", "c1", "t1", "c2"] as const;
 const PX = 192, M_PER_PX = 10;
 
@@ -42,6 +42,7 @@ export function SiteDrawer({ site, data, onClose }: { site: SiteRef; data: Data;
         <button ref={closeBtn} className="x" onClick={onClose} aria-label="Close detail (Escape)">Close <kbd>Esc</kbd></button>
       </header>
       <div className="dbody" ref={body}>
+        {site.actions}
         {list.length === 0 ? (
           <div className="noimg">
             {idx === undefined ? <span>Loading native-resolution crops</span> : <span>Native-resolution crops for this site are not in sites_index.json. The locator below shows where it is.</span>}
