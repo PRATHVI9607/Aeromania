@@ -16,3 +16,4 @@ vault/*.zip
 vault/s1/
 vault/scores/
 vault/siting/
+vault/labels/osm_roads_*.json
