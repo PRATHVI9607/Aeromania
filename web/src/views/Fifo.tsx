@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { cssVar, useTheme } from "../theme";
 import type { ViewProps } from "./props";
 import type { PolicyId, RunOut } from "../types";
 import { bytes, inr, pctf } from "../fmt";
@@ -8,8 +9,8 @@ import { reduced, useTween } from "../anim";
 
 const POL: { id: PolicyId; name: string; color: string }[] = [
   { id: "B1", name: "FIFO", color: "#7b8794" }, { id: "B2", name: "Cloud filter + FIFO", color: "#9aa5b1" },
-  { id: "B3", name: "Value greedy", color: "#52606d" }, { id: "H1", name: "HERALD, full chips by value/byte", color: "#e8892b" },
-  { id: "H2", name: "HERALD progressive (fastest first insight)", color: "#f2c06b" },
+  { id: "B3", name: "Value greedy", color: "#52606d" }, { id: "H1", name: "HERALD, full chips by value/byte", color: "#C2410C" },
+  { id: "H2", name: "HERALD progressive (fastest first insight)", color: "#D97706" },
 ];
 const TH = 300, RACE_S = 10; // timeline canvas height px; race duration seconds
 const RHO = [1, 2, 5, 10];
@@ -22,6 +23,7 @@ function at(a: ArrayLike<number>, p: number) {
 }
 
 function Timeline({ r, data, title, p, tone, value, ub, prog }: { prog: boolean; r: RunOut; data: ViewProps["data"]; title: string; p: number; tone: string; value: number; ub: number }) {
+  const theme = useTheme();
   const ref = useRef<HTMLCanvasElement>(null);
   const nw = data.wins.length;
   const byWin = useMemo(() => {
@@ -35,7 +37,7 @@ function Timeline({ r, data, title, p, tone, value, ub, prog }: { prog: boolean;
     const g = c.getContext("2d")!; g.scale(dpr, dpr);
     const cap = r.timeline.cap, maxCap = Math.max(...cap, 1);
     for (let y = 0; y < nw; y++) {
-      g.fillStyle = "#171d25"; g.fillRect(0, y * RH, (cap[y] / maxCap) * W, Math.max(RH - 0.5, 0.8));
+      g.fillStyle = cssVar("--panel2"); g.fillRect(0, y * RH, (cap[y] / maxCap) * W, Math.max(RH - 0.5, 0.8));
       let x = 0;
       for (const [i, L] of byWin[y]) {
         const t = data.tiles[i];
@@ -46,7 +48,7 @@ function Timeline({ r, data, title, p, tone, value, ub, prog }: { prog: boolean;
         x += wd;
       }
     }
-  }, [r, byWin, data, nw, prog]);
+  }, [r, byWin, data, nw, prog, theme]);
   return (
     <div className="panel racepanel">
       <h3>{title} <small>{bytes(at(r.timeline.bytes.reduce<number[]>((a, v) => (a.push((a[a.length - 1] ?? 0) + v), a), []), p))} sent</small></h3>
@@ -86,7 +88,7 @@ function Curves({ cum, ub, data, p, hid }: { cum: number[][]; ub: number; data: 
         {POL.map((q, k) => <path key={q.id} d={paths[k]} fill="none" stroke={q.color} strokeWidth={q.id === hid ? 2.8 : q.id === "B1" ? 1.8 : 1.2} opacity={q.id === hid || q.id === "B1" ? 1 : 0.55} />)}
       </g>
       <line x1={hx} x2={hx} y1={m.t} y2={H - m.b} className="cursor" />
-      {POL.filter((q) => q.id === hid || q.id === "B1").map((q) => <circle key={q.id} cx={hx} cy={y(at(cum[POL.indexOf(q)], p))} r={4} fill={q.color} stroke="#0b0e12" strokeWidth={1.5} />)}
+      {POL.filter((q) => q.id === hid || q.id === "B1").map((q) => <circle key={q.id} cx={hx} cy={y(at(cum[POL.indexOf(q)], p))} r={4} fill={q.color} stroke="var(--panel)" strokeWidth={1.5} />)}
     </svg>
   );
 }

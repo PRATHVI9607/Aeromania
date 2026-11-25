@@ -17,9 +17,9 @@ const Ledger3D = lazy(() => import("./Ledger3D"));
 const N = 46, MS = 640;
 const NEW = new Set(["new_layout", "building_construction"]);
 const CAT: Record<string, { label: string; color: string; note: string }> = {
-  new_construction: { label: "New construction", color: "#f2a93b", note: "new layout or building; sub-type split is unreliable at 10 m" },
-  agri_ambiguous: { label: "Cleared, ambiguous", color: "#6fd3c0", note: "cleared land without a road grid: may be harvested or fallow field" },
-  lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#6aa5e8", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
+  new_construction: { label: "New construction", color: "#C2410C", note: "new layout or building; sub-type split is unreliable at 10 m" },
+  agri_ambiguous: { label: "Cleared, ambiguous", color: "#0F766E", note: "cleared land without a road grid: may be harvested or fallow field" },
+  lake_filling_lead: { label: "Lake lead (unconfirmed)", color: "#2563EB", note: "OSM lake water lost between the dates; 0 of 10 confirmed filling at 10 m" },
 };
 const cat = (c: string) => (NEW.has(c) ? "new_construction" : c);
 const pct = (x: number | null | undefined) => (x == null ? "n/a" : `${(x * 100).toFixed(0)}%`);
