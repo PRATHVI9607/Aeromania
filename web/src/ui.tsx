@@ -1,9 +1,11 @@
-export function ViewHead({ kicker, title, sub }: { kicker: string; title: string; sub?: React.ReactNode }) {
+import { Explainer, type Explain } from "./kit";
+export function ViewHead({ kicker, title, sub, explain }: { kicker: string; title: string; sub?: React.ReactNode; explain?: Explain }) {
   return (
     <header className="vh">
       <div className="kicker">{kicker}</div>
       <h2 className="headline">{title}</h2>
       {sub && <p className="sub">{sub}</p>}
+      {explain && <Explainer e={explain} />}
     </header>
   );
 }
