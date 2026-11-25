@@ -109,7 +109,7 @@ export function About({ data, ms, runs }: { data: Data; ms: number | null; runs:
       <section className="panel"><h3>Protective use</h3>
         <p className="muted">HERALD detects land-cover change only (bare sand, water-mask change, vegetation loss) at 10 m. It cannot see people or vehicles and is not used to track individuals. No weapons, targeting or surveillance of persons.</p>
         <p className="muted">Outputs are evidence leads for authorized departments and require ground verification. Evidence cards are hash-chained for tamper evidence, not legal admissibility.</p>
-        <p className="muted">Globe: CesiumJS with bundled Natural Earth II imagery. No Cesium ion, no network tiles.</p>
+        <p className="muted">Globe: CesiumJS with local Solar System Scope Earth textures (CC BY 4.0, from NASA data). No Cesium ion, no network tiles.</p>
       </section>
     </div>
   );

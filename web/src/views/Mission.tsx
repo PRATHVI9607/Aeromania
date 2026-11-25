@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Cartesian2, Cartesian3, Color, ConstantPositionProperty, EasingFunction, HorizontalOrigin, Ion, JulianDate, SkyAtmosphere, ImageryLayer, LabelStyle, Material, PointPrimitiveCollection, PolylineCollection,
-  Rectangle, TileMapServiceImageryProvider, VerticalOrigin, Viewer, buildModuleUrl, ScreenSpaceEventType,
+  Cartesian2, Cartesian3, Color, ConstantPositionProperty, EasingFunction, HorizontalOrigin, JulianDate, LabelStyle, Material, PointPrimitiveCollection, PolylineCollection,
+  Rectangle, VerticalOrigin, Viewer, ScreenSpaceEventType,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import type { ViewProps } from "./props";
@@ -9,8 +9,8 @@ import { bytes, hm } from "../fmt";
 import { ViewHead } from "../ui";
 import { reduced } from "../anim";
 import { useJson } from "../useJson";
+import { makeEarth } from "../cz";
 
-Ion.defaultAccessToken = "";
 
 const SPEEDS = [1, 10, 60, 300, 1200]; // sim seconds per wall second
 const TRAIL_MIN = 100, SEGS = 8, LEAD_MIN = 5; // display only: about one orbit of trail, fading in 8 steps; clock starts 5 min before first contact
@@ -59,20 +59,7 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   }, [data.tiles]);
 
   useEffect(() => {
-    const v = new Viewer(box.current!, {
-      baseLayer: ImageryLayer.fromProviderAsync(TileMapServiceImageryProvider.fromUrl(buildModuleUrl("Assets/Textures/NaturalEarthII"))),
-      geocoder: false, baseLayerPicker: false, animation: false, timeline: false, homeButton: false, sceneModePicker: false,
-      navigationHelpButton: false, fullscreenButton: false, infoBox: false, selectionIndicator: false, requestRenderMode: true,
-      maximumRenderTimeChange: Infinity, shouldAnimate: false, skyBox: false, skyAtmosphere: false, creditContainer: document.createElement("div"),
-    });
-    v.useBrowserRecommendedResolution = false; v.resolutionScale = Math.min(window.devicePixelRatio || 1, 2); v.scene.postProcessStages.fxaa.enabled = true;
-    v.scene.globe.enableLighting = true; v.scene.globe.showWaterEffect = false; v.scene.globe.showGroundAtmosphere = true;
-    const sky = new SkyAtmosphere(); sky.brightnessShift = -0.25; v.scene.skyAtmosphere = sky;
-    // stars: offline point field instead of the SkyBox image set
-    const stars = v.scene.primitives.add(new PointPrimitiveCollection());
-    for (let i = 0; i < 700; i++) { const u = Math.random() * 2 - 1, a = Math.random() * 6.2832, r = Math.sqrt(1 - u * u); stars.add({ position: new Cartesian3(r * Math.cos(a) * 3e8, r * Math.sin(a) * 3e8, u * 3e8), pixelSize: 1 + Math.random() * 1.2, color: Color.WHITE.withAlpha(0.25 + Math.random() * 0.6) }); }
-    v.scene.backgroundColor = Color.fromCssColorString("#0A0E14");
-    v.scene.globe.baseColor = Color.fromCssColorString("#10151c");
+    const v = makeEarth(box.current!);
     v.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
     // AOI boxes + points; labels alternate side (sorted north to south) so sone/hasdeo and blr/pavagada never overlap
     const sorted = [...aois].sort((a, b) => b[1][1] - a[1][1]);
