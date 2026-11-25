@@ -9,7 +9,7 @@ Spec: PRD.md. Live state, contracts, and who-owns-what: HANDOFF.md (read it firs
 - Every number shown in the UI is read from a generated JSON in `web/public/data/` or `reports/`. Label every economic number as an assumption.
 - No Cesium ion, no API keys, no paid services.
 - Never write fake/measured-looking numbers. If a gate fails, report the real number and the gap.
-- Commits: conventional messages, NO "Co-Authored-By" or any AI attribution trailer. Local repo only, never push.
+- Commits: conventional messages, NO "Co-Authored-By" or any AI attribution trailer. Remote: origin = github.com/PRATHVI9607/Aeromania (main). Only the lead pushes; builders commit locally.
 
 ## Order
 M0 skeleton → M1 vault → M2 labels → M3 model → M4 change → M5 sched → M6 sim → M7 web → M8 packs → M9 deploy → M10 hw (sim only) → M11 pitch script.
