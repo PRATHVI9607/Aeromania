@@ -12,7 +12,7 @@ Clock: live 12 h hackathon build, started 2026-11-25 ~21:40 local. Priority: Tra
 | M0 skeleton | lead | done | pyproject (uv, py3.11, torch cu126), cli.py, paths.py, config/aois.json |
 | M1 vault + M2 labels (+S1) | builder-data | todo | vault/*, reports/vault.json |
 | M3 model | builder-model | todo | models/herald_int8.onnx, reports/model.json |
-| M4 change | builder-change | blocked on M1 | reports/change_*.json, web/public/data/img/* |
+| M4 change | builder-change | code+tests done, waiting on vault (not run on real data) | reports/change_*.json, web/public/data/img/* |
 | M5 value+sched, M6 sim, orbit | builder-orbit | todo | windows.json, track.json, results.json |
 | M7 web | builder-web | todo | web/ (Vite+React+TS+Cesium) |
 | M8 evidence + economics | — | later | evidence.json, economics.json |
@@ -68,3 +68,4 @@ Dates per AOI (all same MGRS tile + same relative orbit):
 
 ## Notes from builders
 - (lead) PRD says orbit.py "DONE" but it was not in the folder; builder-orbit writes it.
+- (builder-change) herald.change written + 4 unit tests pass + synthetic end-to-end run ok (scipy added to pyproject; run uv lock). No real-data numbers yet: waiting on vault/chips/blr_t0.npy + vault/labels/blr.npz. Run: uv run python -m herald change [--aoi X] [--retune]; blr tunes thresholds on west half, writes config/change_thresholds.json.
