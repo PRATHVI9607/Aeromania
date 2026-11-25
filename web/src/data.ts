@@ -38,7 +38,7 @@ export async function loadData(): Promise<Data> {
   const tiles: Tile[] = normTiles(t);
   const track = normTrack(tr);
   // sched_windows.json = contact windows split at capture times (python sim); same list the python scheduler used, so live recompute matches it.
-  const passes: Window[] = w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0)); // real contact passes (Mission view)
+  const passes: Window[] = w.windows.filter((x: Window) => x.end_min >= (w.first_capture_min ?? 0)); // real contact passes (Mission view); keep the pass that is in progress at first capture (same-pass downlink)
   const wins: Window[] = sw?.windows ?? w.windows.filter((x: Window) => x.start_min >= (w.first_capture_min ?? 0));
   const queries: Query[] = q.queries;
   const stations: Station[] = st?.stations ?? [];

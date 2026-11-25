@@ -37,7 +37,8 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
   const viewer = useRef<Viewer | null>(null);
   const scene = useRef<any>({});
   const wins = data.passes, splits = data.wins; // passes = real contact windows; splits = scheduler windows (indices of the H2 timeline)
-  const t0 = useMemo(() => Math.max(0, (wins[0]?.start_min ?? 0) - LEAD_MIN), [wins]);
+  // demo opens over India: LEAD_MIN before the first Bengaluru pass (it contains the first capture), else the first pass
+  const t0 = useMemo(() => Math.max(0, ((wins.find((w) => w.station === "bengaluru") ?? wins[0])?.start_min ?? 0) - LEAD_MIN), [wins]);
   const [t, setT] = useState(t0);
   const [play, setPlay] = useState(true);
   const [speed, setSpeed] = useState(2);
