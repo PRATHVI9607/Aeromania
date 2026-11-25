@@ -1,0 +1,32 @@
+{
+ "cards": [
+  {
+   "card_id": "ev001",
+   "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+   "ha": 4.0,
+   "conf": 0.5,
+   "note": "clearing é \"q\"",
+   "s1": {
+    "dvv_db": -2.5,
+    "n": 3
+   },
+   "list": [
+    1,
+    2.0,
+    null,
+    true
+   ],
+   "hash": "ed5f7c47755c58d7e5c83447444aa0ee23ca68817e639602ccb07af0d018c6ac"
+  },
+  {
+   "card_id": "ev002",
+   "prev_hash": "ed5f7c47755c58d7e5c83447444aa0ee23ca68817e639602ccb07af0d018c6ac",
+   "ha": 1e-05,
+   "z": {
+    "b": 1,
+    "a": []
+   },
+   "hash": "9ba0fe3391bf9869dfcadb3a311349dfb0d4f6869c1a73e1fe513a26e87d2b3c"
+  }
+ ]
+}

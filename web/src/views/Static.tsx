@@ -6,9 +6,6 @@ const Placeholder = ({ title, children }: { title: string; children?: React.Reac
 );
 const has = (d: Data, k: string) => Object.keys(d.reports).filter((r) => r.startsWith(k));
 
-export function Evidence({ data }: { data: Data }) {
-  return <Placeholder title="Evidence (Pack C)"><p className="muted">Evidence cards with SHA-256 chain and verify button arrive with reports/evidence.json. Found: {has(data, "evidence").join(", ") || "none"}.</p></Placeholder>;
-}
 export function Economics({ data }: { data: Data }) {
   const p = data.params, m = data.meta;
   return (

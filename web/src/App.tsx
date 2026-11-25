@@ -6,7 +6,8 @@ import { Fifo } from "./views/Fifo";
 import { Insights } from "./views/Insights";
 import { Siting } from "./views/Siting";
 import { QueriesView } from "./views/Queries";
-import { Evidence, Economics, Hardware, About } from "./views/Static";
+import { Evidence } from "./views/Evidence";
+import { Economics, Hardware, About } from "./views/Static";
 
 const Mission = lazy(() => import("./views/Mission"));
 const TABS = ["Mission", "FIFO vs HERALD", "Insights", "Siting", "Queries", "Evidence", "Economics", "Hardware", "About / Limits"] as const;
@@ -55,7 +56,7 @@ function Shell({ data }: { data: Data }) {
           {tab === 2 && <Insights {...common} />}
           {tab === 3 && <Siting {...common} />}
           {tab === 4 && <QueriesView {...common} setQueries={setQueries} ms={ms} />}
-          {tab === 5 && <Evidence data={data} />}
+          {tab === 5 && <Evidence {...common} />}
           {tab === 6 && <Economics data={data} />}
           {tab === 7 && <Hardware data={data} />}
           {tab === 8 && <About />}

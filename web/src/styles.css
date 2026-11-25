@@ -65,3 +65,5 @@ input[type=range]{accent-color:var(--acc)}
 .tbl{width:100%;border-collapse:collapse;font-size:12px}.tbl th{text-align:left;color:var(--mut);font-weight:400;border-bottom:1px solid var(--line);padding:4px 6px}.tbl td{padding:4px 6px;border-bottom:1px solid var(--line)}
 @media (max-width:1100px){.insgrid{grid-template-columns:1fr}}
 .span2x{grid-column:1/-1}.reasons{color:var(--mut);max-width:520px}.controls{display:flex;gap:4px}
+.evimgs{display:flex;gap:10px;margin-bottom:10px}.evimgs figure{margin:0}.evimgs img{display:block;background:#0a0d11;border:1px solid var(--line)}.evimgs figcaption{font-size:11px;color:var(--mut)}
+.hash{word-break:break-all;font-size:11px}.trunc2{word-break:break-word}
