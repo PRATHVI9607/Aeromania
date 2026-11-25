@@ -73,7 +73,7 @@ function Shell({ data }: { data: Data }) {
         <div className="navs" ref={navRef} onKeyDown={onKey}>
           {GROUPS.map((g) => (
             <div className="grp" key={g || "top"} role="group" aria-label={g || "Overview"}>
-              {g && <span className="gl">{g}{GROUP_NOTE[g] && <small>{GROUP_NOTE[g]}</small>}</span>}
+              {g && <span className="gtl">{g}{GROUP_NOTE[g] && <small>{GROUP_NOTE[g]}</small>}</span>}
               {VIEWS.map((v, k) => v.group === g && (
                 <a key={v.id} href={`#/${v.id}`} className={k === i ? "on" : ""} aria-current={k === i ? "page" : undefined} title={v.label}
                   onClick={(e) => { e.preventDefault(); go(v.id); }}>

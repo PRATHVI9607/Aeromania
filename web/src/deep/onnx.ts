@@ -54,6 +54,7 @@ export function getSession() {
     const threads = Math.max(1, Math.min(4, navigator.hardwareConcurrency || 1));
     ort.env.wasm.numThreads = threads;
     ort.env.wasm.wasmPaths = "/model/ort/";
+    ort.env.wasm.proxy = true; // run in ORT's own worker so the UI thread stays free
     const s = await ort.InferenceSession.create("/model/herald_int8.onnx", { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
     return { s, ort, threads: ort.env.wasm.numThreads ?? threads, loadMs: performance.now() - t0 };
   })().catch((e) => { sess = null; throw e; }));

@@ -31,7 +31,7 @@ export function Kpi({ label, value, sub, info, onClick, tone }: { label: string;
 
 export interface Explain { what: React.ReactNode; why: React.ReactNode; how: React.ReactNode[]; caveats: React.ReactNode[] }
 /** Four-part explainer under every view title: what you see, why it matters, how it is computed, where it can mislead. */
-export function Explainer({ e, defaultOpen = true }: { e: Explain; defaultOpen?: boolean }) {
+export function Explainer({ e, defaultOpen = false }: { e: Explain; defaultOpen?: boolean }) {
   return (
     <details className="expl" open={defaultOpen}>
       <summary>About this view<span className="dim"> what it shows, why it matters, how it is computed, caveats</span></summary>
