@@ -1,3 +1,4 @@
+import { FOREST_MIN_SHARE } from "./change";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, Chip } from "./Cards";
 import { canvasOf, type PairRes } from "./pair";
@@ -24,6 +25,7 @@ export function ChangeView({ r, rate, a2 }: { r: PairRes; rate: number; a2?: Rea
     g.putImageData(im, 0, 0);
   }, [r]);
   const { ha } = r.change, cons = ha.construction > 0, loss = ha.forestLoss + ha.mine > 0;
+  const isForest = r.change.forestShare >= FOREST_MIN_SHARE;
   return (
     <>
       <div className="lab-stats">
@@ -47,11 +49,12 @@ export function ChangeView({ r, rate, a2 }: { r: PairRes; rate: number; a2?: Rea
           <div className="lab-mix">{MASKS.map(([, c, l]) => <span key={l} className="lab-chip dim"><i style={{ background: c }} />{l}</span>)}</div>
         </div>
       </div>
+      {/* C applies only where the before image has real canopy; otherwise crop-field greening/harvest would read as forest loss */}
       <div className="lab-cards">
-        <Card code="A1" title="Construction" verdict={cons ? "New construction detected" : "No change"} tone={cons ? "warn" : "ok"}
+        <Card code="A1" title="Construction" verdict={cons ? (isForest ? "Land cleared in a forest area (see C)" : "New construction detected") : "No change"} tone={cons ? "warn" : "ok"}
           rows={[["new built-up/cleared", `${f1(ha.construction)} ha`], ["cleared / earthwork", `${f1(ha.cleared)} ha`], ["built-up", `${f1(ha.built)} ha`], ["tax at Rs " + rate.toLocaleString("en-IN") + "/ha (assumption)", cons ? "Rs " + Math.round(ha.construction * rate).toLocaleString("en-IN") : "0"]]} />
-        <Card code="C" title="Forest / mining" verdict={ha.mine > 0 ? "Mine expansion detected" : ha.forestLoss > 0 ? "Forest loss detected" : "No change"} tone={loss ? "bad" : "ok"}
-          rows={[["forest loss", `${f1(ha.forestLoss)} ha`], ["mine expansion", `${f1(ha.mine)} ha`], ["mean dNDVI, forest px", r.change.dndviForest.toFixed(3)]]} />
+        <Card code="C" title="Forest / mining" verdict={!isForest ? "Not a forest area" : ha.mine > 0 ? "Mine expansion detected" : ha.forestLoss > 0 ? "Forest loss detected" : "No change"} tone={isForest && loss ? "bad" : "ok"}
+          rows={[["contiguous canopy at t0", `${(r.change.forestShare * 100).toFixed(0)}% of area`], ["forest loss", `${f1(ha.forestLoss)} ha`], ["mine expansion", `${f1(ha.mine)} ha`], ["mean dNDVI, forest px", r.change.dndviForest.toFixed(3)]]} />
         {a2 ?? <Card code="A2" title="Solar suitability (proxy)" verdict={r.solar.share >= 0.5 ? "Open land, solar-suitable" : "Limited open land"} tone={r.solar.share >= 0.5 ? "ok" : "warn"}
           rows={[["open usable land", `${f1(r.solar.usableHa)} ha`], ["share of valid area", `${(r.solar.share * 100).toFixed(0)}%`], ["~MW at 1.8 ha/MW", f1(r.solar.usableHa / 1.8)], ["slope, grid", "unknown"]]} />}
       </div>

@@ -61,20 +61,24 @@ export interface Change {
   construction: Uint8Array; built: Uint8Array; cleared: Uint8Array; forest: Uint8Array; mine: Uint8Array;
   ha: { construction: number; built: number; cleared: number; forestLoss: number; mine: number; clearing: number };
   dndviForest: number; // mean dNDVI over t0 forest pixels (valid)
+  forestShare: number; // share of valid pixels that are contiguous canopy at t0
 }
 
+export const FOREST_MIN_PX = 500, FOREST_MIN_SHARE = 0.15;
 const sum = (m: Uint8Array) => { let s = 0; for (let i = 0; i < m.length; i++) s += m[i]; return s; };
 
 /** x0,x1 planar DN [5,W*H]; valid 1 = usable pixel on both dates */
 export function detectChange(x0: Bands, x1: Bands, W: number, H: number, valid: Uint8Array): Change {
   const N = W * H, i0 = indices(x0, N), i1 = indices(x1, N), c = thr.construction, k = thr.clearing;
-  let m: Uint8Array = new Uint8Array(N), f: Uint8Array = new Uint8Array(N), wet = new Uint8Array(N), forest0 = new Uint8Array(N);
+  let m: Uint8Array = new Uint8Array(N), f: Uint8Array = new Uint8Array(N), wet = new Uint8Array(N), forest0: Uint8Array = new Uint8Array(N);
   for (let p = 0; p < N; p++) {
     const dn = i1.ndvi[p] - i0.ndvi[p], dd = i1.ndbi[p] - i0.ndbi[p], db = i1.bsi[p] - i0.bsi[p];
     m[p] = dn < -c.a_dndvi && (dd > c.b_dndbi || db > c.c_dbsi) && i1.mndwi[p] < 0 && i0.mndwi[p] < 0 && i1.ndvi[p] < c.ndvi1_max && valid[p] ? 1 : 0;
     wet[p] = i0.mndwi[p] > 0 ? 1 : 0;
     forest0[p] = i0.ndvi[p] > k.forest_ndvi ? 1 : 0;
   }
+  // no WorldCover in the browser: contiguous canopy >= 5 ha stands in for the forest class (crop fields are small and fragmented)
+  const canopy = removeSmall(forest0, W, H, FOREST_MIN_PX); // gates the forest verdict only; loss/mine pixels keep the per-pixel rule
   m = removeSmall(m, W, H, c.min_px);
   const wet0 = k.water_margin_px ? dilate(wet, W, H, k.water_margin_px) : wet;
   for (let p = 0; p < N; p++) f[p] = forest0[p] && i1.ndvi[p] - i0.ndvi[p] < -k.d_ndvi && !wet0[p] && valid[p] ? 1 : 0;
@@ -87,12 +91,14 @@ export function detectChange(x0: Bands, x1: Bands, W: number, H: number, valid: 
   for (let p = 0; p < N; p++) if (near[p] && f[p]) hit[lab[p]] = 1;
   const mine = f.map((_, p) => (lab[p] && hit[lab[p]] ? 1 : 0)) as Uint8Array;
   const forest = f.map((v, p) => (v && !mine[p] ? 1 : 0)) as Uint8Array;
-  let sd = 0, sn = 0;
+  let sd = 0, sn = 0, nv = 0, nf = 0;
+  for (let p = 0; p < N; p++) if (valid[p]) { nv++; if (canopy[p]) nf++; }
   for (let p = 0; p < N; p++) if (forest0[p] && valid[p]) { sd += i1.ndvi[p] - i0.ndvi[p]; sn++; }
   return {
     construction: m, built, cleared, forest, mine,
     ha: { construction: sum(m) * PX_HA, built: sum(built) * PX_HA, cleared: sum(cleared) * PX_HA, forestLoss: sum(forest) * PX_HA, mine: sum(mine) * PX_HA, clearing: sum(f) * PX_HA },
     dndviForest: sn ? sd / sn : 0,
+    forestShare: nv ? nf / nv : 0,
   };
 }
 
