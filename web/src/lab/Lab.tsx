@@ -154,7 +154,8 @@ function Single({ data }: { data: Data }) {
 
 const TABS = [["upload", "Upload"], ["pair", "Change check (2 files)"], ["point", "Point check"]] as const;
 export default function Lab({ data }: { data: Data }) {
-  const [tab, setTab] = useState<(typeof TABS)[number][0]>("upload");
+  const q0 = new URLSearchParams(location.hash.split("?")[1] ?? "");
+  const [tab, setTab] = useState<(typeof TABS)[number][0]>((TABS.find(([k]) => k === q0.get("tab"))?.[0] ?? "upload"));
   return (
     <div className="lab view">
       <h1>Lab: run the onboard AI on real imagery</h1>

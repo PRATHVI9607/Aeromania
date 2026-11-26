@@ -28,7 +28,10 @@ function Picker({ boxes, pick, p }: { boxes: ReturnType<typeof aoiBoxes>; pick: 
 }
 
 export default function Point({ data }: { data: Data }) {
-  const [text, setText] = useState("13.104, 77.517"), [p, setP] = useState<LL | null>({ lat: 13.104, lon: 77.517 }), [ctx, setCtx] = useState<Ctx | null>(null);
+  // #/lab?tab=point&lat=..&lon=..&live=1 (from the Command center live pass) presets the point and starts the live analysis
+  const q0 = useMemo(() => new URLSearchParams(location.hash.split("?")[1] ?? ""), []);
+  const p0 = parseLatLon(`${q0.get("lat") ?? 13.104}, ${q0.get("lon") ?? 77.517}`) ?? { lat: 13.104, lon: 77.517 };
+  const [text, setText] = useState(`${p0.lat}, ${p0.lon}`), [p, setP] = useState<LL | null>(p0), [ctx, setCtx] = useState<Ctx | null>(null);
   const [live, setLive] = useState<{ r: PairRes; a: Scene; b: Scene; econ: any; pw: any } | null>(null), [msg, setMsg] = useState(""), [err, setErr] = useState(""), [busy, setBusy] = useState(false);
   const boxes = useMemo(() => aoiBoxes(data.tiles), [data.tiles]);
   const rate = (data.params as any).rupees_per_ha?.A ?? 84000;
@@ -50,6 +53,7 @@ export default function Point({ data }: { data: Data }) {
     } catch (e: any) { setErr(`Live analysis failed: ${String(e?.message ?? e)}`); }
     setBusy(false); setMsg("");
   };
+  useEffect(() => { if (q0.get("live") === "1") analyse(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const a2live = live && (live.econ && live.pw ? (
     <Card code="A2" title="Solar / wind (NASA POWER)" verdict={live.econ.lcoe < live.econ.tariff ? "Solar viable at tariff (grid/road unknown)" : "Solar marginal at tariff (grid/road unknown)"} tone={live.econ.lcoe < live.econ.tariff ? "ok" : "warn"}
@@ -95,7 +99,7 @@ export default function Point({ data }: { data: Data }) {
         <section className="lab-herald" data-testid="live">
           <h2>Live window, {WIN * 10 / 1000} km around {p.lat.toFixed(3)}, {p.lon.toFixed(3)}</h2>
           <div className="lab-mix"><Chip>before {live.b.datetime.slice(0, 10)} {live.b.id}</Chip><Chip>after {live.a.datetime.slice(0, 10)} {live.a.id}</Chip><Chip>cloud {live.b.cloud.toFixed(1)}% / {live.a.cloud.toFixed(1)}%</Chip><Chip>baseline {live.b.baseline} / {live.a.baseline}{live.a.baseline >= 4 ? " (BOA -1000)" : ""}</Chip></div>
-          <ChangeView r={live.r} rate={rate} a2={a2live} />
+          <ChangeView r={live.r} rate={rate} a2={a2live} forest={L?.aoi === "hasdeo" ? true : L?.aoi || L?.siting ? false : undefined} />
           <p className="lab-note dim small">live Sentinel-2 L2A from Element84 Earth Search; results are leads, not verdicts</p>
         </section>
       )}

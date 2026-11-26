@@ -106,6 +106,7 @@ def main(argv: list[str]) -> int:
                               "dates": {d: dates[d]["datetime"][:10] for d in chips if d in dates},
                               "cloud": cloud, "files": files}
     s1_crops(index)
+    lake_processing(index)
     onboard_sample(index)
     (paths.WEB_DATA / "sites_index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
     print(f"{len(index)} sites -> {OUT}")
@@ -151,3 +152,38 @@ def onboard_sample(index: dict, n_sites: int = 24) -> None:
     meta = {"dtype": "uint16-le", "shape": [len(picks), 5, C, C], "scale": 1e-4, "bands": norm["bands"], "mean": norm["mean"], "std": norm["std"],
             "temperature": rep["eurosat"]["temperature"], "classes": rep["classes"], "model": "models/herald_int8.onnx", "chips": rows}
     (paths.WEB_DATA / "onboard_sample.json").write_text(json.dumps(meta, separators=(",", ":")), encoding="utf-8")
+
+
+def lake_processing(index: dict) -> None:
+    """Per lake lead and date: MNDWI (grey) and water-mask PNGs on the 3x3-chip window, plus water ha per date (lakes.json)."""
+    out, sites = [], json.loads((paths.REPORTS / "sites_blr.json").read_text(encoding="utf-8"))["sites"]
+    lakes = {f"blr_lake{x['osm_id']}": x for x in sites if x["category"] == "lake_filling_lead"}
+    for sid, rep in lakes.items():
+        x = index.get(sid)
+        if not x:
+            continue
+        r0, c0, _ = x["window_chips"]
+        idx = [(r0 + i) * G + (c0 + j) for i in range(3) for j in range(3)]
+        rec = {"id": sid, "name": rep.get("lake"), "acres": rep.get("lake_acres"), "lat": x["lat"], "lon": x["lon"], "dates": {},
+               "report": {k: rep.get(k) for k in ("water_t0_ha", "water_t1_ha", "lost_to_veg_ha", "lost_to_bare_ha", "lost_to_built_ha")}}
+        for d in DATES:
+            f, sf = paths.CHIPS / f"{x['aoi']}_{d}.npy", paths.CHIPS / f"{x['aoi']}_{d}_scl.npy"
+            if not f.exists():
+                continue
+            a = np.asarray(np.load(f, mmap_mode="r")[idx]).astype(np.float32) / 1e4          # [9,5,64,64]
+            a = a.reshape(3, 3, 5, C, C).transpose(2, 0, 3, 1, 4).reshape(5, 3 * C, 3 * C)
+            g, sw = a[1], a[4]
+            mndwi = (g - sw) / np.maximum(g + sw, 1e-6)
+            scl = np.asarray(np.load(sf, mmap_mode="r")[idx]).reshape(3, 3, C, C).transpose(0, 2, 1, 3).reshape(3 * C, 3 * C) if sf.exists() else np.full((3 * C, 3 * C), 4)
+            valid = ~np.isin(scl, (0, 1, 3, 8, 9, 10, 11))
+            water = (mndwi > 0) & valid
+            Image.fromarray((np.clip((mndwi + 0.6) / 1.2, 0, 1) * 255).astype(np.uint8)).save(OUT / f"{sid}_mndwi_{d}.png", optimize=True)
+            rgba = np.zeros((*water.shape, 4), np.uint8)
+            rgba[water] = (56, 189, 248, 200)
+            rgba[~valid] = (148, 163, 184, 140)
+            Image.fromarray(rgba).save(OUT / f"{sid}_water_{d}.png", optimize=True)
+            rec["dates"][d] = {"date": x["dates"].get(d), "water_ha": round(float(water.sum()) / 100, 2), "valid": round(float(valid.mean()), 3),
+                               "mndwi": f"img/sites/{sid}_mndwi_{d}.png", "water": f"img/sites/{sid}_water_{d}.png", "rgb": x["files"].get(d)}
+        out.append(rec)
+    out.sort(key=lambda r: -(r["report"].get("water_t0_ha") or 0))
+    (paths.WEB_DATA / "lakes.json").write_text(json.dumps({"note": "MNDWI = (B03 - B11) / (B03 + B11); water = MNDWI > 0 on clear pixels (SCL); window 1.92 km at 10 m", "lakes": out}, separators=(",", ":")), encoding="utf-8")

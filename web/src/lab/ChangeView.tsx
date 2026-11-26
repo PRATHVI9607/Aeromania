@@ -7,7 +7,8 @@ import type { ReactNode } from "react";
 const MASKS: [keyof PairRes["change"], string, string][] = [["cleared", "#f2a93b", "cleared / earthwork"], ["built", "#e5694f", "built-up"], ["forest", "#6fd3c0", "forest loss"], ["mine", "#b07be0", "mine expansion"]];
 const f1 = (v: number) => v.toFixed(2);
 
-export function ChangeView({ r, rate, a2 }: { r: PairRes; rate: number; a2?: ReactNode }) {
+/** forest: known land type for the point (from our mapped AOIs); undefined = use the canopy heuristic */
+export function ChangeView({ r, rate, a2, forest }: { r: PairRes; rate: number; a2?: ReactNode; forest?: boolean }) {
   const [pos, setPos] = useState(50), [mask, setMask] = useState(true);
   const host = useRef<HTMLDivElement>(null), ov = useRef<HTMLCanvasElement>(null);
   const cv = useMemo(() => ({ b: canvasOf(r.p0, r.W, r.H), a: canvasOf(r.p1, r.W, r.H) }), [r]);
@@ -25,7 +26,7 @@ export function ChangeView({ r, rate, a2 }: { r: PairRes; rate: number; a2?: Rea
     g.putImageData(im, 0, 0);
   }, [r]);
   const { ha } = r.change, cons = ha.construction > 0, loss = ha.forestLoss + ha.mine > 0;
-  const isForest = r.change.forestShare >= FOREST_MIN_SHARE;
+  const isForest = forest ?? r.change.forestShare >= FOREST_MIN_SHARE;
   return (
     <>
       <div className="lab-stats">

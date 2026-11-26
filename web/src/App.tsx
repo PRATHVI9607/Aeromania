@@ -16,6 +16,7 @@ const DeepC = lazy(() => import.meta.glob("./deep/TrackC.tsx")["./deep/TrackC.ts
 const Mission = lazy(() => import("./views/Mission"));
 const Lab = lazy(() => import.meta.glob("./lab/Lab.tsx")["./lab/Lab.tsx"]?.() as Promise<any> ?? Promise.resolve({ default: () => <Empty title="AI Lab">web/src/lab/Lab.tsx is not present in this build.</Empty> }));
 const Simulation = lazy(() => import("./views/Simulation"));
+const LakeWatch = lazy(() => import("./views/LakeWatch"));
 
 interface V { id: string; label: string; group: string; track?: string; title: string }
 const VIEWS: V[] = [
@@ -27,6 +28,7 @@ const VIEWS: V[] = [
   { id: "queries", label: "Downlink planner", group: "Track B: Build the orbit", track: "B", title: "Downlink planner" },
   { id: "evidence", label: "Evidence", group: "Track C: Guard the nation", track: "C", title: "Evidence chain" },
   { id: "simulation", label: "Simulation", group: "Simulation", title: "Simulation" },
+  { id: "lakes", label: "Lake watch", group: "Simulation", title: "Lake watch" },
   { id: "lab", label: "AI Lab", group: "AI Lab", title: "AI Lab" },
   { id: "model", label: "Model and hardware", group: "System", title: "Model and hardware" },
   { id: "econ", label: "Economics", group: "System", title: "Economics" },
@@ -34,7 +36,7 @@ const VIEWS: V[] = [
 ];
 const GROUPS = ["", "Track A: Read the planet", "Track B: Build the orbit", "Track C: Guard the nation", "Simulation", "AI Lab", "System"];
 const GROUP_NOTE: Record<string, string> = {};
-const hashId = () => { const h = location.hash.replace(/^#\/?/, ""); return h === "mission" ? "command" : h; };
+const hashId = () => { const h = location.hash.replace(/^#\/?/, "").split("?")[0]; return h === "mission" ? "command" : h; };
 const fromHash = () => Math.max(0, VIEWS.findIndex((v) => v.id === hashId()));
 
 export function App() {
@@ -114,6 +116,7 @@ function Shell({ data }: { data: Data }) {
               {cur.id === "fifo" && <Guard label="FIFO vs HERALD"><Fifo {...common} setRho={setRho} /></Guard>}
               {cur.id === "queries" && <Guard label="Planner"><Planner {...common} setQueries={setQueries} ms={ms} /></Guard>}
               {cur.id === "evidence" && <Guard label="Evidence"><Tabs tabs={[{ id: "cases", label: "Cases", node: () => <Evidence {...common} /> }, { id: "deep", label: "Deep dive", node: () => <Guard label="Track C deep dive"><Suspense fallback={<Skeleton rows={4} />}><DeepC {...common} /></Suspense></Guard> }]} /></Guard>}
+              {cur.id === "lakes" && <Guard label="Lake watch"><Suspense fallback={<Skeleton rows={4} />}><LakeWatch {...common} /></Suspense></Guard>}
               {cur.id === "lab" && <Guard label="AI Lab"><Suspense fallback={<Skeleton rows={4} />}><Lab {...common} /></Suspense></Guard>}
               {cur.id === "model" && <Guard label="Model and hardware"><Hardware data={data} /></Guard>}
               {cur.id === "econ" && <Guard label="Economics"><Economics data={data} /></Guard>}

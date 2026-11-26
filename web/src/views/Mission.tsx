@@ -363,6 +363,7 @@ export default function Mission({ data, out, active: shown }: ViewProps & { acti
             <button onClick={fetchLatest} disabled={live.state === "loading"}>{live.state === "loading" ? "Fetching" : "Fetch latest real pass"}</button>
             <span className="chip warn">live, uses internet</span>
             {live.state === "err" && <span className="chip bad">{live.msg}</span>}
+            {live.state === "ok" && <a className="liveeval" href="#/lab?tab=point&lat=13.104&lon=77.517&live=1">Analyse this pass: AI + change vs a year ago</a>}
             {live.items.map((it) => (
               <button key={it.id} className={`liveit ${live.sel === it.id ? "on" : ""}`} onClick={() => drapeLive(it)} title={it.id}>
                 {it.thumb && <img src={it.thumb} alt="" width={36} height={36} />}<span className="mono">{it.date}</span><span className="mono dim">{it.cloud != null ? `${it.cloud.toFixed(0)}% cloud` : ""}</span></button>))}
